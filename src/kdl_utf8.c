@@ -1,0 +1,67 @@
+#include <stdbool.h>
+
+#include "kdl_utf8.h"
+
+inline static bool _kdl_is_utf8_continuation(int c)
+{
+    return (c & 0xc0) == 0x80;
+}
+
+kdl_utf8_status _kdl_pop_codepoint(kdl_str *str, uint32_t *codepoint)
+{
+    if (str->len < 1) {
+        return KDL_UTF8_EOF;
+    }
+
+    char const* s = str->data;
+    // Check high bit
+    if ((s[0] & 0x80) == 0) {
+        // ASCII
+        *codepoint = (uint32_t)*s;
+        ++str->data;
+        --str->len;
+        return KDL_UTF8_OK;
+    } else if ((s[0] & 0xe0) == 0xc0) {
+        // 2-byte sequence
+        if (str->len < 2) {
+            // Incomplete UTF-8 sequence
+            return KDL_UTF8_INCOMPLETE;
+        } else if (!_kdl_is_utf8_continuation(s[1])) {
+            // Invalid UTF-8 sequence
+            return KDL_UTF8_DECODE_ERROR;
+        }
+        *codepoint = ((s[0] & 0x1f) << 6) | (s[1] & 0x3f);
+        str->data += 2;
+        str->len -= 2;
+        return KDL_UTF8_OK;
+    } else if ((s[0] & 0xf0) == 0xe0) {
+        // 3-byte sequence
+        if (str->len < 3) {
+            // Incomplete UTF-8 sequence
+            return KDL_UTF8_INCOMPLETE;
+        } else if (!_kdl_is_utf8_continuation(s[1]) || !_kdl_is_utf8_continuation(s[2])) {
+            // Invalid UTF-8 sequence
+            return KDL_UTF8_DECODE_ERROR;
+        }
+        *codepoint = ((s[0] & 0xf) << 12) | ((s[1] & 0x3f) << 6) | (s[2] & 0x3f);
+        str->data += 3;
+        str->len -= 3;
+        return KDL_UTF8_OK;
+    } else if ((s[0] & 0xf8) == 0xf0) {
+        // 4-byte sequence
+        if (str->len < 4) {
+            // Incomplete UTF-8 sequence
+            return KDL_UTF8_INCOMPLETE;
+        } else if (!_kdl_is_utf8_continuation(s[1]) || !_kdl_is_utf8_continuation(s[2]) || !_kdl_is_utf8_continuation(s[3])) {
+            // Invalid UTF-8 sequence
+            return KDL_UTF8_DECODE_ERROR;
+        }
+        *codepoint = ((s[0] & 0x7) << 18) | ((s[1] & 0x3f) << 12) | ((s[2] & 0x3f) << 6) | (s[3] & 0x3f);
+        str->data += 4;
+        str->len -= 4;
+        return KDL_UTF8_OK;
+    } else {
+        return KDL_UTF8_DECODE_ERROR;
+    }
+}
+
