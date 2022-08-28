@@ -15,6 +15,7 @@ set(KDL_C_SOURCES
     src/str.c
     src/tokenizer.c
     src/parser.c
+    src/emitter.c
 )
 
 add_library(kdl ${KDL_C_SOURCES})

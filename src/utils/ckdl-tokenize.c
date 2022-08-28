@@ -1,4 +1,5 @@
 #include <kdl/tokenizer.h>
+#include <kdl/emitter.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -9,6 +10,12 @@ static size_t read_func(void *user_data, char *buf, size_t bufsize)
 {
     FILE *fp = (FILE*) user_data;
     return fread(buf, 1, bufsize, fp);
+}
+
+static size_t write_func(void *user_data, char const *data, size_t nbytes)
+{
+    (void)user_data;
+    return fwrite(data, 1, nbytes, stdout);
 }
 
 int main(int argc, char **argv)
@@ -34,6 +41,17 @@ int main(int argc, char **argv)
     }
 
     kdl_tokenizer *tokenizer = kdl_create_stream_tokenizer(&read_func, (void*)in);
+    kdl_emitter *emitter = kdl_create_stream_emitter(&write_func, NULL,
+        (kdl_emitter_options){
+            .indent = 4,
+            .escape_mode = KDL_ESCAPE_ASCII_MODE,
+            .identifier_mode = KDL_ASCII_IDENTIFIERS
+        });
+
+    if (tokenizer == NULL || emitter == NULL) {
+        fprintf(stderr, "Initialization error\n");
+        return -1;
+    }
 
     bool have_error = false;
     while (1) {
@@ -101,20 +119,18 @@ int main(int argc, char **argv)
             break;
         }
 
-        printf("%s", token_type_name);
-        if (token.value.len != 0) {
-            kdl_owned_string esc_val = kdl_escape(&token.value, KDL_ESCAPE_ASCII_MODE);
-            printf(" \"%s\"", esc_val.data);
-            kdl_free_string(&esc_val);
-        }
-        puts("");
+        kdl_emit_node(emitter, (kdl_str){ token_type_name, strlen(token_type_name) });
+        kdl_value val = (kdl_value){
+            .type = KDL_TYPE_STRING,
+            .value = { .string = token.value }
+        };
+        kdl_emit_arg(emitter, &val);
     }
 
+    kdl_destroy_emitter(emitter);
+    kdl_destroy_tokenizer(tokenizer);
     if (in != stdin) {
         fclose(in);
-    }
-    if (tokenizer != NULL) {
-        kdl_destroy_tokenizer(tokenizer);
     }
     return have_error ? 1 : 0;
 }

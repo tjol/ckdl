@@ -1,5 +1,6 @@
 #include "kdl/tokenizer.h"
 #include "utf8.h"
+#include "grammar.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -88,7 +89,7 @@ static size_t refill_tokenizer(kdl_tokenizer *self)
     return read_count;
 }
 
-static inline bool is_whitespace(uint32_t c)
+bool _kdl_is_whitespace(uint32_t c)
 {
     return
         c == 0x0009 || // Character Tabulation
@@ -111,7 +112,7 @@ static inline bool is_whitespace(uint32_t c)
         c == 0x3000;   // Ideographic Space
 }
 
-static inline bool is_newline(uint32_t c)
+bool _kdl_is_newline(uint32_t c)
 {
     return
         c == 0x000D || // CR  Carriage Return
@@ -122,25 +123,25 @@ static inline bool is_newline(uint32_t c)
         c == 0x2029;   // PS  Paragraph Separator
 }
 
-static inline bool is_id(uint32_t c)
+bool _kdl_is_id(uint32_t c)
 {
     return c > 0x20 && c <= 0x10FFFF &&
         c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' &&
         c != '}' && c != '<' && c != '>' && c != ';' && c != '[' &&
         c != ']' && c != '=' && c != ',' && c != '"' &&
-        !is_whitespace(c) && !is_newline(c);
+        !_kdl_is_whitespace(c) && !_kdl_is_newline(c);
 }
 
-static inline bool is_id_start(uint32_t c)
+bool _kdl_is_id_start(uint32_t c)
 {
-    return is_id(c) && (c < '0' || c > '9');
+    return _kdl_is_id(c) && (c < '0' || c > '9');
 }
 
-static inline bool is_end_of_word(uint32_t c)
+bool _kdl_is_end_of_word(uint32_t c)
 {
     // is this character something that could terminate an identifier (or
     // number) in some situation?
-    return is_whitespace(c) || is_newline(c) ||
+    return _kdl_is_whitespace(c) || _kdl_is_newline(c) ||
         c == ';' || c == ')' || c == '}' || c == '/' || c == '\\' || c == '=';
 }
 
@@ -202,12 +203,12 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
         }
 
         // Could be the start of a new token
-        if (is_whitespace(c)) {
+        if (_kdl_is_whitespace(c)) {
             // ignore whitespace
             self->whitespace_required = false;
             self->document.len -= (next - self->document.data);
             cur = self->document.data = next;
-        } else if (is_newline(c)) {
+        } else if (_kdl_is_newline(c)) {
             // end of line
             self->whitespace_required = false;
             // special treatment for CRLF
@@ -291,7 +292,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             // string
             self->whitespace_required = true;
             return _kdl_pop_string(self, dest);
-        } else if (!self->whitespace_required && is_id(c)) {
+        } else if (!self->whitespace_required && _kdl_is_id(c)) {
             self->whitespace_required = true;
             if (c == 'r') {
                 // this *could* be a raw string
@@ -324,10 +325,10 @@ static kdl_tokenizer_status _kdl_pop_word(kdl_tokenizer *self, kdl_token *dest)
             return KDL_TOKENIZER_ERROR;
         }
 
-        if (is_end_of_word(c)) {
+        if (_kdl_is_end_of_word(c)) {
             // end the word
             goto end_of_word;
-        } else if (!is_id(c)) {
+        } else if (!_kdl_is_id(c)) {
             // invalid character
             return KDL_TOKENIZER_ERROR;
         }
@@ -374,7 +375,7 @@ static kdl_tokenizer_status _kdl_pop_comment(kdl_tokenizer *self, kdl_token *des
             default: // error
                 return KDL_TOKENIZER_ERROR;
             }
-            if (is_newline(c)) goto end_of_line;
+            if (_kdl_is_newline(c)) goto end_of_line;
             // Accept this character
             cur = next;
         }

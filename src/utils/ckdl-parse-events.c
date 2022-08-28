@@ -1,4 +1,5 @@
 #include <kdl/parser.h>
+#include <kdl/emitter.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -11,16 +12,10 @@ static size_t read_func(void *user_data, char *buf, size_t bufsize)
     return fread(buf, 1, bufsize, fp);
 }
 
-static inline void print_kdl_str(kdl_str const *s)
+static size_t write_func(void *user_data, char const *data, size_t nbytes)
 {
-    fwrite(s->data, 1, s->len, stdout);
-}
-
-static inline void print_kdl_str_repr(kdl_str const *s)
-{
-    kdl_owned_string tmp_str = kdl_escape(s, KDL_ESCAPE_CONTROL | KDL_ESCAPE_NEWLINE | KDL_ESCAPE_TAB);
-    printf("\"%s\"", tmp_str.data);
-    kdl_free_string(&tmp_str);
+    (void)user_data;
+    return fwrite(data, 1, nbytes, stdout);
 }
 
 void print_usage(char const *argv0, FILE *fp)
@@ -67,6 +62,23 @@ int main(int argc, char **argv)
     }
 
     kdl_parser *parser = kdl_create_stream_parser(&read_func, (void*)in, parse_opts);
+    kdl_emitter *emitter = kdl_create_stream_emitter(&write_func, NULL,
+        (kdl_emitter_options){
+            .indent = 4,
+            .escape_mode = KDL_ESCAPE_CONTROL | KDL_ESCAPE_NEWLINE | KDL_ESCAPE_TAB,
+            .identifier_mode = KDL_PREFER_BARE_IDENTIFIERS
+        });
+
+    if (parser == NULL || emitter == NULL) {
+        fprintf(stderr, "Initialization error\n");
+        return -1;
+    }
+
+    // constants
+    kdl_str const slashdash_type_str = (kdl_str){ "(commented-out)", 15 };
+    kdl_str const value_str = (kdl_str){ "value", 5 };
+    kdl_str const type_str = (kdl_str){ "type", 4 };
+    kdl_str const key_str = (kdl_str){ "key", 3 };
 
     bool have_error = false;
     bool eof = false;
@@ -111,60 +123,36 @@ int main(int argc, char **argv)
             }
         }
 
+        kdl_str event_name_str = (kdl_str){ event_name, strlen(event_name) };
+
         if (slashdash) {
-            printf("(commented-out)");
+            kdl_emit_node_with_type(emitter, slashdash_type_str, event_name_str);
+        } else {
+            kdl_emit_node(emitter, event_name_str);
         }
-        printf("%s value=", event_name);
-        switch (event->value.type) {
-        case KDL_TYPE_NUMBER:
-            switch (event->value.value.number.type) {
-            case KDL_NUMBER_TYPE_INTEGER:
-                printf("(i64)%lld", event->value.value.number.value.integer);
-                break;
-            case KDL_NUMBER_TYPE_FLOATING_POINT:
-                printf("(f64)%g", event->value.value.number.value.floating_point);
-                break;
-            case KDL_NUMBER_TYPE_STRING_ENCODED:
-                printf("(str)");
-                print_kdl_str(&event->value.value.number.value.string);
-                break;
-            default:
-                printf("(error)null");
-                break;
-            }
-            break;
-        case KDL_TYPE_BOOLEAN:
-            if (event->value.value.boolean) {
-                printf("true");
-            } else {
-                printf("false");
-            }
-            break;
-        case KDL_TYPE_NULL:
-            printf("null");
-            break;
-        case KDL_TYPE_STRING:
-            print_kdl_str_repr(&event->value.value.string);
-            break;
-        default:
-            printf("(error)null");
-            break;
-        }
+        kdl_emit_property(emitter, value_str, &event->value);
 
         if (event->type_annotation.data != NULL) {
-            printf(" type=");
-            print_kdl_str_repr(&event->type_annotation);
+            kdl_value type_val = (kdl_value) {
+                .type = KDL_TYPE_STRING,
+                .value = { .string = event->type_annotation }
+            };
+            kdl_emit_property(emitter, type_str, &type_val);
         }
 
         if (event->property_key.data != NULL) {
-            printf(" key=");
-            print_kdl_str_repr(&event->property_key);
+            kdl_value type_val = (kdl_value) {
+                .type = KDL_TYPE_STRING,
+                .value = { .string = event->property_key }
+            };
+            kdl_emit_property(emitter, key_str, &type_val);
         }
-
-        puts("");
 
         if (have_error || eof) break;
     }
+
+    kdl_destroy_emitter(emitter);
+    kdl_destroy_parser(parser);
 
     if (in != stdin) {
         fclose(in);
