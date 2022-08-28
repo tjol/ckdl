@@ -1,5 +1,5 @@
 #include "kdl/common.h"
-#include "kdl_utf8.h"
+#include "utf8.h"
 
 #include <stdio.h>
 #include <stdlib.h>

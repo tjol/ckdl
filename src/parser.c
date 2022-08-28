@@ -2,7 +2,7 @@
 #include "kdl/common.h"
 #include "kdl/tokenizer.h"
 
-#include "kdl_compiler_compat.h"
+#include "compiler_compat.h"
 
 #include <stdlib.h>
 #include <string.h>

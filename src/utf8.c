@@ -1,6 +1,6 @@
 #include <stdbool.h>
 
-#include "kdl_utf8.h"
+#include "utf8.h"
 
 inline static bool _kdl_is_utf8_continuation(int c)
 {

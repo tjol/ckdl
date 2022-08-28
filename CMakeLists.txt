@@ -11,7 +11,7 @@ else()
 endif()
 
 set(KDL_C_SOURCES
-    src/kdl_utf8.c
+    src/utf8.c
     src/str.c
     src/tokenizer.c
     src/parser.c
