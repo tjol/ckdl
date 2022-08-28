@@ -7,6 +7,8 @@
 
 #define BUFFER_SIZE_INCREMENT 512
 
+extern inline kdl_str kdl_borrow_str(kdl_owned_string const *str);
+
 
 kdl_owned_string kdl_clone_str(kdl_str const *s)
 {
@@ -107,6 +109,7 @@ esc_eof:
     return result;
 
 esc_error:
+    if (buf != NULL) free(buf);
     result = (kdl_owned_string){ NULL, 0 };
     return result;
 }

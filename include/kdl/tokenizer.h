@@ -36,10 +36,8 @@ typedef struct _kdl_token kdl_token;
 struct _kdl_tokenizer;
 typedef struct _kdl_tokenizer kdl_tokenizer;
 
-typedef size_t (*kdl_read_func)(void *user_data, char *buf, size_t bufsize);
-
-kdl_tokenizer *kdl_create_tokenizer_from_memory(kdl_str doc);
-kdl_tokenizer *kdl_create_tokenizer_from_stream(kdl_read_func read_func, void *user_data);
+kdl_tokenizer *kdl_create_tokenizer_for_string(kdl_str doc);
+kdl_tokenizer *kdl_create_tokenizer_for_stream(kdl_read_func read_func, void *user_data);
 void kdl_destroy_tokenizer(kdl_tokenizer *tokenizer);
 
 enum _kdl_tokenizer_status {

@@ -17,7 +17,7 @@ struct _kdl_tokenizer {
     bool whitespace_required;
 };
 
-kdl_tokenizer *kdl_create_tokenizer_from_memory(kdl_str doc)
+kdl_tokenizer *kdl_create_tokenizer_for_string(kdl_str doc)
 {
     kdl_tokenizer *self = malloc(sizeof(kdl_tokenizer));
     if (self != NULL) {
@@ -31,7 +31,7 @@ kdl_tokenizer *kdl_create_tokenizer_from_memory(kdl_str doc)
     return self;
 }
 
-kdl_tokenizer *kdl_create_tokenizer_from_stream(kdl_read_func read_func, void *user_data)
+kdl_tokenizer *kdl_create_tokenizer_for_stream(kdl_read_func read_func, void *user_data)
 {
     kdl_tokenizer *self = malloc(sizeof(kdl_tokenizer));
     if (self != NULL) {
@@ -123,6 +123,14 @@ static inline bool is_newline(uint32_t c)
 }
 
 static inline bool is_id(uint32_t c)
+{
+    return c > 0x20 && c <= 0x10FFFF &&
+        c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' &&
+        c != '}' && c != '<' && c != '>' && c != ';' && c != '[' &&
+        c != ']' && c != '=' && c != ',' && c != '"';
+}
+
+static inline bool is_id_or_paren(uint32_t c)
 {
     return c > 0x20 && c <= 0x10FFFF &&
         c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' &&

@@ -33,7 +33,7 @@ int main(int argc, char **argv)
         return 2;
     }
 
-    kdl_tokenizer *tokenizer = kdl_create_tokenizer_from_stream(&read_func, (void*)in);
+    kdl_tokenizer *tokenizer = kdl_create_tokenizer_for_stream(&read_func, (void*)in);
 
     bool have_error = false;
     while (1) {
@@ -112,6 +112,9 @@ int main(int argc, char **argv)
     
     if (in != stdin) {
         fclose(in);
+    }
+    if (tokenizer != NULL) {
+        kdl_destroy_tokenizer(tokenizer);
     }
     return have_error ? 1 : 0;
 }
