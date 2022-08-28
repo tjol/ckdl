@@ -8,7 +8,7 @@
 extern "C" {
 #endif // __cplusplus
 
-enum _kdl_event {
+enum kdl_event {
     KDL_EVENT_EOF = 0,
     KDL_EVENT_PARSE_ERROR,
     KDL_EVENT_START_NODE,
@@ -17,23 +17,23 @@ enum _kdl_event {
     KDL_EVENT_PROPERTY,
     KDL_EVENT_COMMENT = 0x10000
 };
-typedef enum _kdl_event kdl_event;
 
-struct _kdl_event_data {
+enum kdl_parse_option {
+    KDL_DEFAULTS = 0,
+    KDL_EMIT_COMMENTS = 1,
+};
+
+typedef enum kdl_event kdl_event;
+typedef struct kdl_event_data kdl_event_data;
+typedef enum kdl_parse_option kdl_parse_option;
+typedef struct _kdl_parser kdl_parser;
+
+struct kdl_event_data {
     kdl_event event;
     kdl_value value;
     kdl_str type_annotation;
     kdl_str property_key;
 };
-typedef struct _kdl_event_data kdl_event_data;
-
-enum _kdl_parse_option {
-    KDL_DEFAULTS = 0,
-    KDL_EMIT_COMMENTS = 1,
-};
-typedef enum _kdl_parse_option kdl_parse_option;
-
-typedef struct _kdl_parser kdl_parser;
 
 KDL_NODISCARD kdl_parser *kdl_create_string_parser(kdl_str doc, kdl_parse_option opt);
 KDL_NODISCARD kdl_parser *kdl_create_stream_parser(kdl_read_func read_func, void *user_data, kdl_parse_option opt);

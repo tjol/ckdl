@@ -7,22 +7,25 @@
 extern "C" {
 #endif // __cplusplus
 
-enum _kdl_type {
+enum kdl_type {
     KDL_TYPE_NULL,
     KDL_TYPE_STRING,
     KDL_TYPE_NUMBER,
     KDL_TYPE_BOOLEAN
 };
-typedef enum _kdl_type kdl_type;
 
-enum _kdl_number_type {
+enum kdl_number_type {
     KDL_NUMBER_TYPE_INTEGER,
     KDL_NUMBER_TYPE_FLOATING_POINT,
     KDL_NUMBER_TYPE_STRING_ENCODED
 };
-typedef enum _kdl_number_type kdl_number_type;
 
-struct _kdl_number {
+typedef enum kdl_type kdl_type;
+typedef enum kdl_number_type kdl_number_type;
+typedef struct kdl_number kdl_number;
+typedef struct kdl_value kdl_value;
+
+struct kdl_number {
     kdl_number_type type;
     union {
         long long integer;
@@ -30,9 +33,8 @@ struct _kdl_number {
         kdl_str string;
     } value;
 };
-typedef struct _kdl_number kdl_number;
 
-struct _kdl_value {
+struct kdl_value {
     kdl_type type;
     union {
         kdl_str string;
@@ -40,7 +42,6 @@ struct _kdl_value {
         bool boolean;
     } value;
 };
-typedef struct _kdl_value kdl_value;
 
 #ifdef __cplusplus
 }
