@@ -23,17 +23,40 @@ static inline void print_kdl_str_repr(kdl_str const *s)
     kdl_free_string(&tmp_str);
 }
 
+void print_usage(char const *argv0, FILE *fp)
+{
+    fprintf(fp, "Usage: %s [-h] [-c]\n\n", argv0);
+    fprintf(fp, "    -h    Print usage information\n");
+    fprintf(fp, "    -c    Emit comments\n");
+}
+
 
 int main(int argc, char **argv)
 {
-    FILE *in = NULL;
-    if (argc == 1) {
-        in = stdin;
-    } else if (argc == 2) {
-        char const *fn = argv[1];
-        if (strcmp(fn, "-") == 0) {
-            in = stdin;
+    FILE *in = stdin;
+    char const* argv0 = argv[0];
+    kdl_parse_option parse_opts = KDL_DEFAULTS;
+    bool opts_ended = false;
+
+    while (--argc) {
+        ++argv;
+        if (!opts_ended && **argv == '-') {
+            // options
+            for (char const *p = *argv+1; *p; ++p) {
+                if (*p == 'h') {
+                    print_usage(argv0, stdout);
+                    return 0;
+                } else if (*p == 'c') {
+                    parse_opts |= KDL_EMIT_COMMENTS;
+                } else if (*p == '-') {
+                    opts_ended = true;
+                } else {
+                    print_usage(argv0, stderr);
+                    return 2;
+                }
+            }
         } else {
+            char const *fn = *argv;
             in = fopen(fn, "r");
             if (in == NULL) {
                 fprintf(stderr, "Error opening file \"%s\": %s\n",
@@ -41,46 +64,56 @@ int main(int argc, char **argv)
                 return 1;
             }
         }
-    } else {
-        fprintf(stderr, "Error: Too many arguments\n");
-        return 2;
     }
 
-    kdl_parser *parser = kdl_create_parser_for_stream(&read_func, (void*)in, 0);
+    kdl_parser *parser = kdl_create_parser_for_stream(&read_func, (void*)in, parse_opts);
 
     bool have_error = false;
     bool eof = false;
+    bool slashdash = false;
     while (1) {
         kdl_event_data *event = kdl_parser_next_event(parser);
         char const *event_name = NULL;
 
-        switch (event->event) {
-        case KDL_EVENT_EOF:
-            event_name = "KDL_EVENT_EOF";
-            eof = true;
-            break;
-        case KDL_EVENT_START_NODE:
-            event_name = "KDL_EVENT_START_NODE";
-            break;
-        case KDL_EVENT_END_NODE:
-            event_name = "KDL_EVENT_END_NODE";
-            break;
-        case KDL_EVENT_ARGUMENT:
-            event_name = "KDL_EVENT_ARGUMENT";
-            break;
-        case KDL_EVENT_PROPERTY:
-            event_name = "KDL_EVENT_PROPERTY";
-            break;
-        case KDL_EVENT_PARSE_ERROR:
-            event_name = "KDL_EVENT_PARSE_ERROR";
-            have_error = true;
-            break;
-        default:
-            event_name = "unknown-event";
-            have_error = true;
-            break;
+        if (event->event == KDL_EVENT_COMMENT) {
+            // regular comment
+            event_name = "KDL_EVENT_COMMENT";
+            slashdash = false;
+        } else {
+            // event could be a slashdash variant
+            kdl_event bare_event = event->event & 0xffff;
+            slashdash = (event->event & KDL_EVENT_COMMENT) != 0;
+            switch (bare_event) {
+            case KDL_EVENT_EOF:
+                event_name = "KDL_EVENT_EOF";
+                eof = true;
+                break;
+            case KDL_EVENT_START_NODE:
+                event_name = "KDL_EVENT_START_NODE";
+                break;
+            case KDL_EVENT_END_NODE:
+                event_name = "KDL_EVENT_END_NODE";
+                break;
+            case KDL_EVENT_ARGUMENT:
+                event_name = "KDL_EVENT_ARGUMENT";
+                break;
+            case KDL_EVENT_PROPERTY:
+                event_name = "KDL_EVENT_PROPERTY";
+                break;
+            case KDL_EVENT_PARSE_ERROR:
+                event_name = "KDL_EVENT_PARSE_ERROR";
+                have_error = true;
+                break;
+            default:
+                event_name = "unknown-event";
+                have_error = true;
+                break;
+            }
         }
 
+        if (slashdash) {
+            printf("(commented-out)");
+        }
         printf("%s value=", event_name);
         switch (event->value.type) {
         case KDL_TYPE_NUMBER:

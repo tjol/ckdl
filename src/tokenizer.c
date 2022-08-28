@@ -127,15 +127,8 @@ static inline bool is_id(uint32_t c)
     return c > 0x20 && c <= 0x10FFFF &&
         c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' &&
         c != '}' && c != '<' && c != '>' && c != ';' && c != '[' &&
-        c != ']' && c != '=' && c != ',' && c != '"';
-}
-
-static inline bool is_id_or_paren(uint32_t c)
-{
-    return c > 0x20 && c <= 0x10FFFF &&
-        c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' &&
-        c != '}' && c != '<' && c != '>' && c != ';' && c != '[' &&
-        c != ']' && c != '=' && c != ',' && c != '"';
+        c != ']' && c != '=' && c != ',' && c != '"' &&
+        !is_whitespace(c) && !is_newline(c);
 }
 
 static inline bool is_id_start(uint32_t c)

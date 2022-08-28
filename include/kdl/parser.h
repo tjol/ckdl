@@ -2,8 +2,7 @@
 #define KDL_PARSER_H_
 
 #include "common.h"
-
-#include <stdbool.h>
+#include "value.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,41 +18,6 @@ enum _kdl_event {
     KDL_EVENT_COMMENT = 0x10000
 };
 typedef enum _kdl_event kdl_event;
-
-enum _kdl_type {
-    KDL_TYPE_NULL,
-    KDL_TYPE_STRING,
-    KDL_TYPE_NUMBER,
-    KDL_TYPE_BOOLEAN
-};
-typedef enum _kdl_type kdl_type;
-
-enum _kdl_number_type {
-    KDL_NUMBER_TYPE_INTEGER,
-    KDL_NUMBER_TYPE_FLOATING_POINT,
-    KDL_NUMBER_TYPE_STRING_ENCODED
-};
-typedef enum _kdl_number_type kdl_number_type;
-
-struct _kdl_number {
-    kdl_number_type type;
-    union {
-        long long integer;
-        double floating_point;
-        kdl_str string;
-    } value;
-};
-typedef struct _kdl_number kdl_number;
-
-struct _kdl_value {
-    kdl_type type;
-    union {
-        kdl_str string;
-        kdl_number number;
-        bool boolean;
-    } value;
-};
-typedef struct _kdl_value kdl_value;
 
 struct _kdl_event_data {
     kdl_event event;
