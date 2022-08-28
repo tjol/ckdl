@@ -122,7 +122,7 @@ int main(int argc, char **argv)
             }
         }
 
-        kdl_str event_name_str = (kdl_str){ event_name, strlen(event_name) };
+        kdl_str event_name_str = kdl_str_from_cstr(event_name);
 
         if (slashdash) {
             kdl_emit_node_with_type(emitter, slashdash_type_str, event_name_str);

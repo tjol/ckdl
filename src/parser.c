@@ -119,17 +119,18 @@ kdl_event_data *kdl_parser_next_event(kdl_parser *self)
         } else {
             switch (kdl_pop_token(self->tokenizer, &token)) {
             case KDL_TOKENIZER_EOF:
-                if (self->depth > 0) {
+                if (self->state == PARSER_IN_NODE) {
+                    // EOF may be ok, but we have to close the node first
+                    --self->depth;
+                    self->state = PARSER_OUTSIDE_NODE;
+                    reset_event(self);
+                    self->event.event = KDL_EVENT_END_NODE;
+                    return &self->event;
+                } else if (self->depth > 0) {
                     set_parse_error(self, "Unexpected end of data");
                     return &self->event;
                 } else if (self->slashdash_depth > 0) {
                     set_parse_error(self, "Dangling slashdash (/-)");
-                    return &self->event;
-                } else if (self->state == PARSER_IN_NODE) {
-                    // EOF ok, but we have to close the node first
-                    self->state = PARSER_OUTSIDE_NODE;
-                    reset_event(self);
-                    self->event.event = KDL_EVENT_END_NODE;
                     return &self->event;
                 } else {
                     // EOF ok

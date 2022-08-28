@@ -46,6 +46,7 @@ inline kdl_str kdl_borrow_str(kdl_owned_string const *str)
     return (kdl_str){ str->data, str->len };
 }
 
+kdl_str kdl_str_from_cstr(char const *s);
 KDL_NODISCARD kdl_owned_string kdl_clone_str(kdl_str const *s);
 void kdl_free_string(kdl_owned_string *s);
 

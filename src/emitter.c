@@ -200,16 +200,16 @@ bool kdl_start_emitting_children(kdl_emitter *self)
 {
     self->start_of_line = true;
     ++self->depth;
-    return (self->write_func(self->write_user_data, "{\n", 2) == 2);
+    return (self->write_func(self->write_user_data, " {\n", 3) == 3);
 }
 
 bool kdl_finish_emitting_children(kdl_emitter *self)
 {
     if (self->depth == 0) return false;
     --self->depth;
+    if (!_kdl_emit_node_preamble(self)) return false;
     self->start_of_line = true;
-    return _kdl_emit_node_preamble(self)
-        && (self->write_func(self->write_user_data, "}\n", 2) == 2);
+    return (self->write_func(self->write_user_data, "}\n", 2) == 2);
 }
 
 bool kdl_emit_end(kdl_emitter *self)
@@ -218,7 +218,7 @@ bool kdl_emit_end(kdl_emitter *self)
         if (!kdl_finish_emitting_children(self)) return false;
     }
     if (!self->start_of_line) {
-        if (self->write_func(self->write_user_data, "\n", 2) != 1) return false;
+        if (self->write_func(self->write_user_data, "\n", 1) != 1) return false;
     }
     return true;
 }

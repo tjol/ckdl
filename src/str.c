@@ -10,6 +10,10 @@
 
 extern inline kdl_str kdl_borrow_str(kdl_owned_string const *str);
 
+kdl_str kdl_str_from_cstr(char const *s)
+{
+    return (kdl_str){ s, strlen(s) };
+}
 
 kdl_owned_string kdl_clone_str(kdl_str const *s)
 {
