@@ -65,3 +65,33 @@ kdl_utf8_status _kdl_pop_codepoint(kdl_str *str, uint32_t *codepoint)
     }
 }
 
+int _kdl_push_codepoint(uint32_t codepoint, char *buf)
+{
+    char *p = buf;
+    if (codepoint <= 0x7f) {
+        // ASCII
+        *(p++) = (char)codepoint;
+        return p - buf;
+    } else if (codepoint <= 0x7ff) {
+        // fits in two bytes
+        *(p++) = 0xc0 | (0x1f & (codepoint >> 6));
+        *(p++) = 0x80 | (0x3f & codepoint);
+        return p - buf;
+    } else if (codepoint <= 0xffff) {
+        // fits in three bytes
+        *(p++) = 0xe0 | (0x0f & (codepoint >> 12));
+        *(p++) = 0x80 | (0x3f & (codepoint >> 6));
+        *(p++) = 0x80 | (0x3f & codepoint);
+        return p - buf;
+    } else if (codepoint <= 0x10ffff) {
+        // fits in four bytes
+        *(p++) = 0xf0 | (0x07 & (codepoint >> 18));
+        *(p++) = 0x80 | (0x3f & (codepoint >> 12));
+        *(p++) = 0x80 | (0x3f & (codepoint >> 6));
+        *(p++) = 0x80 | (0x3f & codepoint);
+        return p - buf;
+    } else {
+        // value too big
+        return 0;
+    }
+}

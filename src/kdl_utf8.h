@@ -15,5 +15,6 @@ enum _kdl_utf8_status {
 typedef enum _kdl_utf8_status kdl_utf8_status;
 
 kdl_utf8_status _kdl_pop_codepoint(kdl_str *str, uint32_t *codepoint);
+int _kdl_push_codepoint(uint32_t codepoint, char *buf);
 
 #endif // KDL_INTERNAL_UTF8_H_

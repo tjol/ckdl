@@ -86,12 +86,13 @@ int main(int argc, char **argv)
         case KDL_TYPE_NUMBER:
             switch (event->value.value.number.type) {
             case KDL_NUMBER_TYPE_INTEGER:
-                printf("%lld", event->value.value.number.value.integer);
+                printf("(i64)%lld", event->value.value.number.value.integer);
                 break;
             case KDL_NUMBER_TYPE_FLOATING_POINT:
-                printf("%g", event->value.value.number.value.floating_point);
+                printf("(f64)%g", event->value.value.number.value.floating_point);
                 break;
             case KDL_NUMBER_TYPE_STRING_ENCODED:
+                printf("(str)");
                 print_kdl_str(&event->value.value.number.value.string);
                 break;
             default:

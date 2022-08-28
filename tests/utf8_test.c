@@ -45,13 +45,20 @@ void assert_utf8_string(char const *in_ptr, size_t in_len, uint32_t const *out_p
 {
     uint32_t codepoint;
     kdl_str s = {in_ptr, in_len};
+    char *buf = malloc(in_len + 1);
+    buf[in_len] = -1;
+    char *buf_end = buf;
 
     for (size_t i = 0; i < out_len; ++i)
     {
         cr_assert(KDL_UTF8_OK == _kdl_pop_codepoint(&s, &codepoint));
         cr_assert(codepoint == out_ptr[i]);
+        buf_end += _kdl_push_codepoint(codepoint, buf_end);
     }
     cr_assert(KDL_UTF8_EOF == _kdl_pop_codepoint(&s, &codepoint));
+    cr_assert(buf_end == buf + in_len);
+    cr_assert(*buf_end == -1);
+    cr_assert(0 == memcmp(buf, in_ptr, in_len));
 }
 
 Test(utf8, ascii)
