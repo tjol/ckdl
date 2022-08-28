@@ -1,7 +1,9 @@
 #include "kdl_utf8.h"
 
-#include <criterion/criterion.h>
+#include "test_util.h"
+
 #include <string.h>
+#include <stdlib.h>
 
 static char ASCII_IN[] = "abcd1234";
 static uint32_t ASCII_OUT[] = {0x61U, 0x62U, 0x63U, 0x64U, 0x31U, 0x32U, 0x33U, 0x34U};
@@ -51,49 +53,58 @@ void assert_utf8_string(char const *in_ptr, size_t in_len, uint32_t const *out_p
 
     for (size_t i = 0; i < out_len; ++i)
     {
-        cr_assert(KDL_UTF8_OK == _kdl_pop_codepoint(&s, &codepoint));
-        cr_assert(codepoint == out_ptr[i]);
+        ASSERT(KDL_UTF8_OK == _kdl_pop_codepoint(&s, &codepoint));
+        ASSERT(codepoint == out_ptr[i]);
         buf_end += _kdl_push_codepoint(codepoint, buf_end);
     }
-    cr_assert(KDL_UTF8_EOF == _kdl_pop_codepoint(&s, &codepoint));
-    cr_assert(buf_end == buf + in_len);
-    cr_assert(*buf_end == -1);
-    cr_assert(0 == memcmp(buf, in_ptr, in_len));
+    ASSERT(KDL_UTF8_EOF == _kdl_pop_codepoint(&s, &codepoint));
+    ASSERT(buf_end == buf + in_len);
+    ASSERT(*buf_end == -1);
+    ASSERT(0 == memcmp(buf, in_ptr, in_len));
 }
 
-Test(utf8, ascii)
+static void test_utf8_ascii()
 {
     ASSERT_UTF8_STRING(ASCII_IN, ASCII_OUT);
     ASSERT_UTF8_STRING(ASCII_CONTROL_IN, ASCII_CONTROL_OUT);
 }
 
-Test(utf8, bmp)
+static void test_utf8_bmp()
 {
     ASSERT_UTF8_STRING(LATIN1_IN, LATIN1_OUT);
     ASSERT_UTF8_STRING(RUSSIAN_IN, RUSSIAN_OUT);
 }
 
-Test(utf8, emoji)
+static void test_utf8_emoji()
 {
     ASSERT_UTF8_STRING(EMOJI_IN, EMOJI_OUT);
 }
 
-Test(utf8, invalid)
+static void test_utf8_invalid()
 {
     uint32_t codepoint = 0;
     size_t count = sizeof(INVALID) / sizeof(char const*);
     for (size_t i = 0; i < count; ++i) {
         kdl_str s = {INVALID[i], strlen(INVALID[i])};
-        cr_expect(KDL_UTF8_DECODE_ERROR == _kdl_pop_codepoint(&s, &codepoint));
+        ASSERT(KDL_UTF8_DECODE_ERROR == _kdl_pop_codepoint(&s, &codepoint));
     }
 }
 
-Test(utf8, incomplete)
+static void test_utf8_incomplete()
 {
     uint32_t codepoint = 0;
     size_t count = sizeof(INCOMPLETE) / sizeof(char const*);
     for (size_t i = 0; i < count; ++i) {
         kdl_str s = {INCOMPLETE[i], strlen(INCOMPLETE[i])};
-        cr_expect(KDL_UTF8_INCOMPLETE == _kdl_pop_codepoint(&s, &codepoint));
+        ASSERT(KDL_UTF8_INCOMPLETE == _kdl_pop_codepoint(&s, &codepoint));
     }
+}
+
+void TEST_MAIN()
+{
+    run_test("UTF8: ASCII", &test_utf8_ascii);
+    run_test("UTF8: BMP", &test_utf8_bmp);
+    run_test("UTF8: Emoji", &test_utf8_emoji);
+    run_test("UTF8: Invalid", &test_utf8_invalid);
+    run_test("UTF8: Incomplete",&test_utf8_incomplete);
 }
