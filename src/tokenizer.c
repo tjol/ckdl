@@ -17,7 +17,7 @@ struct _kdl_tokenizer {
     bool whitespace_required;
 };
 
-kdl_tokenizer *kdl_create_tokenizer_for_string(kdl_str doc)
+kdl_tokenizer *kdl_create_string_tokenizer(kdl_str doc)
 {
     kdl_tokenizer *self = malloc(sizeof(kdl_tokenizer));
     if (self != NULL) {
@@ -31,7 +31,7 @@ kdl_tokenizer *kdl_create_tokenizer_for_string(kdl_str doc)
     return self;
 }
 
-kdl_tokenizer *kdl_create_tokenizer_for_stream(kdl_read_func read_func, void *user_data)
+kdl_tokenizer *kdl_create_stream_tokenizer(kdl_read_func read_func, void *user_data)
 {
     kdl_tokenizer *self = malloc(sizeof(kdl_tokenizer));
     if (self != NULL) {
@@ -493,7 +493,7 @@ static kdl_tokenizer_status _kdl_pop_raw_string(kdl_tokenizer *self, kdl_token *
             return KDL_TOKENIZER_ERROR;
         }
     }
-    
+
     char const* string_start = cur = next;
     // Scan the string itself
     int hashes_found = 0;

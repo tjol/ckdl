@@ -39,7 +39,7 @@ void run_test(char const *name, void (*func)())
     run_test_active = false;
 }
 
-int main(int argc, char **argv)
+int main()
 {
     TEST_MAIN();
     if (failures != 0) {

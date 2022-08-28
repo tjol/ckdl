@@ -48,7 +48,7 @@ static inline bool push_char(char **buf, size_t *buf_len, size_t *str_len, char 
 }
 
 
-kdl_owned_string kdl_escape(kdl_str const *s)
+kdl_owned_string kdl_escape(kdl_str const *s, kdl_escape_mode mode)
 {
     kdl_owned_string result;
     kdl_str unescaped = *s;
@@ -62,6 +62,7 @@ kdl_owned_string kdl_escape(kdl_str const *s)
     uint32_t c;
 
     while (true) {
+        char const *orig_char = unescaped.data;
         switch (_kdl_pop_codepoint(&unescaped, &c)) {
         case KDL_UTF8_EOF:
             goto esc_eof;
@@ -71,33 +72,40 @@ kdl_owned_string kdl_escape(kdl_str const *s)
             goto esc_error;
         }
 
-        if (c == 0x0A) {
+        if (c == 0x0A && (mode & KDL_ESCAPE_NEWLINE)) {
             if (!push_chars(&buf, &buf_len, &str_len, "\\n", 2)) goto esc_error;
-        } else if (c == 0x0D) {
+        } else if (c == 0x0D && (mode & KDL_ESCAPE_NEWLINE)) {
             if (!push_chars(&buf, &buf_len, &str_len, "\\r", 2)) goto esc_error;
-        } else if (c == 0x09) {
+        } else if (c == 0x09  && (mode & KDL_ESCAPE_TAB)) {
             if (!push_chars(&buf, &buf_len, &str_len, "\\t", 2)) goto esc_error;
         } else if (c == 0x5C) {
             if (!push_chars(&buf, &buf_len, &str_len, "\\\\", 2)) goto esc_error;
         } else if (c == 0x22) {
             if (!push_chars(&buf, &buf_len, &str_len, "\\\"", 2)) goto esc_error;
-        } else if (c == 0x08) {
+        } else if (c == 0x08 && (mode & KDL_ESCAPE_CONTROL)) {
             if (!push_chars(&buf, &buf_len, &str_len, "\\b", 2)) goto esc_error;
-        } else if (c == 0x0C) {
+        } else if (c == 0x0C && (mode & KDL_ESCAPE_NEWLINE)) {
             if (!push_chars(&buf, &buf_len, &str_len, "\\f", 2)) goto esc_error;
-        } else if (c >= 0x20 && c < 0x7f) {
-            // Keep printable ASCII
-            push_char(&buf, &buf_len, &str_len, c);
-        } else if (c > 0x10ffff) {
-            // Not a valid character
-            goto esc_error;
-        } else {
+        } else if (
+            ((mode & KDL_ESCAPE_CONTROL)
+                && ((c < 0x20 && c != 0x0A && c != 0x0D && c != 0x09 && c != 0x0C)
+                    || c == 0x7F /* DEL */))
+            || ((mode & KDL_ESCAPE_NEWLINE)
+                && (c == 0x85 || c == 0x2028 || c == 0x2029))
+            || ((mode & KDL_ESCAPE_ASCII_MODE) == KDL_ESCAPE_ASCII_MODE
+                && c >= 0x7f)) {
             // \u escape
             char u_esc_buf[11];
             int count = snprintf(u_esc_buf, 11, "\\u{%x}", (unsigned int)c);
             if (count < 0 || !push_chars(&buf, &buf_len, &str_len, u_esc_buf, count)) {
                 goto esc_error;
             }
+        } else if (c > 0x10ffff) {
+            // Not a valid character
+            goto esc_error;
+        } else {
+            // keep the rest
+            push_chars(&buf, &buf_len, &str_len, orig_char, unescaped.data - orig_char);
         }
     }
 esc_eof:
@@ -119,7 +127,7 @@ kdl_owned_string kdl_unescape(kdl_str const *s)
     kdl_owned_string result;
     kdl_str escaped = *s;
     uint32_t c;
-    char utf8_tmp_buf[4];   
+    char utf8_tmp_buf[4];
     int utf8_bytes = 0;
 
     size_t orig_len = escaped.len;

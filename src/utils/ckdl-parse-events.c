@@ -18,7 +18,7 @@ static inline void print_kdl_str(kdl_str const *s)
 
 static inline void print_kdl_str_repr(kdl_str const *s)
 {
-    kdl_owned_string tmp_str = kdl_escape(s);
+    kdl_owned_string tmp_str = kdl_escape(s, KDL_ESCAPE_CONTROL | KDL_ESCAPE_NEWLINE | KDL_ESCAPE_TAB);
     printf("\"%s\"", tmp_str.data);
     kdl_free_string(&tmp_str);
 }
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
         }
     }
 
-    kdl_parser *parser = kdl_create_parser_for_stream(&read_func, (void*)in, parse_opts);
+    kdl_parser *parser = kdl_create_stream_parser(&read_func, (void*)in, parse_opts);
 
     bool have_error = false;
     bool eof = false;
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 
         if (have_error || eof) break;
     }
-    
+
     if (in != stdin) {
         fclose(in);
     }

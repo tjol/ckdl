@@ -42,21 +42,21 @@ static void _init_kdl_parser(kdl_parser *self)
 }
 
 
-kdl_parser *kdl_create_parser_for_string(kdl_str doc, kdl_parse_option opt)
+kdl_parser *kdl_create_string_parser(kdl_str doc, kdl_parse_option opt)
 {
     kdl_parser *self = malloc(sizeof(kdl_parser));
     _init_kdl_parser(self);
-    self->tokenizer = kdl_create_tokenizer_for_string(doc);
+    self->tokenizer = kdl_create_string_tokenizer(doc);
     self->opt = opt;
     return self;
 }
 
 
-kdl_parser *kdl_create_parser_for_stream(kdl_read_func read_func, void *user_data, kdl_parse_option opt)
+kdl_parser *kdl_create_stream_parser(kdl_read_func read_func, void *user_data, kdl_parse_option opt)
 {
     kdl_parser *self = malloc(sizeof(kdl_parser));
     _init_kdl_parser(self);
-    self->tokenizer = kdl_create_tokenizer_for_stream(read_func, user_data);
+    self->tokenizer = kdl_create_stream_tokenizer(read_func, user_data);
     self->opt = opt;
     return self;
 }
@@ -409,6 +409,11 @@ static kdl_event_data *_kdl_parser_next_event_in_node(kdl_parser *self, kdl_toke
                 // Parse the argument
                 if (!_kdl_parse_value(token, &self->event.value, &self->tmp_string_value)) {
                     set_parse_error(self, "Error parsing argument");
+                    return &self->event;
+                }
+                // check that it's not a bare identifier
+                if (token->type == KDL_TOKEN_WORD && self->event.value.type == KDL_TYPE_STRING) {
+                    set_parse_error(self, "Bare identifier not allowed here");
                     return &self->event;
                 }
                 // return it

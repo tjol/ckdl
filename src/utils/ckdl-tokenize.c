@@ -33,7 +33,7 @@ int main(int argc, char **argv)
         return 2;
     }
 
-    kdl_tokenizer *tokenizer = kdl_create_tokenizer_for_stream(&read_func, (void*)in);
+    kdl_tokenizer *tokenizer = kdl_create_stream_tokenizer(&read_func, (void*)in);
 
     bool have_error = false;
     while (1) {
@@ -103,13 +103,13 @@ int main(int argc, char **argv)
 
         printf("%s", token_type_name);
         if (token.value.len != 0) {
-            kdl_owned_string esc_val = kdl_escape(&token.value);
+            kdl_owned_string esc_val = kdl_escape(&token.value, KDL_ESCAPE_ASCII_MODE);
             printf(" \"%s\"", esc_val.data);
             kdl_free_string(&esc_val);
         }
         puts("");
     }
-    
+
     if (in != stdin) {
         fclose(in);
     }
