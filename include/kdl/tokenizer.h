@@ -1,8 +1,6 @@
 #ifndef KDL_TOKENIZER_H_
 #define KDL_TOKENIZER_H_
 
-#include <stddef.h>
-
 #include "common.h"
 
 #ifdef __cplusplus
@@ -36,8 +34,8 @@ typedef struct _kdl_token kdl_token;
 struct _kdl_tokenizer;
 typedef struct _kdl_tokenizer kdl_tokenizer;
 
-kdl_tokenizer *kdl_create_tokenizer_for_string(kdl_str doc);
-kdl_tokenizer *kdl_create_tokenizer_for_stream(kdl_read_func read_func, void *user_data);
+KDL_NODISCARD kdl_tokenizer *kdl_create_tokenizer_for_string(kdl_str doc);
+KDL_NODISCARD kdl_tokenizer *kdl_create_tokenizer_for_stream(kdl_read_func read_func, void *user_data);
 void kdl_destroy_tokenizer(kdl_tokenizer *tokenizer);
 
 enum _kdl_tokenizer_status {

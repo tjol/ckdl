@@ -2,6 +2,8 @@
 #include "kdl/common.h"
 #include "kdl/tokenizer.h"
 
+#include "kdl_compiler_compat.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -351,6 +353,7 @@ static kdl_event_data *_kdl_parser_next_event_in_node(kdl_parser *self, kdl_toke
             // end this node, and process the token again
             self->next_token = *token;
             self->have_next_token = true;
+            _fallthrough_;
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
             // end the node
@@ -553,6 +556,7 @@ static bool _kdl_parse_decimal_integer(kdl_str number, kdl_value *val, kdl_owned
         switch (number.data[0]) {
         case '-':
             negative = true;
+            _fallthrough_;
         case '+':
             i = 1;
         }
@@ -605,6 +609,7 @@ static bool _kdl_parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_s
         switch (number.data[0]) {
         case '-':
             negative = true;
+            _fallthrough_;
         case '+':
             i = 1;
         }
@@ -625,6 +630,7 @@ static bool _kdl_parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_s
                 switch (number.data[i+1]) {
                 case '-':
                     exponent_negative = true;
+                    _fallthrough_;
                 case '+':
                     ++i;
                 }
@@ -692,6 +698,7 @@ static bool _kdl_parse_hex_number(kdl_str number, kdl_value *val, kdl_owned_stri
         switch (number.data[0]) {
         case '-':
             negative = true;
+            _fallthrough_;
         case '+':
             i = 1;
         }
@@ -749,6 +756,7 @@ static bool _kdl_parse_octal_number(kdl_str number, kdl_value *val, kdl_owned_st
         switch (number.data[0]) {
         case '-':
             negative = true;
+            _fallthrough_;
         case '+':
             i = 1;
         }
@@ -803,6 +811,7 @@ static bool _kdl_parse_binary_number(kdl_str number, kdl_value *val, kdl_owned_s
         switch (number.data[0]) {
         case '-':
             negative = true;
+            _fallthrough_;
         case '+':
             i = 1;
         }

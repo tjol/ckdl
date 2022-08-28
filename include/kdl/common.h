@@ -3,6 +3,15 @@
 
 #include <stddef.h>
 
+// define attributes for functions
+#if defined(__cplusplus)
+#define KDL_NODISCARD [[nodiscard]]
+#elif defined(__GNUC__)
+#define KDL_NODISCARD __attribute__((warn_unused_result))
+#else
+#define KDL_NODISCARD
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -26,10 +35,10 @@ inline kdl_str kdl_borrow_str(kdl_owned_string const *str)
     return (kdl_str){ str->data, str->len };
 }
 
-kdl_owned_string kdl_clone_str(kdl_str const *s);
+KDL_NODISCARD kdl_owned_string kdl_clone_str(kdl_str const *s);
 void kdl_free_string(kdl_owned_string *s);
-kdl_owned_string kdl_escape(kdl_str const *s);
-kdl_owned_string kdl_unescape(kdl_str const *s);
+KDL_NODISCARD kdl_owned_string kdl_escape(kdl_str const *s);
+KDL_NODISCARD kdl_owned_string kdl_unescape(kdl_str const *s);
 
 #ifdef __cplusplus
 }

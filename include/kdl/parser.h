@@ -71,8 +71,8 @@ typedef enum _kdl_parse_option kdl_parse_option;
 
 typedef struct _kdl_parser kdl_parser;
 
-kdl_parser *kdl_create_parser_for_string(kdl_str doc, kdl_parse_option opt);
-kdl_parser *kdl_create_parser_for_stream(kdl_read_func read_func, void *user_data, kdl_parse_option opt);
+KDL_NODISCARD kdl_parser *kdl_create_parser_for_string(kdl_str doc, kdl_parse_option opt);
+KDL_NODISCARD kdl_parser *kdl_create_parser_for_stream(kdl_read_func read_func, void *user_data, kdl_parse_option opt);
 void kdl_destroy_parser(kdl_parser *parser);
 
 kdl_event_data *kdl_parser_next_event(kdl_parser *parser);
