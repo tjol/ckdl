@@ -37,6 +37,7 @@ class ParseError : public std::exception {
     std::string m_msg;
 public:
     ParseError(kdl_str const& msg);
+    ParseError(std::string msg) : m_msg{std::move(msg)} {}
     const char* what() const noexcept { return m_msg.c_str(); }
 };
 
@@ -65,12 +66,14 @@ public:
     Number(double n) : m_value{n} {}
     Number(float n) : m_value{(double)n} {}
     Number(const kdl_number& n);
-    // explicit Number(std::u8string_view s);
 
     Number(Number const&) = default;
     Number(Number&&) = default;
     Number& operator=(Number const&) = default;
     Number& operator=(Number&&) = default;
+
+    bool operator==(const Number&) const = default;
+    bool operator!=(const Number&) const = default;
 
     NumberRepresentation representation() const noexcept
     {
@@ -110,6 +113,9 @@ public:
     {
         m_type_annotation.reset();
     }
+
+    bool operator==(const HasTypeAnnotation&) const = default;
+    bool operator!=(const HasTypeAnnotation&) const = default;
 };
 
 class Value : public HasTypeAnnotation {
@@ -161,6 +167,7 @@ public:
     {
     }
     Value(kdl_value const& val);
+    [[nodiscard]] static Value from_string(std::u8string_view s);
 
     Value(Value const&) = default;
     Value(Value&&) = default;
@@ -199,6 +206,9 @@ public:
 
     Value& operator=(long long n) { return (*this) = Number{n}; }
     Value& operator=(double n) { return (*this) = Number{n}; }
+
+    bool operator==(const Value&) const = default;
+    bool operator!=(const Value&) const = default;
 
     void set_to_null() { m_value = std::monostate{}; }
 

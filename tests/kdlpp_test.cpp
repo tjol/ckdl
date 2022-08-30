@@ -32,9 +32,26 @@ static void test_constructing()
     ASSERT(expected == doc.to_string());
 }
 
+static void test_value_from_string()
+{
+    ASSERT(kdl::Value::from_string(u8"0x1_2_3") == kdl::Value{0x123});
+    ASSERT(kdl::Value::from_string(u8"0o200") != kdl::Value{0x100});
+    ASSERT(kdl::Value::from_string(u8"\"hello\\t\"") == kdl::Value{u8"hello\t"});
+
+    bool threw_ParseError = false;
+    try {
+        (void)kdl::Value::from_string(u8"1 2");
+    } catch ([[maybe_unused]] kdl::ParseError const& e) {
+        threw_ParseError = true;
+    } catch (...) {
+    }
+    ASSERT(threw_ParseError);
+}
+
 void TEST_MAIN()
 {
     run_test("kdlpp: cycle", &test_cycle);
     run_test("kdlpp: constructors", &test_constructing);
+    run_test("kdlpp: Value::from_string", &test_value_from_string);
 }
 
