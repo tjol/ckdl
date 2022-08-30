@@ -43,7 +43,8 @@ struct kdl_owned_string {
 
 inline kdl_str kdl_borrow_str(kdl_owned_string const *str)
 {
-    return (kdl_str){ str->data, str->len };
+    kdl_str result = { str->data, str->len };
+    return result;
 }
 
 kdl_str kdl_str_from_cstr(char const *s);

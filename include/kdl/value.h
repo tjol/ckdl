@@ -9,9 +9,9 @@ extern "C" {
 
 enum kdl_type {
     KDL_TYPE_NULL,
-    KDL_TYPE_STRING,
+    KDL_TYPE_BOOLEAN,
     KDL_TYPE_NUMBER,
-    KDL_TYPE_BOOLEAN
+    KDL_TYPE_STRING
 };
 
 enum kdl_number_type {
@@ -36,6 +36,7 @@ struct kdl_number {
 
 struct kdl_value {
     kdl_type type;
+    kdl_str type_annotation;
     union {
         kdl_str string;
         kdl_number number;

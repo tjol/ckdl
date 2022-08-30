@@ -72,9 +72,9 @@ void kdl_destroy_parser(kdl_parser *self)
 
 static void reset_event(kdl_parser *self)
 {
+    self->event.name = (kdl_str){ NULL, 0 };
     self->event.value.type = KDL_TYPE_NULL;
-    self->event.type_annotation = (kdl_str){ NULL, 0 };
-    self->event.property_key = (kdl_str){ NULL, 0 };
+    self->event.value.type_annotation = (kdl_str){ NULL, 0 };
 }
 
 static void set_parse_error(kdl_parser *self, char const *message)
@@ -237,7 +237,7 @@ static kdl_event_data *_kdl_parser_next_node(kdl_parser *self, kdl_token *token)
                 // We're good, this is an identifier
                 self->state = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_START)
                     | PARSER_FLAG_TYPE_ANNOTATION_END;
-                self->event.type_annotation = tmp_val.value.string;
+                self->event.value.type_annotation = tmp_val.value.string;
                 return NULL;
             } else {
                 set_parse_error(self, "Expected identifier or string");
@@ -257,13 +257,14 @@ static kdl_event_data *_kdl_parser_next_node(kdl_parser *self, kdl_token *token)
             return &self->event;
         }
     } else {
+        kdl_value tmp_val;
         switch (token->type) {
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
             return NULL;
         case KDL_TOKEN_START_TYPE:
             // only one type allowed!
-            if (self->event.type_annotation.data != NULL) {
+            if (self->event.value.type_annotation.data != NULL) {
                 set_parse_error(self, "Unexpected second type annotation");
                 return &self->event;
             } else {
@@ -273,14 +274,15 @@ static kdl_event_data *_kdl_parser_next_node(kdl_parser *self, kdl_token *token)
         case KDL_TOKEN_WORD:
         case KDL_TOKEN_STRING:
         case KDL_TOKEN_RAW_STRING:
-            if (!_kdl_parse_value(token, &self->event.value, &self->tmp_string_value)) {
+            if (!_kdl_parse_value(token, &tmp_val, &self->tmp_string_key)) {
                 set_parse_error(self, "Error parsing node name");
                 return &self->event;
             }
-            if (self->event.value.type == KDL_TYPE_STRING) {
+            if (tmp_val.type == KDL_TYPE_STRING) {
                 // We're good, this is an identifier
                 self->state = PARSER_IN_NODE;
                 self->event.event = KDL_EVENT_START_NODE;
+                self->event.name = tmp_val.value.string;
                 ++self->depth;
                 ev = _kdl_parser_apply_slashdash(self);
                 if (ev) return ev;
@@ -329,7 +331,7 @@ static kdl_event_data *_kdl_parser_next_event_in_node(kdl_parser *self, kdl_toke
                 // We're good, this is an identifier
                 self->state = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_START)
                     | PARSER_FLAG_TYPE_ANNOTATION_END;
-                self->event.type_annotation = tmp_val.value.string;
+                self->event.value.type_annotation = tmp_val.value.string;
                 return NULL;
             } else {
                 set_parse_error(self, "Expected identifier or string");
@@ -369,7 +371,7 @@ static kdl_event_data *_kdl_parser_next_event_in_node(kdl_parser *self, kdl_toke
         case KDL_TOKEN_STRING:
         case KDL_TOKEN_RAW_STRING:
             // either a property key, or a property value, or an argument
-            if (self->event.property_key.data == NULL && self->event.type_annotation.data == NULL) {
+            if (self->event.name.data == NULL && self->event.value.type_annotation.data == NULL) {
                 // property key only possible if we don't already have one, and if we don't
                 // yet have a type annotation (values are annotated, keys are not)
                 // -> Check the next token
@@ -400,7 +402,7 @@ static kdl_event_data *_kdl_parser_next_event_in_node(kdl_parser *self, kdl_toke
                 }
                 if (tmp_val.type == KDL_TYPE_STRING) {
                     // all good
-                    self->event.property_key = tmp_val.value.string;
+                    self->event.name = tmp_val.value.string;
                     return NULL;
                 } else {
                     set_parse_error(self, "Property keys must be strings or identifiers");
@@ -418,7 +420,7 @@ static kdl_event_data *_kdl_parser_next_event_in_node(kdl_parser *self, kdl_toke
                     return &self->event;
                 }
                 // return it
-                if (self->event.property_key.data != NULL) {
+                if (self->event.name.data != NULL) {
                     self->event.event = KDL_EVENT_PROPERTY;
                 } else {
                     self->event.event = KDL_EVENT_ARGUMENT;
@@ -429,7 +431,7 @@ static kdl_event_data *_kdl_parser_next_event_in_node(kdl_parser *self, kdl_toke
             }
         case KDL_TOKEN_START_TYPE:
             // only one type allowed!
-            if (self->event.type_annotation.data != NULL) {
+            if (self->event.value.type_annotation.data != NULL) {
                 set_parse_error(self, "Unexpected second type annotation");
                 return &self->event;
             } else {

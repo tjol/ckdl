@@ -22,23 +22,22 @@ static void test_basics()
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "node1", 5) == 0);
+    ASSERT(memcmp(ev->name.data, "node1", 5) == 0);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_PROPERTY);
     ASSERT(ev->value.type == KDL_TYPE_NUMBER);
     ASSERT(ev->value.value.number.type == KDL_NUMBER_TYPE_INTEGER);
     ASSERT(ev->value.value.number.value.integer == 0x123);
-    ASSERT(ev->type_annotation.data == NULL);
-    ASSERT(memcmp("key", ev->property_key.data, 3) == 0);
+    ASSERT(ev->value.type_annotation.data == NULL);
+    ASSERT(memcmp("key", ev->name.data, 3) == 0);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_ARGUMENT);
     ASSERT(ev->value.type == KDL_TYPE_STRING);
     ASSERT(memcmp(ev->value.value.string.data, garcon, 7) == 0);
-    ASSERT(ev->type_annotation.data == NULL);
-    ASSERT(ev->property_key.data == NULL);
+    ASSERT(ev->value.type_annotation.data == NULL);
+    ASSERT(ev->name.data == NULL);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_END_NODE);
@@ -46,15 +45,14 @@ static void test_basics()
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "node2", 5) == 0);
+    ASSERT(memcmp(ev->name.data, "node2", 5) == 0);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_ARGUMENT);
     ASSERT(ev->value.type == KDL_TYPE_STRING);
     ASSERT(memcmp(ev->value.value.string.data, garcon, 7) == 0);
-    ASSERT(ev->type_annotation.data == NULL);
-    ASSERT(ev->property_key.data == NULL);
+    ASSERT(ev->value.type_annotation.data == NULL);
+    ASSERT(ev->name.data == NULL);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_END_NODE);
@@ -62,18 +60,14 @@ static void test_basics()
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "node3", 5) == 0);
-    ASSERT(ev->type_annotation.data == NULL);
-    ASSERT(ev->property_key.data == NULL);
+    ASSERT(memcmp(ev->name.data, "node3", 5) == 0);
+    ASSERT(ev->value.type_annotation.data == NULL);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "child1", 6) == 0);
-    ASSERT(ev->type_annotation.data[0] == 't');
-    ASSERT(ev->type_annotation.len == 1);
-    ASSERT(ev->property_key.data == NULL);
+    ASSERT(memcmp(ev->name.data, "child1", 6) == 0);
+    ASSERT(ev->value.type_annotation.data[0] == 't');
+    ASSERT(ev->value.type_annotation.len == 1);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_END_NODE);
@@ -81,10 +75,8 @@ static void test_basics()
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "child2", 6) == 0);
-    ASSERT(ev->type_annotation.data == NULL);
-    ASSERT(ev->property_key.data == NULL);
+    ASSERT(memcmp(ev->name.data, "child2", 6) == 0);
+    ASSERT(ev->value.type_annotation.data == NULL);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_END_NODE);
@@ -92,10 +84,8 @@ static void test_basics()
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "child3", 6) == 0);
-    ASSERT(ev->type_annotation.data == NULL);
-    ASSERT(ev->property_key.data == NULL);
+    ASSERT(memcmp(ev->name.data, "child3", 6) == 0);
+    ASSERT(ev->value.type_annotation.data == NULL);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_END_NODE);
@@ -127,8 +117,7 @@ static void test_slashdash()
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "node1", 5) == 0);
+    ASSERT(memcmp(ev->name.data, "node1", 5) == 0);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_END_NODE);
@@ -136,8 +125,7 @@ static void test_slashdash()
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "node3", 5) == 0);
+    ASSERT(memcmp(ev->name.data, "node3", 5) == 0);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_END_NODE);
@@ -153,8 +141,7 @@ static void test_slashdash()
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "node1", 5) == 0);
+    ASSERT(memcmp(ev->name.data, "node1", 5) == 0);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == (KDL_EVENT_COMMENT | KDL_EVENT_PROPERTY));
@@ -164,29 +151,25 @@ static void test_slashdash()
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == (KDL_EVENT_COMMENT | KDL_EVENT_START_NODE));
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "node2", 5) == 0);
+    ASSERT(memcmp(ev->name.data, "node2", 5) == 0);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == (KDL_EVENT_COMMENT | KDL_EVENT_START_NODE));
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "child1", 6) == 0);
+    ASSERT(memcmp(ev->name.data, "child1", 6) == 0);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == (KDL_EVENT_COMMENT | KDL_EVENT_END_NODE));
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == (KDL_EVENT_COMMENT | KDL_EVENT_START_NODE));
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "child2", 6) == 0);
+    ASSERT(memcmp(ev->name.data, "child2", 6) == 0);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == (KDL_EVENT_COMMENT | KDL_EVENT_END_NODE));
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == (KDL_EVENT_COMMENT | KDL_EVENT_START_NODE));
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "child3", 6) == 0);
+    ASSERT(memcmp(ev->name.data, "child3", 6) == 0);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == (KDL_EVENT_COMMENT | KDL_EVENT_END_NODE));
@@ -196,8 +179,7 @@ static void test_slashdash()
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
-    ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, "node3", 5) == 0);
+    ASSERT(memcmp(ev->name.data, "node3", 5) == 0);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_END_NODE);

@@ -76,8 +76,7 @@ int main(int argc, char **argv)
     // constants
     kdl_str const slashdash_type_str = (kdl_str){ "(commented-out)", 15 };
     kdl_str const value_str = (kdl_str){ "value", 5 };
-    kdl_str const type_str = (kdl_str){ "type", 4 };
-    kdl_str const key_str = (kdl_str){ "key", 3 };
+    kdl_str const name_str = (kdl_str){ "name", 4 };
 
     bool have_error = false;
     bool eof = false;
@@ -129,23 +128,17 @@ int main(int argc, char **argv)
         } else {
             kdl_emit_node(emitter, event_name_str);
         }
+        if (event->name.data != NULL) {
+            kdl_value name_val = (kdl_value) {
+                .type = KDL_TYPE_STRING,
+                .type_annotation = { NULL, 0 },
+                .value = { .string = event->name }
+            };
+            kdl_emit_property(emitter, name_str, &name_val);
+        }
+
         kdl_emit_property(emitter, value_str, &event->value);
 
-        if (event->type_annotation.data != NULL) {
-            kdl_value type_val = (kdl_value) {
-                .type = KDL_TYPE_STRING,
-                .value = { .string = event->type_annotation }
-            };
-            kdl_emit_property(emitter, type_str, &type_val);
-        }
-
-        if (event->property_key.data != NULL) {
-            kdl_value type_val = (kdl_value) {
-                .type = KDL_TYPE_STRING,
-                .value = { .string = event->property_key }
-            };
-            kdl_emit_property(emitter, key_str, &type_val);
-        }
 
         if (have_error || eof) break;
     }

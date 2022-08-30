@@ -88,25 +88,6 @@ static bool _kdl_emit_number(kdl_emitter *self, kdl_number const *n)
     return false;
 }
 
-static bool _kdl_emit_value(kdl_emitter *self, kdl_value const* v)
-{
-    switch (v->type) {
-    case KDL_TYPE_NULL:
-        return self->write_func(self->write_user_data, "null", 4) == 4;
-    case KDL_TYPE_STRING:
-        return _kdl_emit_str(self, v->value.string);
-    case KDL_TYPE_NUMBER:
-        return _kdl_emit_number(self, &v->value.number);
-    case KDL_TYPE_BOOLEAN:
-        if (v->value.boolean) {
-            return self->write_func(self->write_user_data, "true", 4) == 4;
-        } else {
-            return self->write_func(self->write_user_data, "false", 5) == 4;
-        }
-    }
-    return false;
-}
-
 static bool _kdl_emit_identifier(kdl_emitter *self, kdl_str name)
 {
     bool bare = true;
@@ -132,6 +113,32 @@ static bool _kdl_emit_identifier(kdl_emitter *self, kdl_str name)
     } else {
         return _kdl_emit_str(self, name);
     }
+}
+
+static bool _kdl_emit_value(kdl_emitter *self, kdl_value const* v)
+{
+    if (v->type_annotation.data != NULL)
+    {
+        if ((self->write_func(self->write_user_data, "(", 1) != 1)
+            || !_kdl_emit_identifier(self, v->type_annotation)
+            || (self->write_func(self->write_user_data, ")", 1) != 1))
+            return false;
+    }
+    switch (v->type) {
+    case KDL_TYPE_NULL:
+        return self->write_func(self->write_user_data, "null", 4) == 4;
+    case KDL_TYPE_STRING:
+        return _kdl_emit_str(self, v->value.string);
+    case KDL_TYPE_NUMBER:
+        return _kdl_emit_number(self, &v->value.number);
+    case KDL_TYPE_BOOLEAN:
+        if (v->value.boolean) {
+            return self->write_func(self->write_user_data, "true", 4) == 4;
+        } else {
+            return self->write_func(self->write_user_data, "false", 5) == 4;
+        }
+    }
+    return false;
 }
 
 static bool _kdl_emit_node_preamble(kdl_emitter *self)
@@ -170,29 +177,11 @@ bool kdl_emit_arg(kdl_emitter *self, kdl_value const *value)
         && _kdl_emit_value(self, value);
 }
 
-bool kdl_emit_arg_with_type(kdl_emitter *self, kdl_str type, kdl_value const *value)
-{
-    return (self->write_func(self->write_user_data, " (", 2) == 2)
-        && _kdl_emit_identifier(self, type)
-        && (self->write_func(self->write_user_data, ")", 1) == 1)
-        && _kdl_emit_value(self, value);
-}
-
 bool kdl_emit_property(kdl_emitter *self, kdl_str name, kdl_value const *value)
 {
     return (self->write_func(self->write_user_data, " ", 1) == 1)
         && _kdl_emit_identifier(self, name)
         && (self->write_func(self->write_user_data, "=", 1) == 1)
-        && _kdl_emit_value(self, value);
-}
-
-bool kdl_emit_property_with_type(kdl_emitter *self, kdl_str name, kdl_str type, kdl_value const *value)
-{
-    return (self->write_func(self->write_user_data, " ", 1) == 1)
-        && _kdl_emit_identifier(self, name)
-        && (self->write_func(self->write_user_data, "=(", 2) == 2)
-        && _kdl_emit_identifier(self, type)
-        && (self->write_func(self->write_user_data, ")", 1) == 1)
         && _kdl_emit_value(self, value);
 }
 

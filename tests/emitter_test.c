@@ -28,6 +28,7 @@ static void test_basics()
     ASSERT(kdl_emit_node(emitter, kdl_str_from_cstr("first child")));
     kdl_value v;
     v.type = KDL_TYPE_NUMBER;
+    v.type_annotation = (kdl_str){ NULL, 0 };
     v.value.number = (kdl_number) {
         .type = KDL_NUMBER_TYPE_INTEGER,
         .value = { .integer = 1 }

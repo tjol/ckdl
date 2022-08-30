@@ -30,9 +30,8 @@ typedef struct _kdl_parser kdl_parser;
 
 struct kdl_event_data {
     kdl_event event;
+    kdl_str name;
     kdl_value value;
-    kdl_str type_annotation;
-    kdl_str property_key;
 };
 
 KDL_NODISCARD kdl_parser *kdl_create_string_parser(kdl_str doc, kdl_parse_option opt);
