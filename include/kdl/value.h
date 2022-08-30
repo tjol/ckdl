@@ -38,9 +38,9 @@ struct kdl_value {
     kdl_type type;
     kdl_str type_annotation;
     union {
-        kdl_str string;
-        kdl_number number;
         bool boolean;
+        kdl_number number;
+        kdl_str string;
     } value;
 };
 

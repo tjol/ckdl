@@ -186,7 +186,7 @@ static void test_slashdash()
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_EOF);
-    
+
     kdl_destroy_parser(parser);
 }
 

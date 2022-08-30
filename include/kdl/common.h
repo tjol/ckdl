@@ -21,7 +21,8 @@ enum kdl_escape_mode {
     KDL_ESCAPE_CONTROL = 0x10,
     KDL_ESCAPE_NEWLINE = 0x20,
     KDL_ESCAPE_TAB = 0x40,
-    KDL_ESCAPE_ASCII_MODE =0x170
+    KDL_ESCAPE_ASCII_MODE =0x170,
+    KDL_ESCAPE_DEFAULT = KDL_ESCAPE_CONTROL | KDL_ESCAPE_NEWLINE | KDL_ESCAPE_TAB
 };
 
 typedef size_t (*kdl_read_func)(void *user_data, char *buf, size_t bufsize);

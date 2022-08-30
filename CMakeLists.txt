@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(ckdl C CXX)
+project(ckdl C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_EXTENSIONS OFF)
@@ -26,6 +26,7 @@ add_library(kdl-internal-headers INTERFACE)
 target_include_directories(kdl-internal-headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_subdirectory(src/utils)
+add_subdirectory(bindings/cpp)
 
 enable_testing()
 add_subdirectory(tests)

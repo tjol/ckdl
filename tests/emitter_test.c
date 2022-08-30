@@ -9,12 +9,12 @@ static void test_basics()
 {
     kdl_emitter *emitter = kdl_create_buffering_emitter((kdl_emitter_options) {
         .indent = 3,
-        .escape_mode = KDL_ESCAPE_CONTROL | KDL_ESCAPE_NEWLINE | KDL_ESCAPE_TAB,
+        .escape_mode = KDL_ESCAPE_DEFAULT,
         .identifier_mode = KDL_PREFER_BARE_IDENTIFIERS
     });
 
-    char const *expected = 
-        "💩\n"
+    char const *expected =
+        "\xf0\x9f\x92\xa9\n"
         "node2 {\n"
         "   \"first child\" 1 a=\"b\"\n"
         "   (ta)second-child\n"
