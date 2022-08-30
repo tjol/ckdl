@@ -96,6 +96,8 @@ public:
     explicit operator kdl_number() const;
 };
 
+template <typename T> concept _into_number = requires (T t) { Number{t}; };
+
 class HasTypeAnnotation {
     std::optional<std::u8string> m_type_annotation;
 protected:
@@ -129,12 +131,7 @@ public:
     Value(char8_t const* s) : m_value{std::u8string{s}} {}
 
     Value(Number n) : m_value{std::move(n)} {}
-    Value(long long n) : m_value{Number{n}} {}
-    Value(long n) : m_value{Number{n}} {}
-    Value(int n) : m_value{Number{n}} {}
-    Value(short n) : m_value{Number{n}} {}
-    Value(double n) : m_value{Number{n}} {}
-    Value(float n) : m_value{Number{n}} {}
+    Value(_into_number auto n) : m_value{Number{n}} {}
 
     Value(std::u8string_view type_annotation, bool b)
         : HasTypeAnnotation{type_annotation},
@@ -156,16 +153,12 @@ public:
           m_value{std::move(n)}
     {
     }
-    Value(std::u8string_view type_annotation, long long n)
+    Value(std::u8string_view type_annotation, _into_number auto n)
         : HasTypeAnnotation{type_annotation},
-          m_value{Number{n}}
+          m_value{std::move(n)}
     {
     }
-    Value(std::u8string_view type_annotation, double n)
-        : HasTypeAnnotation{type_annotation},
-          m_value{Number{n}}
-    {
-    }
+
     Value(kdl_value const& val);
     [[nodiscard]] static Value from_string(std::u8string_view s);
 
@@ -204,8 +197,11 @@ public:
         return *this;
     }
 
-    Value& operator=(long long n) { return (*this) = Number{n}; }
-    Value& operator=(double n) { return (*this) = Number{n}; }
+    Value& operator=(_into_number auto n)
+    {
+        m_value = Number{n};
+        return *this;
+    }
 
     bool operator==(const Value&) const = default;
     bool operator!=(const Value&) const = default;
