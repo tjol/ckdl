@@ -4,6 +4,7 @@ project(kdl-tests C CXX)
 include(CTest)
 
 add_library(test_util OBJECT test_util.c)
+target_include_directories(test_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(utf8_test utf8_test.c)
 target_link_libraries(utf8_test kdl kdl-internal-headers test_util)
@@ -16,7 +17,3 @@ add_test(parser_test parser_test)
 add_executable(emitter_test emitter_test.c)
 target_link_libraries(emitter_test kdl test_util)
 add_test(emitter_test emitter_test)
-
-add_executable(kdlpp_test kdlpp_test.cpp)
-target_link_libraries(kdlpp_test kdlpp test_util)
-add_test(kdlpp_test kdlpp_test)

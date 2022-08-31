@@ -31,3 +31,4 @@ target_include_directories(kdlpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(kdlpp PUBLIC kdl)
 target_compile_features(kdlpp PUBLIC cxx_std_20)
 
+add_subdirectory(tests)
