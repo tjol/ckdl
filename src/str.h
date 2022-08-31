@@ -4,6 +4,7 @@
 #include "kdl/common.h"
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 struct _kdl_write_buffer {
