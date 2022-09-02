@@ -403,9 +403,10 @@ end_of_line:
             if (c == '*' && prev_char == '/') {
                 // another level of nesting
                 ++depth;
-                c = 0; // "/*/" doesn't count
+                c = 0; // "/*/" doesn't count as self-closing
             } else if (c == '/' && prev_char == '*') {
                 --depth;
+                c = 0; // "*/*" doesn't count as reopening
             }
 
             // Accept this character
