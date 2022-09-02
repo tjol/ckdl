@@ -1,8 +1,8 @@
-#ifndef KDL_KDLPP_H_
-#define KDL_KDLPP_H_
+#ifndef KDLPP_H_
+#define KDLPP_H_
 
 #if !defined(__cplusplus) || __cplusplus < 202002L
-#error "<kdl/kdlpp.h> requires C++20"
+#error "kdlpp.h requires C++20"
 #endif
 
 #include <functional>
@@ -319,4 +319,4 @@ Document parse(std::u8string_view kdl_text);
 
 } // namespace kdl
 
-#endif // KDL_KDLPP_H_
+#endif // KDLPP_H_
