@@ -93,6 +93,8 @@ static bool _kdl_emit_identifier(kdl_emitter *self, kdl_str name)
     bool bare = true;
     if (self->opt.identifier_mode == KDL_QUOTE_ALL_IDENTIFIERS) {
         bare = false;
+    } else if (name.len == 0) {
+        bare = false;
     } else {
         uint32_t c;
         kdl_str tail = name;
