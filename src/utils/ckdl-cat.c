@@ -23,9 +23,11 @@ static void proplist_clear(struct proplist *pl);
 static void proplist_append(struct proplist *pl, kdl_str name, kdl_value const* value);
 static void proplist_emit(kdl_emitter *emitter, struct proplist *pl);
 
-int kdl_cat(FILE *in, FILE *out)
+static bool kdl_cat_impl(kdl_parser *parser, kdl_emitter *emitter);
+
+bool kdl_cat_file_to_file(FILE *in, FILE *out)
 {
-    bool have_error = false;
+    bool ok = true;
 
     kdl_parser *parser = kdl_create_stream_parser(&read_func, (void*)in, KDL_DEFAULTS);
     kdl_emitter *emitter = kdl_create_stream_emitter(&write_func, (void*)out,
@@ -36,9 +38,46 @@ int kdl_cat(FILE *in, FILE *out)
         });
 
     if (parser == NULL || emitter == NULL) {
-        goto error;
+        ok = false;
+    } else {
+        ok = kdl_cat_impl(parser, emitter);
     }
 
+    kdl_destroy_emitter(emitter);
+    kdl_destroy_parser(parser);
+    return ok;
+}
+
+kdl_owned_string kdl_cat_file_to_string(FILE *in)
+{
+    kdl_owned_string result = { NULL, 0 };
+
+    kdl_parser *parser = kdl_create_stream_parser(&read_func, (void*)in, KDL_DEFAULTS);
+    kdl_emitter *emitter = kdl_create_buffering_emitter((kdl_emitter_options){
+            .indent = 4,
+            .escape_mode = KDL_ESCAPE_CONTROL | KDL_ESCAPE_NEWLINE | KDL_ESCAPE_TAB,
+            .identifier_mode = KDL_PREFER_BARE_IDENTIFIERS
+        });
+
+    bool ok = true;
+    if (parser == NULL || emitter == NULL) {
+        ok = false;
+    } else {
+        ok = kdl_cat_impl(parser, emitter);
+    }
+
+    if (ok) {
+        kdl_str emitter_buffer = kdl_get_emitter_buffer(emitter);
+        result = kdl_clone_str(&emitter_buffer);
+    }
+
+    kdl_destroy_emitter(emitter);
+    kdl_destroy_parser(parser);
+    return result;
+}
+
+static bool kdl_cat_impl(kdl_parser *parser, kdl_emitter *emitter)
+{
     // state
     bool in_node_list = true;
     struct proplist props = { NULL, 0, 0 };
@@ -47,27 +86,27 @@ int kdl_cat(FILE *in, FILE *out)
         kdl_event_data *ev = kdl_parser_next_event(parser);
         switch (ev->event) {
         case KDL_EVENT_EOF:
-            if (!kdl_emit_end(emitter)) goto error;
-            goto done;
+            if (!kdl_emit_end(emitter)) return false;
+            return true;
         case KDL_EVENT_PARSE_ERROR:
-            goto error;
+            return false;
         case KDL_EVENT_START_NODE:
             if (!in_node_list) {
                 proplist_emit(emitter, &props);
                 proplist_clear(&props);
-                if (!kdl_start_emitting_children(emitter)) goto error;
+                if (!kdl_start_emitting_children(emitter)) return false;
             }
             if (ev->value.type_annotation.data == NULL) {
-                if (!kdl_emit_node(emitter, ev->name)) goto error;
+                if (!kdl_emit_node(emitter, ev->name)) return false;
             } else {
-                if (!kdl_emit_node_with_type(emitter, ev->value.type_annotation, ev->name)) goto error;
+                if (!kdl_emit_node_with_type(emitter, ev->value.type_annotation, ev->name)) return false;
             }
             in_node_list = false;
             break;
         case KDL_EVENT_END_NODE:
             if (in_node_list) {
                 // just ended a node, end the parent now
-                if (!kdl_finish_emitting_children(emitter)) goto error;
+                if (!kdl_finish_emitting_children(emitter)) return false;
             } else {
                 // regular end to childless node
                 proplist_emit(emitter, &props);
@@ -82,17 +121,9 @@ int kdl_cat(FILE *in, FILE *out)
             proplist_append(&props, ev->name, &ev->value);
             break;
         default:
-            goto error;
+            return false;
         }
     }
-
-    goto done;
-error:
-    have_error = true;
-done:
-    kdl_destroy_emitter(emitter);
-    kdl_destroy_parser(parser);
-    return have_error ? 1 : 0;
 }
 
 static size_t read_func(void *user_data, char *buf, size_t bufsize)

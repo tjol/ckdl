@@ -42,10 +42,10 @@ int main(int argc, char **argv)
         }
     }
 
-    int status = kdl_cat(in, stdout);
+    bool ok = kdl_cat_file_to_file(in, stdout);
 
     if (in != stdin) {
         fclose(in);
     }
-    return status;
+    return ok ? 0 : 1;
 }
