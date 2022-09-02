@@ -1,8 +1,6 @@
 #include <kdlpp.h>
 #include <kdl/kdl.h>
 
-#include <sstream>
-
 namespace kdl {
 
 // internal helper functions
@@ -122,9 +120,9 @@ Value::Value(kdl_value const& val)
 
 Value Value::from_string(std::u8string_view s)
 {
-    std::basic_ostringstream<char8_t> stream;
-    stream << u8"- " << s;
-    auto doc = parse(stream.view());
+    std::u8string doc_text = u8"- ";
+    doc_text.append(s);
+    auto doc = parse(doc_text);
     if (doc.nodes().size() == 1) {
         auto const& node = doc.nodes()[0];
         if (node.args().size() == 1 && node.properties().empty() && node.children().empty()) {
