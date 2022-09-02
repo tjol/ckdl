@@ -11,9 +11,11 @@ structure relatively directly.
 
 This repository currently contains language bindings for:
 
- * C++
+ * C++20
 
 ### Status
 
-ckdl is in the very early stages of development and not currently standard
-compliant, though it should be able to read most documents.
+ckdl is in an early stage of development. It is probably standard-compliant,
+and passes all test cases in the KDL test suite other than those that depend
+on the exact string representation of floating-point numbers or integers
+&gt; 64 bits.
