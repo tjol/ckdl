@@ -34,6 +34,17 @@ static void do_test_case(void *user_data)
     } else {
         // should parse with no issue
         ASSERT2(s.data != NULL, "Parsing should not fail");
+        // compare results
+        FILE *gt_fp = fopen(tc->ground_truth_path, "r");
+        fseek(gt_fp, 0, SEEK_END);
+        long filelen = ftell(gt_fp);
+        fseek(gt_fp, 0, SEEK_SET);
+        char *buf = malloc(filelen);
+        fread(buf, 1, filelen, gt_fp);
+        fclose(gt_fp);
+        ASSERT(filelen == (long)s.len);
+        ASSERT(memcmp(buf, s.data, filelen) == 0);
+        free(buf);
     }
     fclose(in);
 }
