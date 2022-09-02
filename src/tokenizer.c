@@ -9,13 +9,20 @@
 // small for testing
 #define MIN_BUFFER_SIZE 4096
 
+enum _whitespace_status {
+    WHITESPACE_OPTIONAL = 0,
+    WHITESPACE_REQUIRED = 1,
+    WHITESPACE_BANNED = 2,
+    WHITESPACE_BANNED_IN_TYPE = 4 | WHITESPACE_BANNED,
+};
+
 struct _kdl_tokenizer {
     kdl_str document;
     kdl_read_func read_func;
     void *read_user_data;
     char *buffer;
     size_t buffer_size;
-    bool whitespace_required;
+    enum _whitespace_status whitespace_status;
 };
 
 kdl_tokenizer *kdl_create_string_tokenizer(kdl_str doc)
@@ -27,7 +34,7 @@ kdl_tokenizer *kdl_create_string_tokenizer(kdl_str doc)
         self->read_user_data = NULL;
         self->buffer = NULL;
         self->buffer_size = 0;
-        self->whitespace_required = false;
+        self->whitespace_status = WHITESPACE_OPTIONAL;
     }
     return self;
 }
@@ -41,7 +48,7 @@ kdl_tokenizer *kdl_create_stream_tokenizer(kdl_read_func read_func, void *user_d
         self->read_user_data = user_data;
         self->buffer = NULL;
         self->buffer_size = 0;
-        self->whitespace_required = false;
+        self->whitespace_status = WHITESPACE_OPTIONAL;
     }
     return self;
 }
@@ -203,14 +210,14 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
         }
 
         // Could be the start of a new token
-        if (_kdl_is_whitespace(c)) {
+        if (_kdl_is_whitespace(c) && !(self->whitespace_status & WHITESPACE_BANNED)) {
             // ignore whitespace
-            self->whitespace_required = false;
+            self->whitespace_status = WHITESPACE_OPTIONAL;
             self->document.len -= (next - self->document.data);
             cur = self->document.data = next;
-        } else if (_kdl_is_newline(c)) {
+        } else if (_kdl_is_newline(c) && !(self->whitespace_status & WHITESPACE_BANNED)) {
             // end of line
-            self->whitespace_required = false;
+            self->whitespace_status = WHITESPACE_OPTIONAL;
             // special treatment for CRLF
             if (c == '\r') {
                 char const *nnext;
@@ -230,7 +237,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             return KDL_TOKENIZER_OK;
         } else if (c == ';') {
             // semicolon (end of node)
-            self->whitespace_required = false;
+            self->whitespace_status = WHITESPACE_OPTIONAL;
             dest->type = KDL_TOKEN_SEMICOLON;
             dest->value.data = self->document.data;
             dest->value.len = (size_t)(cur - self->document.data);
@@ -238,7 +245,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             return KDL_TOKENIZER_OK;
         } else if (c == '\\') {
             // line continuation
-            self->whitespace_required = false;
+            self->whitespace_status = WHITESPACE_OPTIONAL;
             dest->type = KDL_TOKEN_LINE_CONTINUATION;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
@@ -246,7 +253,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             return KDL_TOKENIZER_OK;
         } else if (c == '(') {
             // start of type annotation
-            self->whitespace_required = false;
+            self->whitespace_status = WHITESPACE_BANNED_IN_TYPE;
             dest->type = KDL_TOKEN_START_TYPE;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
@@ -254,7 +261,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             return KDL_TOKENIZER_OK;
         } else if (c == ')') {
             // end of type annotation
-            self->whitespace_required = false;
+            self->whitespace_status = WHITESPACE_BANNED;
             dest->type = KDL_TOKEN_END_TYPE;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
@@ -262,7 +269,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             return KDL_TOKENIZER_OK;
         } else if (c == '{') {
             // start of list of children
-            self->whitespace_required = false;
+            self->whitespace_status = WHITESPACE_OPTIONAL;
             dest->type = KDL_TOKEN_START_CHILDREN;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
@@ -270,7 +277,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             return KDL_TOKENIZER_OK;
         } else if (c == '}') {
             // end of list of children
-            self->whitespace_required = false;
+            self->whitespace_status = WHITESPACE_OPTIONAL;
             dest->type = KDL_TOKEN_END_CHILDREN;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
@@ -278,22 +285,24 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             return KDL_TOKENIZER_OK;
         } else if (c == '=') {
             // attribute assignment
-            self->whitespace_required = false;
+            self->whitespace_status = WHITESPACE_BANNED;
             dest->type = KDL_TOKEN_EQUALS;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
             _kdl_tok_update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
-        } else if (c == '/') {
+        } else if (c == '/' && !(self->whitespace_status & WHITESPACE_BANNED)) {
             // could be a comment
-            self->whitespace_required = false;
+            self->whitespace_status = WHITESPACE_OPTIONAL;
             return _kdl_pop_comment(self, dest);
-        } else if (!self->whitespace_required && c == '"') {
+        } else if (self->whitespace_status != WHITESPACE_REQUIRED && c == '"') {
             // string
-            self->whitespace_required = true;
+            if (self->whitespace_status != WHITESPACE_BANNED_IN_TYPE)
+                self->whitespace_status = WHITESPACE_REQUIRED;
             return _kdl_pop_string(self, dest);
-        } else if (!self->whitespace_required && _kdl_is_id(c)) {
-            self->whitespace_required = true;
+        } else if (self->whitespace_status != WHITESPACE_REQUIRED && _kdl_is_id(c)) {
+            if (self->whitespace_status != WHITESPACE_BANNED_IN_TYPE)
+                self->whitespace_status = WHITESPACE_REQUIRED;
             if (c == 'r') {
                 // this *could* be a raw string
                 kdl_tokenizer_status rstring_status = _kdl_pop_raw_string(self, dest);

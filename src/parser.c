@@ -149,19 +149,6 @@ kdl_event_data *kdl_parser_next_event(kdl_parser *self)
             }
         }
 
-        if (self->state & PARSER_FLAG_LINE_CONT) {
-            switch (token.type) {
-            case KDL_TOKEN_SINGLE_LINE_COMMENT:
-                break; // fine
-            case KDL_TOKEN_NEWLINE:
-                self->state &= ~PARSER_FLAG_LINE_CONT;
-                continue; // Get next token - \ and newline cancel out
-            default:
-                set_parse_error(self, "Illegal token after line continuation");
-                return &self->event;
-            }
-        }
-
         switch (token.type) {
         case KDL_TOKEN_MULTI_LINE_COMMENT:
         case KDL_TOKEN_SINGLE_LINE_COMMENT:
@@ -176,9 +163,6 @@ kdl_event_data *kdl_parser_next_event(kdl_parser *self)
             if (self->slashdash_depth < 0) {
                 self->slashdash_depth = self->depth + 1;
             }
-            break;
-        case KDL_TOKEN_LINE_CONTINUATION:
-            self->state |= PARSER_FLAG_LINE_CONT;
             break;
         default:
             switch (self->state & 0xff) {
@@ -318,7 +302,18 @@ static kdl_event_data *_kdl_parser_next_event_in_node(kdl_parser *self, kdl_toke
     kdl_event_data *ev;
     bool is_property = false;
 
-    if (self->state & PARSER_FLAG_TYPE_ANNOTATION_START) {
+    if (self->state & PARSER_FLAG_LINE_CONT) {
+        switch (token->type) {
+        case KDL_TOKEN_SINGLE_LINE_COMMENT:
+            break; // fine
+        case KDL_TOKEN_NEWLINE:
+            self->state &= ~PARSER_FLAG_LINE_CONT;
+            return NULL; // Get next token - \ and newline cancel out
+        default:
+            set_parse_error(self, "Illegal token after line continuation");
+            return &self->event;
+        }
+    } else if (self->state & PARSER_FLAG_TYPE_ANNOTATION_START) {
         kdl_value tmp_val;
         switch (token->type) {
         case KDL_TOKEN_WORD:
@@ -353,6 +348,9 @@ static kdl_event_data *_kdl_parser_next_event_in_node(kdl_parser *self, kdl_toke
         }
     } else {
         switch (token->type) {
+        case KDL_TOKEN_LINE_CONTINUATION:
+            self->state |= PARSER_FLAG_LINE_CONT;
+            return NULL;
         case KDL_TOKEN_END_CHILDREN:
             // end this node, and process the token again
             self->next_token = *token;

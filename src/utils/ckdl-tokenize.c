@@ -57,6 +57,7 @@ int main(int argc, char **argv)
         kdl_token token;
         kdl_tokenizer_status status = kdl_pop_token(tokenizer, &token);
         if (status == KDL_TOKENIZER_ERROR) {
+            kdl_emit_end(emitter);
             fprintf(stderr, "Tokenization error\n");
             have_error = true;
             break;
