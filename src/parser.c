@@ -313,7 +313,9 @@ static kdl_event_data *_kdl_parser_next_event_in_node(kdl_parser *self, kdl_toke
             set_parse_error(self, "Illegal token after line continuation");
             return &self->event;
         }
-    } else if (self->state & PARSER_FLAG_TYPE_ANNOTATION_START) {
+    }
+
+    if (self->state & PARSER_FLAG_TYPE_ANNOTATION_START) {
         kdl_value tmp_val;
         switch (token->type) {
         case KDL_TOKEN_WORD:
@@ -613,7 +615,13 @@ static bool _kdl_parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_s
     unsigned long long decimal_mantissa = 0;
     int explicit_exponent = 0;
     bool exponent_negative = false;
-    enum { before_decimal, after_decimal, exponent } state = before_decimal;
+    enum {
+        before_decimal,
+        after_decimal_nodigit,
+        after_decimal,
+        exponent_nodigit,
+        exponent
+    } state = before_decimal;
 
     size_t i = 0; // index into number-string
 
@@ -634,10 +642,10 @@ static bool _kdl_parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_s
     for (; i < number.len; ++i) {
         char c = number.data[i];
         if (c == '.' && state == before_decimal) {
-            state = after_decimal;
-            if (number.len - i > 1 && number.data[i+1] == '_') return false;
-        } else if ((c == 'e' || c == 'E') && state != exponent) {
-            state = exponent;
+            state = after_decimal_nodigit;
+            if (number.len - i <= 1 || number.data[i+1] == '_') return false;
+        } else if ((c == 'e' || c == 'E') && state != exponent && state != after_decimal_nodigit) {
+            state = exponent_nodigit;
             if (i + 1 < number.len) {
                 // handle exponent sign
                 switch (number.data[i+1]) {
@@ -647,19 +655,22 @@ static bool _kdl_parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_s
                 case '+':
                     ++i;
                 }
-                if (number.len - i > 1 && number.data[i+1] == '_') return false;
+                if (number.len - i <= 1 || number.data[i+1] == '_') return false;
             }
         } else if (c >= '0' && c <= '9') {
             // digit!
             int digit = c - '0';
-            if (state == exponent) {
+            if (state == exponent || state == exponent_nodigit) {
+                state = exponent;
                 explicit_exponent = explicit_exponent * 10 + digit;
             } else {
                 decimal_mantissa = decimal_mantissa * 10 + digit;
-                if (state == before_decimal)
+                if (state == before_decimal) {
                     ++digits_before_decimal;
-                else
+                } else {
+                    state = after_decimal;
                     ++digits_after_decimal;
+                }
             }
         } else if (c == '_') {
             // underscores are allowed
@@ -667,6 +678,11 @@ static bool _kdl_parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_s
             // invalid
             return false;
         }
+    }
+
+    if (state == after_decimal_nodigit || state == exponent_nodigit) {
+        // invalid
+        return false;
     }
 
     // rough heuristic for numbers that fit into a double exactly
