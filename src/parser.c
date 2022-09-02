@@ -442,6 +442,12 @@ static kdl_event_data *_kdl_parser_next_event_in_node(kdl_parser *self, kdl_toke
         case KDL_TOKEN_START_CHILDREN:
             // enter the node / allow new children
             self->state = PARSER_OUTSIDE_NODE;
+            // if we just opened a slashdash, reduced its depth so that it ends
+            // at the end of the parent node (we're commenting out the children block)
+            if (self->slashdash_depth == self->depth + 1) {
+                --self->slashdash_depth; // as if the /- had appeared before the node
+                // the node has already been forwarded, so that's fine
+            }
             reset_event(self);
             return NULL;
         default:
