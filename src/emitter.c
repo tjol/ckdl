@@ -208,6 +208,7 @@ bool kdl_emit_end(kdl_emitter *self)
     }
     if (!self->start_of_line) {
         if (self->write_func(self->write_user_data, "\n", 1) != 1) return false;
+        self->start_of_line = true;
     }
     return true;
 }
