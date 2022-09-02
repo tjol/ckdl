@@ -74,7 +74,7 @@ int main(int argc, char **argv)
     }
 
     // constants
-    kdl_str const slashdash_type_str = (kdl_str){ "(commented-out)", 15 };
+    kdl_str const slashdash_type_str = (kdl_str){ "commented-out", 13 };
     kdl_str const value_str = (kdl_str){ "value", 5 };
     kdl_str const name_str = (kdl_str){ "name", 4 };
 

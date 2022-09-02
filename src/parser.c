@@ -125,7 +125,9 @@ kdl_event_data *kdl_parser_next_event(kdl_parser *self)
                     self->state = PARSER_OUTSIDE_NODE;
                     reset_event(self);
                     self->event.event = KDL_EVENT_END_NODE;
-                    return &self->event;
+                    ev = _kdl_parser_apply_slashdash(self);
+                    if (ev) return ev;
+                    else continue;
                 } else if (self->depth > 0) {
                     set_parse_error(self, "Unexpected end of data");
                     return &self->event;
@@ -183,17 +185,16 @@ kdl_event_data *kdl_parser_next_event(kdl_parser *self)
             case PARSER_OUTSIDE_NODE:
                 ev = _kdl_parser_next_node(self, &token);
                 if (ev) return ev;
-                else break;
+                else continue;
             case PARSER_IN_NODE:
                 ev = _kdl_parser_next_event_in_node(self, &token);
                 if (ev) return ev;
-                else break;
+                else continue;
             default:
                 set_parse_error(self, "Inconsistent state");
                 return &self->event;
             }
         }
-
     }
 }
 
