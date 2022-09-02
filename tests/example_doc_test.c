@@ -20,6 +20,7 @@ static int strcmp_p(void const *s1, void const *s2)
 struct test_case {
     char const *input_path;
     char const *ground_truth_path;
+    bool ignore_output;
 };
 
 static void do_test_case(void *user_data)
@@ -34,18 +35,21 @@ static void do_test_case(void *user_data)
     } else {
         // should parse with no issue
         ASSERT2(s.data != NULL, "Parsing should not fail");
-        // compare results
-        FILE *gt_fp = fopen(tc->ground_truth_path, "r");
-        fseek(gt_fp, 0, SEEK_END);
-        long filelen = ftell(gt_fp);
-        fseek(gt_fp, 0, SEEK_SET);
-        char *buf = malloc(filelen);
-        fread(buf, 1, filelen, gt_fp);
-        fclose(gt_fp);
-        // Test cases may contain a lone newline where an empty file is more appropriate
-        ASSERT(filelen == (long)s.len || (filelen == 1 && buf[0] == '\n' && s.len == 0));
-        ASSERT(memcmp(buf, s.data, s.len) == 0);
-        free(buf);
+        if (!tc->ignore_output)
+        {
+            // compare results
+            FILE *gt_fp = fopen(tc->ground_truth_path, "r");
+            fseek(gt_fp, 0, SEEK_END);
+            long filelen = ftell(gt_fp);
+            fseek(gt_fp, 0, SEEK_SET);
+            char *buf = malloc(filelen);
+            fread(buf, 1, filelen, gt_fp);
+            fclose(gt_fp);
+            // Test cases may contain a lone newline where an empty file is more appropriate
+            ASSERT(filelen == (long)s.len || (filelen == 1 && buf[0] == '\n' && s.len == 0));
+            ASSERT(memcmp(buf, s.data, s.len) == 0);
+            free(buf);
+        }
     }
     fclose(in);
 }
@@ -58,6 +62,22 @@ void TEST_MAIN()
         test_cases_root = test_arg(1);
     } else {
         test_cases_root = KDL_TEST_CASES_ROOT;
+    }
+
+    // prepare the list of fuzzy test cases (don't compare output)
+    char *excl_buf = strdup(FUZZY_KDL_TESTS);
+    size_t n_fuzzy = 0;
+    if (*excl_buf) ++n_fuzzy;
+    for (char *p = excl_buf; *p; ++p)
+        if (*p == ':')
+            ++n_fuzzy;
+    char **fuzzy_test_cases = malloc(n_fuzzy * sizeof(char *));
+    fuzzy_test_cases[0] = excl_buf;
+    for (char *p = excl_buf, **e = &fuzzy_test_cases[1]; *p; ++p) {
+        if (*p == ':') {
+            *p = '\0';
+            *(e++) = p + 1;
+        }
     }
 
     printf("Test data root: %s\n", test_cases_root);
@@ -117,10 +137,17 @@ void TEST_MAIN()
         // does the output file exist?
         char const* filename = filenames[i];
         tc.input_path = filename;
+        tc.ignore_output = false;
         strncpy(expected_basename_ptr, filename, expected_basename_avail);
         if (stat(expected_kdl_fn, &st) == 0) {
             // file exists - expected to pass
             tc.ground_truth_path = expected_kdl_fn;
+            // Check if this is a test we exclude
+            for (size_t i = 0; i < n_fuzzy; ++i) {
+                if (strcmp(fuzzy_test_cases[i], filename) == 0) {
+                    tc.ignore_output = true;
+                }
+            }
         } else {
             if (errno == ENOENT) {
                 // file does not exist - expected to fail
@@ -135,6 +162,8 @@ void TEST_MAIN()
         run_test_d(filename, &do_test_case, &tc);
     }
 
+    free(excl_buf);
+    free(fuzzy_test_cases);
     free(fn_buf);
     free(filenames);
     free(input_dir);
