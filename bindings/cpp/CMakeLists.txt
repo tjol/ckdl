@@ -11,7 +11,7 @@ unset(CMAKE_EXTRA_INCLUDE_FILES)
 if(NOT HAVE_U8STRING_VIEW)
     message(WARNING "kdlpp requires a C++20 compiler with std::u8string_view")
     message(WARNING "Not building kdlpp")
-    set(BUILD_KDLPP OFF CACHE BOOL "Build C++ binding (kdlpp)")
+    set(BUILD_KDLPP OFF CACHE BOOL "Build C++ binding (kdlpp)" FORCE)
 else()
     set(BUILD_KDLPP ON CACHE BOOL "Build C++ binding (kdlpp)")
 endif()
@@ -22,13 +22,17 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-set(KDLPP_CXX_SOURCES
-    src/kdlpp.cpp
-)
+if(BUILD_KDLPP)
 
-add_library(kdlpp ${KDLPP_CXX_SOURCES})
-target_include_directories(kdlpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(kdlpp PUBLIC kdl)
-target_compile_features(kdlpp PUBLIC cxx_std_20)
+    set(KDLPP_CXX_SOURCES
+        src/kdlpp.cpp
+    )
 
-add_subdirectory(tests)
+    add_library(kdlpp ${KDLPP_CXX_SOURCES})
+    target_include_directories(kdlpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(kdlpp PUBLIC kdl)
+    target_compile_features(kdlpp PUBLIC cxx_std_20)
+
+    add_subdirectory(tests)
+
+endif()
