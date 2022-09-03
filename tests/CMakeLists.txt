@@ -11,7 +11,7 @@ check_symbol_exists(DT_REG "dirent.h" HAVE_DT_MACROS)
 # Check for d_namlen
 CHECK_STRUCT_HAS_MEMBER("struct dirent" d_namlen dirent.h HAVE_D_NAMLEN LANGUAGE C)
 if(HAVE_D_NAMLEN)
-    add_compile_definitions(-DHAVE_D_NAMLEN)
+    add_compile_definitions(HAVE_D_NAMLEN)
 endif()
 
 

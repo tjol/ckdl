@@ -129,7 +129,7 @@ void TEST_MAIN()
         if (is_regular_file(input_dir_p, de)) {
             ++n_files;
 #ifdef HAVE_D_NAMLEN
-            size_t fn_len = de->d_namelen;
+            size_t fn_len = de->d_namlen;
 #else
             size_t fn_len = strlen(de->d_name);
 #endif
