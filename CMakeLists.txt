@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.7)
 project(ckdl C)
 
 set(CMAKE_C_STANDARD 11)
@@ -10,17 +10,14 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+add_definitions(-D_DEFAULT_SOURCE)
+set(CMAKE_REQUIRED_DEFINITIONS -D_DEFAULT_SOURCE)
+
 # Check if we need _DEFAULT_SOURCE (e.g. GNU/Linux)
 include(CheckSymbolExists)
 check_symbol_exists(strdup "string.h" HAVE_STRDUP)
 if(NOT HAVE_STRDUP)
-    set(CMAKE_REQUIRED_DEFINITIONS -D_DEFAULT_SOURCE)
-    check_symbol_exists(strdup "string.h" HAVE_STRDUP_GNU)
-    if(NOT HAVE_STRDUP_GNU)
-        message(FATAL_ERROR "strdup function not found")
-    else()
-        add_compile_definitions(_DEFAULT_SOURCE)
-    endif()
+    message(FATAL_ERROR "strdup function not found")
 endif()
 
 set(KDL_C_SOURCES
@@ -39,7 +36,12 @@ add_library(kdl-internal-headers INTERFACE)
 target_include_directories(kdl-internal-headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_subdirectory(src/utils)
-add_subdirectory(bindings/cpp)
+
+if(CMAKE_VERSION VERSION_LESS 3.17)
+    message(WARNING "CMake 3.17 is required for the C++20 bindings, not building kdlpp")
+else()
+    add_subdirectory(bindings/cpp)
+endif()
 
 enable_testing()
 add_subdirectory(tests)

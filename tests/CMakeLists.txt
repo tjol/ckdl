@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.7)
 project(kdl-tests C CXX)
 
 include(CTest)
@@ -11,7 +11,7 @@ check_symbol_exists(DT_REG "dirent.h" HAVE_DT_MACROS)
 # Check for d_namlen
 CHECK_STRUCT_HAS_MEMBER("struct dirent" d_namlen dirent.h HAVE_D_NAMLEN LANGUAGE C)
 if(HAVE_D_NAMLEN)
-    add_compile_definitions(HAVE_D_NAMLEN)
+    add_definitions(-DHAVE_D_NAMLEN)
 endif()
 
 
@@ -59,7 +59,7 @@ if(NOT KDL_TEST_CASES_ROOT)
     endif()
 endif()
 
-add_library(test_util OBJECT test_util.c)
+add_library(test_util STATIC test_util.c)
 target_include_directories(test_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(utf8_test utf8_test.c)
