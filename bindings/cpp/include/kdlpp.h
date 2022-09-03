@@ -1,10 +1,6 @@
 #ifndef KDLPP_H_
 #define KDLPP_H_
 
-#if !defined(__cplusplus) || __cplusplus < 202002L
-#error "kdlpp.h requires C++20"
-#endif
-
 #include <functional>
 #include <map>
 #include <optional>

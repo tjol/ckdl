@@ -2,18 +2,40 @@ cmake_minimum_required(VERSION 3.7)
 project(kdl-tests C CXX)
 
 include(CTest)
+include(CheckIncludeFile)
 include(CheckSymbolExists)
 include(CheckStructHasMember)
 
 # check file system API
+
+# check for chdir()
+check_symbol_exists(chdir "unistd.h" CHDIR_IN_UNISTD_H)
+if(CHDIR_IN_UNISTD)
+    add_definitions(-DCHDIR_IN_UNISTD_H)
+else()
+    check_symbol_exists(chdir "direct.h" CHDIR_IN_DIRECT_H)
+    if(CHDIR_IN_DIRECT_H)
+        add_definitions(-DCHDIR_IN_DIRECT_H)
+    else()
+        message(FATAL_ERROR "Could not find chdir()")
+    endif()
+endif()
+
 # Check for dirent + DT_REG
-check_symbol_exists(DT_REG "dirent.h" HAVE_DT_MACROS)
-# Check for d_namlen
+check_symbol_exists(DT_REG "dirent.h" HAVE_DIRENT)
+if(HAVE_DIRENT)
+    add_definitions(-DHAVE_DIRENT)
+else()
+    check_symbol_exists(FindFirstFileA "windows.h" HAVE_WIN32_FILE_API)
+    if(HAVE_WIN32_FILE_API)
+        add_definitions(-DHAVE_WIN32_FILE_API)
+    endif()
+endif()
+# Check for d_namlen (optional Darwin feature)
 CHECK_STRUCT_HAS_MEMBER("struct dirent" d_namlen dirent.h HAVE_D_NAMLEN LANGUAGE C)
 if(HAVE_D_NAMLEN)
     add_definitions(-DHAVE_D_NAMLEN)
 endif()
-
 
 # Download test data
 if(NOT KDL_TEST_CASES_ROOT)

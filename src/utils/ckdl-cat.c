@@ -212,6 +212,8 @@ static void proplist_emit(kdl_emitter *emitter, struct proplist *pl)
             while (out_end - dest < (ptrdiff_t)e) {
                 // mark as invalid
                 out_end->name.data = NULL;
+                // make sure it isn't freed later
+                --pl->count;
                 ++out_end;
             }
         }
@@ -219,6 +221,7 @@ static void proplist_emit(kdl_emitter *emitter, struct proplist *pl)
         dest = props;
         props = tmp;
     }
+    pl->size = count;
     pl->props = props; // might have swapped buffers
 
     free(dest);
