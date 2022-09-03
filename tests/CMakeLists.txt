@@ -22,7 +22,7 @@ else()
 endif()
 
 # Check for dirent + DT_REG
-check_symbol_exists(DT_REG "dirent.h" HAVE_DIRENT)
+check_symbol_exists(DT_REG "dirent.h" HAVE_DIRENT LANGUAGE C)
 if(HAVE_DIRENT)
     add_definitions(-DHAVE_DIRENT)
 else()

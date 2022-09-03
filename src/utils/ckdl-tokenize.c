@@ -109,6 +109,9 @@ int main(int argc, char **argv)
         case KDL_TOKEN_LINE_CONTINUATION:
             token_type_name = "KDL_TOKEN_LINE_CONTINUATION";
             break;
+        case KDL_TOKEN_WHITESPACE:
+            token_type_name = "KDL_TOKEN_WHITESPACE";
+            break;
         default:
             break;
         }

@@ -10,8 +10,8 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-add_definitions(-D_POSIX_C_SOURCE=200809L -D_BSD_SOURCE)
-set(CMAKE_REQUIRED_DEFINITIONS -D_POSIX_C_SOURCE=200809L -D_BSD_SOURCE)
+add_definitions(-D_BSD_SOURCE)
+set(CMAKE_REQUIRED_DEFINITIONS -D_BSD_SOURCE)
 
 # Check if we need _DEFAULT_SOURCE (e.g. GNU/Linux)
 include(CheckSymbolExists)

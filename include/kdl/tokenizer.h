@@ -27,7 +27,8 @@ enum kdl_token_type {
     KDL_TOKEN_END_CHILDREN,
     KDL_TOKEN_NEWLINE,
     KDL_TOKEN_SEMICOLON,
-    KDL_TOKEN_LINE_CONTINUATION
+    KDL_TOKEN_LINE_CONTINUATION,
+    KDL_TOKEN_WHITESPACE
 };
 
 typedef enum kdl_tokenizer_status kdl_tokenizer_status;
