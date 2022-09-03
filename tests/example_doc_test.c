@@ -144,12 +144,13 @@ static void get_test_file_list(char const *input_dir, char ***filelist, size_t *
     size_t filenames_len = n_files_ * sizeof(char *);
     char **filenames = malloc(filenames_len + fn_buf_len);
     char *fn_buf = (char *)filenames + filenames_len;
+    char **filenames_end = (char**)fn_buf;
     char *fn_buf_end = fn_buf;
     char *fn_buf_very_end = fn_buf + fn_buf_len;
     char **fn_p = filenames;
 #if defined(HAVE_DIRENT)
     rewinddir(input_dir_p);
-    while ((de = readdir(input_dir_p)) != NULL && (fn_p < filenames + (n_files * sizeof(char *)))) {
+    while ((de = readdir(input_dir_p)) != NULL && (fn_p < filenames_end)) {
         if (is_regular_file(input_dir_p, de)) {
             char const *fn = de->d_name;
 #elif defined(HAVE_WIN32_FILE_API)

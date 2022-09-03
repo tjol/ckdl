@@ -10,7 +10,7 @@ include(CheckStructHasMember)
 
 # check for chdir()
 check_symbol_exists(chdir "unistd.h" CHDIR_IN_UNISTD_H)
-if(CHDIR_IN_UNISTD)
+if(CHDIR_IN_UNISTD_H)
     add_definitions(-DCHDIR_IN_UNISTD_H)
 else()
     check_symbol_exists(chdir "direct.h" CHDIR_IN_DIRECT_H)
