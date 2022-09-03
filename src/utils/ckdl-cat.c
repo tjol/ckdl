@@ -209,7 +209,7 @@ static void proplist_emit(kdl_emitter *emitter, struct proplist *pl)
             if (r > count) r = count;
             if (e > count) e = count;
             out_end = overwriting_merge(out_end, &props[i], &props[r], &props[e]);
-            while (out_end - dest < (ssize_t)e) {
+            while (out_end - dest < (ptrdiff_t)e) {
                 // mark as invalid
                 out_end->name.data = NULL;
                 ++out_end;

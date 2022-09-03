@@ -8,7 +8,12 @@
 #include <dirent.h>
 #include <errno.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/stat.h>
+
+#ifndef O_PATH
+#define O_PATH O_RDONLY
+#endif
 
 static int strcmp_p(void const *s1, void const *s2)
 {
@@ -52,6 +57,25 @@ static void do_test_case(void *user_data)
         }
     }
     fclose(in);
+}
+
+static bool is_regular_file(DIR *d, struct dirent *de)
+{
+    struct stat st;
+    int dfd, ffd;
+    switch (de->d_type) {
+    case DT_REG:
+        return true;
+    case DT_UNKNOWN:
+        // must stat
+        dfd = dirfd(d);
+        ffd = openat(dfd, de->d_name, O_PATH);
+        fstat(ffd, &st);
+        close(ffd);
+        return (st.st_mode & S_IFREG) != 0;
+    default:
+        return false;
+    }
 }
 
 void TEST_MAIN()
@@ -102,10 +126,15 @@ void TEST_MAIN()
     size_t longest_filename = 0;
     struct dirent *de;
     while ((de = readdir(input_dir_p)) != NULL) {
-        if (de->d_type == DT_REG) {
+        if (is_regular_file(input_dir_p, de)) {
             ++n_files;
-            if (de->d_namlen > longest_filename)
-                longest_filename = de->d_namlen;
+#ifdef HAVE_D_NAMLEN
+            size_t fn_len = de->d_namelen;
+#else
+            size_t fn_len = strlen(de->d_name);
+#endif
+            if (fn_len > longest_filename)
+                longest_filename = fn_len;
         }
     }
     // allocate file list
@@ -117,7 +146,7 @@ void TEST_MAIN()
     char **fn_p = filenames;
     rewinddir(input_dir_p);
     while ((de = readdir(input_dir_p)) != NULL && (fn_p < filenames + (n_files * sizeof(char *)))) {
-        if (de->d_type == DT_REG) {
+        if (is_regular_file(input_dir_p, de)) {
             *(fn_p++) = fn_buf_end;
             fn_buf_end += snprintf(fn_buf_end, fn_buf_very_end - fn_buf_end, "%s", de->d_name) + 1;
         }

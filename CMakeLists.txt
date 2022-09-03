@@ -10,6 +10,19 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# Check if we need _DEFAULT_SOURCE (e.g. GNU/Linux)
+include(CheckSymbolExists)
+check_symbol_exists(strdup "string.h" HAVE_STRDUP)
+if(NOT HAVE_STRDUP)
+    set(CMAKE_REQUIRED_DEFINITIONS -D_DEFAULT_SOURCE)
+    check_symbol_exists(strdup "string.h" HAVE_STRDUP_GNU)
+    if(NOT HAVE_STRDUP_GNU)
+        message(FATAL_ERROR "strdup function not found")
+    else()
+        add_compile_definitions(_DEFAULT_SOURCE)
+    endif()
+endif()
+
 set(KDL_C_SOURCES
     src/utf8.c
     src/str.c
