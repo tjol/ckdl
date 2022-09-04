@@ -6,9 +6,20 @@ include(CheckIncludeFile)
 include(CheckSymbolExists)
 include(CheckStructHasMember)
 
-# check file system API
+# check for non-ISO APIs (file system, POSIX, etc)
+if(NOT WIN32)
+    add_definitions(-D_BSD_SOURCE)
+    set(CMAKE_REQUIRED_DEFINITIONS -D_BSD_SOURCE)
+endif()
 
-# check for chdir()
+# strdup is hidden behind a feature macro in glibc
+include(CheckSymbolExists)
+check_symbol_exists(strdup "string.h" HAVE_STRDUP)
+if(NOT HAVE_STRDUP)
+    message(FATAL_ERROR "strdup function not found")
+endif()
+
+# Windows doesn't have unistd.h
 check_symbol_exists(chdir "unistd.h" CHDIR_IN_UNISTD_H)
 if(CHDIR_IN_UNISTD_H)
     add_definitions(-DCHDIR_IN_UNISTD_H)
