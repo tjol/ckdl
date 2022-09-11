@@ -15,8 +15,10 @@
 #if defined(_WIN32)
 #    ifdef BUILDING_KDL
 #        define KDL_EXPORT __declspec(dllexport)
-#    else
+#    elif !defined(KDL_STATIC_LIB) || !KDL_STATIC_LIB
 #        define KDL_EXPORT __declspec(dllimport)
+#    else
+#        define KDL_EXPORT
 #    endif
 #elif defined(__GNUC__) && __GNUC__ >= 4
 #    define KDL_EXPORT __attribute__((visibility("default")))

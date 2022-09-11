@@ -163,7 +163,12 @@ static void proplist_append(struct proplist *pl, kdl_str name, kdl_value const* 
 {
     if (pl->size <= pl->count) {
         pl->size = pl->count + 10;
-        pl->props = realloc(pl->props, pl->size * sizeof(struct prop));
+        struct prop *props = realloc(pl->props, pl->size * sizeof(struct prop));
+        if (props != NULL) {
+            pl->props = props;
+        } else {
+            return;
+        }
     }
     struct prop *p = &pl->props[pl->count++];
     p->name = kdl_clone_str(&name);
@@ -199,6 +204,9 @@ static void proplist_emit(kdl_emitter *emitter, struct proplist *pl)
     // do a merge sort which overwrites duplicates
     struct prop *props = pl->props;
     struct prop *dest = malloc(sizeof(struct prop) * pl->count);
+    if (dest == NULL) {
+        return;
+    }
 
     size_t count = pl->count;
     for (size_t wnd = 1; wnd < count; wnd *= 2) {
@@ -242,7 +250,7 @@ static int kdl_str_cmp(kdl_owned_string const *s1, kdl_owned_string const *s2)
     size_t min_len = s1->len > s2->len ? s2->len : s1->len;
     int cmp = memcmp(s1->data, s2->data, min_len);
     // deal with different length names
-    if (cmp == 0) cmp = s1->len - s2->len;
+    if (cmp == 0) cmp = (int)(s1->len - s2->len);
     return cmp;
 }
 

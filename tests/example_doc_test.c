@@ -66,7 +66,7 @@ static void do_test_case(void *user_data)
             // translation this may be less than the file length.
             // We actually *want* CRLF translation here in order to compare
             // results!
-            filelen = fread(buf, 1, filelen, gt_fp);
+            filelen = (long)fread(buf, 1, filelen, gt_fp);
             buf[filelen] = '\0';
             fclose(gt_fp);
             // Test cases may contain a lone newline where an empty file is more appropriate
@@ -155,7 +155,7 @@ static void get_test_file_list(char const *input_dir, char ***filelist, size_t *
             char const *fn = de->d_name;
 #elif defined(HAVE_WIN32_FILE_API)
     h_find = FindFirstFileA(input_glob, &find_data);
-    while (h_find != INVALID_HANDLE_VALUE) {
+    while (h_find != INVALID_HANDLE_VALUE && (fn_p < filenames_end)) {
         if ((find_data.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_DEVICE)) == 0) {
             char const *fn = find_data.cFileName;
 #endif
@@ -241,8 +241,8 @@ void TEST_MAIN()
             // file exists - expected to pass
             tc.ground_truth_path = expected_kdl_fn;
             // Check if this is a test we exclude
-            for (size_t i = 0; i < n_fuzzy; ++i) {
-                if (strcmp(fuzzy_test_cases[i], filename) == 0) {
+            for (size_t j = 0; j < n_fuzzy; ++j) {
+                if (strcmp(fuzzy_test_cases[j], filename) == 0) {
                     tc.ignore_output = true;
                 }
             }

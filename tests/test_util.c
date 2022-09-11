@@ -25,7 +25,7 @@ void assert_true(bool assertion, char const *assertion_s, char const *context)
 
 void run_test(char const *name, void (*func)())
 {
-    run_test_d(name, func, NULL);
+    run_test_d(name, (void (*)(void *))func, NULL);
 }
 
 void run_test_d(char const *name, void (*func)(void *), void *user_data)

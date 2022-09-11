@@ -16,12 +16,6 @@ else()
     set(BUILD_KDLPP ON CACHE BOOL "Build C++ binding (kdlpp)")
 endif()
 
-if(MSVC)
-    add_compile_options(/W4)
-else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
-
 if(BUILD_KDLPP)
 
     set(KDLPP_CXX_SOURCES

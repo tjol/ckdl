@@ -54,9 +54,11 @@ static void _init_kdl_parser(kdl_parser *self)
 kdl_parser *kdl_create_string_parser(kdl_str doc, kdl_parse_option opt)
 {
     kdl_parser *self = malloc(sizeof(kdl_parser));
-    _init_kdl_parser(self);
-    self->tokenizer = kdl_create_string_tokenizer(doc);
-    self->opt = opt;
+    if (self != NULL) {
+        _init_kdl_parser(self);
+        self->tokenizer = kdl_create_string_tokenizer(doc);
+        self->opt = opt;
+    }
     return self;
 }
 
@@ -64,9 +66,11 @@ kdl_parser *kdl_create_string_parser(kdl_str doc, kdl_parse_option opt)
 kdl_parser *kdl_create_stream_parser(kdl_read_func read_func, void *user_data, kdl_parse_option opt)
 {
     kdl_parser *self = malloc(sizeof(kdl_parser));
-    _init_kdl_parser(self);
-    self->tokenizer = kdl_create_stream_tokenizer(read_func, user_data);
-    self->opt = opt;
+    if (self != NULL) {
+        _init_kdl_parser(self);
+        self->tokenizer = kdl_create_stream_tokenizer(read_func, user_data);
+        self->opt = opt;
+    }
     return self;
 }
 
@@ -266,7 +270,6 @@ static kdl_event_data *_kdl_parser_next_node(kdl_parser *self, kdl_token *token)
             return &self->event;
         }
     } else {
-        kdl_value tmp_val;
         switch (token->type) {
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
