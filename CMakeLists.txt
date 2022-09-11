@@ -34,11 +34,16 @@ target_include_directories(kdl-internal-headers INTERFACE ${CMAKE_CURRENT_SOURCE
 
 add_subdirectory(src/utils)
 
+set(BUILD_TESTS ON CACHE BOOL "Build tests")
+
+if(BUILD_TESTS)
+    include(CTest)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
 if(CMAKE_VERSION VERSION_LESS 3.17)
     message(WARNING "CMake 3.17 is required for the C++20 bindings, not building kdlpp")
 else()
     add_subdirectory(bindings/cpp)
 endif()
-
-enable_testing()
-add_subdirectory(tests)

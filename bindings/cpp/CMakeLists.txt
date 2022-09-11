@@ -33,6 +33,8 @@ if(BUILD_KDLPP)
     target_link_libraries(kdlpp PUBLIC kdl)
     target_compile_features(kdlpp PUBLIC cxx_std_20)
 
-    add_subdirectory(tests)
+    if(BUILD_TESTS)
+        add_subdirectory(tests)
+    endif()
 
 endif()
