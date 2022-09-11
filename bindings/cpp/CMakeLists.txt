@@ -26,6 +26,8 @@ if(BUILD_KDLPP)
     target_include_directories(kdlpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_link_libraries(kdlpp PUBLIC kdl)
     target_compile_features(kdlpp PUBLIC cxx_std_20)
+    install(TARGETS kdlpp COMPONENT libkdlpp)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/kdlpp.h TYPE INCLUDE COMPONENT libkdlpp)
 
     if(BUILD_TESTS)
         add_subdirectory(tests)
