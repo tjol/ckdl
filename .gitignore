@@ -1,6 +1,10 @@
-/build*/
 .DS_Store
 Thumbs.db
+
+/build*/
+/_skbuild/
 /.vs/
 /.vscode/
 /out/
+/dist/
+*.egg-info

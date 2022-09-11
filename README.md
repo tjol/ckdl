@@ -12,6 +12,7 @@ structure relatively directly.
 This repository currently contains language bindings for:
 
  * C++20
+ * Python
 
 ### Status
 
