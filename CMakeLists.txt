@@ -45,5 +45,14 @@ endif()
 if(CMAKE_VERSION VERSION_LESS 3.17)
     message(WARNING "CMake 3.17 is required for the C++20 bindings, not building kdlpp")
 else()
-    add_subdirectory(bindings/cpp)
+    include(CheckLanguage)
+    check_language(CXX)
+    if(CMAKE_CXX_COMPILER)
+        add_subdirectory(bindings/cpp)
+    else()
+        message(WARNING "No C++ compiler found, not building kdlpp\n"
+            "If you have a C++ compiler, try setting the CXX environment variable "
+            "or the CMAKE_CXX_COMPILER CMake cache variable to the full path of "
+            "the compiler.")
+    endif()
 endif()

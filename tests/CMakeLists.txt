@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(kdl-tests C CXX)
+project(kdl-tests C)
 
 include(CTest)
 include(CheckIncludeFile)
