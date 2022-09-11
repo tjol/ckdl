@@ -59,7 +59,7 @@ void assert_utf8_string(char const *in_ptr, size_t in_len, uint32_t const *out_p
     }
     ASSERT(KDL_UTF8_EOF == _kdl_pop_codepoint(&s, &codepoint));
     ASSERT(buf_end == buf + in_len);
-    ASSERT(*buf_end == -1);
+    ASSERT(*buf_end == (char)(-1));
     ASSERT(0 == memcmp(buf, in_ptr, in_len));
 }
 
