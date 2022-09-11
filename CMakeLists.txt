@@ -14,7 +14,15 @@ set(CMAKE_C_EXTENSIONS OFF)
 if(MSVC)
     add_compile_options(/W4)
 else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    # try GCC-like options
+     include(CheckCCompilerFlag)
+     set(warning_flags Wall Wextra Wpedantic)
+     foreach(flag ${warning_flags})
+         check_c_compiler_flag("-${flag}" "COMPILER_FLAG_${flag}")
+         if(${COMPILER_FLAG_${flag}})
+             add_compile_options("-${flag}")
+         endif()
+     endforeach()
 endif()
 
 set(KDL_C_SOURCES

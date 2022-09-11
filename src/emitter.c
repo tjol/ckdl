@@ -9,6 +9,10 @@
 
 #define INITIAL_BUFFER_SIZE 4096
 
+#ifndef DBL_DECIMAL_DIG
+#define DBL_DECIMAL_DIG 10
+#endif
+
 struct _kdl_emitter
 {
     kdl_emitter_options opt;
