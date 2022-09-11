@@ -28,7 +28,7 @@ if(BUILD_KDLPP)
         src/kdlpp.cpp
     )
 
-    add_library(kdlpp ${KDLPP_CXX_SOURCES})
+    add_library(kdlpp STATIC ${KDLPP_CXX_SOURCES})
     target_include_directories(kdlpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_link_libraries(kdlpp PUBLIC kdl)
     target_compile_features(kdlpp PUBLIC cxx_std_20)

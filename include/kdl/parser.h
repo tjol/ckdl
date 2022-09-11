@@ -34,11 +34,11 @@ struct kdl_event_data {
     kdl_value value;
 };
 
-KDL_NODISCARD kdl_parser *kdl_create_string_parser(kdl_str doc, kdl_parse_option opt);
-KDL_NODISCARD kdl_parser *kdl_create_stream_parser(kdl_read_func read_func, void *user_data, kdl_parse_option opt);
-void kdl_destroy_parser(kdl_parser *parser);
+KDL_NODISCARD KDL_EXPORT kdl_parser *kdl_create_string_parser(kdl_str doc, kdl_parse_option opt);
+KDL_NODISCARD KDL_EXPORT kdl_parser *kdl_create_stream_parser(kdl_read_func read_func, void *user_data, kdl_parse_option opt);
+KDL_EXPORT void kdl_destroy_parser(kdl_parser *parser);
 
-kdl_event_data *kdl_parser_next_event(kdl_parser *parser);
+KDL_EXPORT kdl_event_data *kdl_parser_next_event(kdl_parser *parser);
 
 #ifdef __cplusplus
 }

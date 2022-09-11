@@ -16,7 +16,7 @@ if(MSVC)
 else()
     # try GCC-like options
     include(CheckCCompilerFlag)
-    set(warning_flags Wall Wextra Wpedantic)
+    set(warning_flags Wall Wextra Wpedantic fvisibility=hidden)
     foreach(flag ${warning_flags})
         check_c_compiler_flag("-${flag}" "COMPILER_FLAG_${flag}")
         if(${COMPILER_FLAG_${flag}})
@@ -26,19 +26,23 @@ else()
 endif()
 
 set(KDL_C_SOURCES
-    src/utf8.c
     src/str.c
     src/tokenizer.c
     src/parser.c
     src/emitter.c
 )
 
-add_library(kdl ${KDL_C_SOURCES})
-target_include_directories(kdl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(KDL_UTF8_C_SOURCES
+    src/utf8.c
+)
 
-# for tests
-add_library(kdl-internal-headers INTERFACE)
-target_include_directories(kdl-internal-headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_library(kdl-utf8 STATIC ${KDL_UTF8_C_SOURCES})
+target_include_directories(kdl-utf8 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+add_library(kdl ${KDL_C_SOURCES})
+target_link_libraries(kdl kdl-utf8)
+target_include_directories(kdl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_definitions(kdl PRIVATE -DBUILDING_KDL=1)
 
 add_subdirectory(src/utils)
 

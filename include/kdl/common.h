@@ -5,11 +5,23 @@
 
 // define attributes for functions
 #if defined(__cplusplus)
-#define KDL_NODISCARD [[nodiscard]]
+#    define KDL_NODISCARD [[nodiscard]]
 #elif defined(__GNUC__)
-#define KDL_NODISCARD __attribute__((warn_unused_result))
+#    define KDL_NODISCARD __attribute__((warn_unused_result))
 #else
-#define KDL_NODISCARD
+#    define KDL_NODISCARD
+#endif
+
+#if defined(_WIN32)
+#    ifdef BUILDING_KDL
+#        define KDL_EXPORT __declspec(dllexport)
+#    else
+#        define KDL_EXPORT __declspec(dllimport)
+#    endif
+#elif defined(__GNUC__) && __GNUC__ >= 4
+#    define KDL_EXPORT __attribute__((visibility("default")))
+#else
+#    define KDL_EXPORT
 #endif
 
 #ifdef __cplusplus
@@ -42,18 +54,18 @@ struct kdl_owned_string {
     size_t len;
 };
 
-inline kdl_str kdl_borrow_str(kdl_owned_string const *str)
+KDL_EXPORT inline kdl_str kdl_borrow_str(kdl_owned_string const *str)
 {
     kdl_str result = { str->data, str->len };
     return result;
 }
 
-kdl_str kdl_str_from_cstr(char const *s);
-KDL_NODISCARD kdl_owned_string kdl_clone_str(kdl_str const *s);
-void kdl_free_string(kdl_owned_string *s);
+KDL_EXPORT kdl_str kdl_str_from_cstr(char const *s);
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_clone_str(kdl_str const *s);
+KDL_EXPORT void kdl_free_string(kdl_owned_string *s);
 
-KDL_NODISCARD kdl_owned_string kdl_escape(kdl_str const *s, kdl_escape_mode mode);
-KDL_NODISCARD kdl_owned_string kdl_unescape(kdl_str const *s);
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape(kdl_str const *s, kdl_escape_mode mode);
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape(kdl_str const *s);
 
 #ifdef __cplusplus
 }

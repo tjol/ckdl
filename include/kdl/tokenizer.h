@@ -41,11 +41,11 @@ struct kdl_token {
     kdl_str value;
 };
 
-KDL_NODISCARD kdl_tokenizer *kdl_create_string_tokenizer(kdl_str doc);
-KDL_NODISCARD kdl_tokenizer *kdl_create_stream_tokenizer(kdl_read_func read_func, void *user_data);
-void kdl_destroy_tokenizer(kdl_tokenizer *tokenizer);
+KDL_NODISCARD KDL_EXPORT kdl_tokenizer *kdl_create_string_tokenizer(kdl_str doc);
+KDL_NODISCARD KDL_EXPORT kdl_tokenizer *kdl_create_stream_tokenizer(kdl_read_func read_func, void *user_data);
+KDL_EXPORT void kdl_destroy_tokenizer(kdl_tokenizer *tokenizer);
 
-kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *tokenizer, kdl_token *dest);
+KDL_EXPORT kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *tokenizer, kdl_token *dest);
 
 #ifdef __cplusplus
 } // extern "C"

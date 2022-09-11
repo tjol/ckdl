@@ -111,7 +111,7 @@ add_library(test_util STATIC test_util.c)
 target_include_directories(test_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(utf8_test utf8_test.c)
-target_link_libraries(utf8_test kdl kdl-internal-headers test_util)
+target_link_libraries(utf8_test kdl kdl-utf8 test_util)
 add_test(utf8_test utf8_test)
 
 add_executable(parser_test parser_test.c)
