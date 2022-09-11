@@ -1,4 +1,11 @@
-cmake_minimum_required(VERSION 3.7)
+# CMake 3.8 makes it possible to test which feature selection macros (like
+# _BSD_SOURCE) are required in combination with the selected C standard settings
+# (see https://cmake.org/cmake/help/latest/policy/CMP0067.html)
+#
+# Ubuntu 18.04 LTS "bionic" ships with 3.10, Debian bullseye has 3.17 and RHEL 8
+# has 3.20.
+# Users of older systems have to install a newer version of CMake.
+cmake_minimum_required(VERSION 3.8)
 project(ckdl C)
 
 set(CMAKE_C_STANDARD 11)

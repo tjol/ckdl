@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.8)
 project(kdl-tests C CXX)
 
 include(CTest)
@@ -6,17 +6,27 @@ include(CheckIncludeFile)
 include(CheckSymbolExists)
 include(CheckStructHasMember)
 
-# check for non-ISO APIs (file system, POSIX, etc)
-if(NOT WIN32)
-    add_definitions(-D_BSD_SOURCE)
-    set(CMAKE_REQUIRED_DEFINITIONS -D_BSD_SOURCE)
-endif()
-
-# strdup is hidden behind a feature macro in glibc
+# strdup is hidden behind a feature macro in glibc - check which one we need
 include(CheckSymbolExists)
 check_symbol_exists(strdup "string.h" HAVE_STRDUP)
 if(NOT HAVE_STRDUP)
-    message(FATAL_ERROR "strdup function not found")
+    message(STATUS "Trying with -D_DEFAULT_SOURCE")
+    set(CMAKE_REQUIRED_DEFINITIONS -D_DEFAULT_SOURCE)
+    check_symbol_exists(strdup "string.h" HAVE_STRDUP_DEFAULT_SOURCE)
+    if(HAVE_STRDUP_DEFAULT_SOURCE)
+        add_definitions(-D_DEFAULT_SOURCE)
+    else()
+        # Older glibc versions (e.g. CentOS 7) require _BSD_SOURCE instead
+        # (deprecated in newer versions)
+        message(STATUS "Trying with -D_BSD_SOURCE")
+        set(CMAKE_REQUIRED_DEFINITIONS -D_BSD_SOURCE)
+        check_symbol_exists(strdup "string.h" HAVE_STRDUP_BSD_SOURCE)
+        if(HAVE_STRDUP_BSD_SOURCE)
+            add_definitions(-D_BSD_SOURCE)
+        else()
+            message(FATAL_ERROR "strdup function not found")
+        endif()
+    endif()
 endif()
 
 # Windows doesn't have unistd.h
