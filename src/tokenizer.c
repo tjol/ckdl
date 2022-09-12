@@ -50,7 +50,7 @@ void kdl_destroy_tokenizer(kdl_tokenizer *tokenizer)
     free(tokenizer);
 }
 
-static size_t refill_tokenizer(kdl_tokenizer *self)
+static size_t _refill_tokenizer(kdl_tokenizer *self)
 {
     if (self->read_func == NULL) return 0;
 
@@ -141,7 +141,7 @@ bool _kdl_is_end_of_word(uint32_t c)
         c == ';' || c == ')' || c == '}' || c == '/' || c == '\\' || c == '=';
 }
 
-static inline kdl_utf8_status _kdl_tok_get_char(kdl_tokenizer *self,
+static inline kdl_utf8_status _tok_get_char(kdl_tokenizer *self,
     char const **cur, char const **next, uint32_t *codepoint)
 {
     while (true) {
@@ -155,7 +155,7 @@ static inline kdl_utf8_status _kdl_tok_get_char(kdl_tokenizer *self,
         case KDL_UTF8_EOF:
         case KDL_UTF8_INCOMPLETE:
             offset = *cur - self->document.data;
-            size_t bytes_read = refill_tokenizer(self);
+            size_t bytes_read = _refill_tokenizer(self);
             // make sure *cur is still valid despite possible realloc call
             *cur = self->document.data + offset;
             if (bytes_read == 0) {
@@ -171,16 +171,16 @@ static inline kdl_utf8_status _kdl_tok_get_char(kdl_tokenizer *self,
     }
 }
 
-static inline void _kdl_tok_update_doc_ptr(kdl_tokenizer *self, char const *new_ptr)
+static inline void _update_doc_ptr(kdl_tokenizer *self, char const *new_ptr)
 {
     self->document.len -= (new_ptr - self->document.data);
     self->document.data = new_ptr;
 }
 
-static kdl_tokenizer_status _kdl_pop_word(kdl_tokenizer *self, kdl_token *dest);
-static kdl_tokenizer_status _kdl_pop_comment(kdl_tokenizer *self, kdl_token *dest);
-static kdl_tokenizer_status _kdl_pop_string(kdl_tokenizer *self, kdl_token *dest);
-static kdl_tokenizer_status _kdl_pop_raw_string(kdl_tokenizer *self, kdl_token *dest);
+static kdl_tokenizer_status _pop_word(kdl_tokenizer *self, kdl_token *dest);
+static kdl_tokenizer_status _pop_comment(kdl_tokenizer *self, kdl_token *dest);
+static kdl_tokenizer_status _pop_string(kdl_tokenizer *self, kdl_token *dest);
+static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer *self, kdl_token *dest);
 
 kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
 {
@@ -189,7 +189,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
     char const *next = NULL;
 
     while (true) {
-        switch (_kdl_tok_get_char(self, &cur, &next, &c)) {
+        switch (_tok_get_char(self, &cur, &next, &c)) {
         case KDL_UTF8_OK:
             break;
         case KDL_UTF8_EOF:
@@ -203,7 +203,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             // find whitespace run
             char const *ws_start = cur;
             cur = next;
-            while (_kdl_tok_get_char(self, &cur, &next, &c) == KDL_UTF8_OK
+            while (_tok_get_char(self, &cur, &next, &c) == KDL_UTF8_OK
                 && _kdl_is_whitespace(c)) {
                 // accept whitespace character
                 cur = next;
@@ -212,7 +212,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             dest->type = KDL_TOKEN_WHITESPACE;
             dest->value.data = ws_start;
             dest->value.len = cur - ws_start;
-            _kdl_tok_update_doc_ptr(self, cur);
+            _update_doc_ptr(self, cur);
             return KDL_TOKENIZER_OK;
         } else if (_kdl_is_newline(c)) {
             // end of line
@@ -220,9 +220,9 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             if (c == '\r') {
                 char const *nnext;
                 uint32_t c2;
-                bool is_crlf = _kdl_tok_get_char(self, &next, &nnext, &c2)
+                bool is_crlf = _tok_get_char(self, &next, &nnext, &c2)
                                 == KDL_UTF8_OK && c2 == '\n';
-                // cur has been invalidated by _kdl_tok_get_char
+                // cur has been invalidated by _tok_get_char
                 // but we know '\r' takes 1 byte
                 cur = next - 1;
                 if (is_crlf)
@@ -231,87 +231,87 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             dest->type = KDL_TOKEN_NEWLINE;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
-            _kdl_tok_update_doc_ptr(self, next);
+            _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == ';') {
             // semicolon (end of node)
             dest->type = KDL_TOKEN_SEMICOLON;
             dest->value.data = self->document.data;
             dest->value.len = (size_t)(cur - self->document.data);
-            _kdl_tok_update_doc_ptr(self, next);
+            _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == '\\') {
             // line continuation
             dest->type = KDL_TOKEN_LINE_CONTINUATION;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
-            _kdl_tok_update_doc_ptr(self, next);
+            _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == '(') {
             // start of type annotation
             dest->type = KDL_TOKEN_START_TYPE;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
-            _kdl_tok_update_doc_ptr(self, next);
+            _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == ')') {
             // end of type annotation
             dest->type = KDL_TOKEN_END_TYPE;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
-            _kdl_tok_update_doc_ptr(self, next);
+            _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == '{') {
             // start of list of children
             dest->type = KDL_TOKEN_START_CHILDREN;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
-            _kdl_tok_update_doc_ptr(self, next);
+            _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == '}') {
             // end of list of children
             dest->type = KDL_TOKEN_END_CHILDREN;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
-            _kdl_tok_update_doc_ptr(self, next);
+            _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == '=') {
             // attribute assignment
             dest->type = KDL_TOKEN_EQUALS;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
-            _kdl_tok_update_doc_ptr(self, next);
+            _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == '/') {
             // could be a comment
-            return _kdl_pop_comment(self, dest);
+            return _pop_comment(self, dest);
         } else if (c == '"') {
             // string
-            return _kdl_pop_string(self, dest);
+            return _pop_string(self, dest);
         } else if (_kdl_is_id(c)) {
             if (c == 'r') {
                 // this *could* be a raw string
-                kdl_tokenizer_status rstring_status = _kdl_pop_raw_string(self, dest);
+                kdl_tokenizer_status rstring_status = _pop_raw_string(self, dest);
                 if (rstring_status == KDL_TOKENIZER_OK)
                     return KDL_TOKENIZER_OK;
                 // else: parse this as an identifier instead (which may also fail)
             }
             // start of an identfier, number, bool, or null
-            return _kdl_pop_word(self, dest);
+            return _pop_word(self, dest);
         } else {
             return KDL_TOKENIZER_ERROR;
         }
     }
 }
 
-static kdl_tokenizer_status _kdl_pop_word(kdl_tokenizer *self, kdl_token *dest)
+static kdl_tokenizer_status _pop_word(kdl_tokenizer *self, kdl_token *dest)
 {
     uint32_t c = 0;
     char const *cur = self->document.data;
     char const *next = NULL;
 
     while (true) {
-        switch (_kdl_tok_get_char(self, &cur, &next, &c)) {
+        switch (_tok_get_char(self, &cur, &next, &c)) {
         case KDL_UTF8_OK:
             break;
         case KDL_UTF8_EOF:
@@ -333,20 +333,20 @@ static kdl_tokenizer_status _kdl_pop_word(kdl_tokenizer *self, kdl_token *dest)
 end_of_word:
     dest->value = self->document;
     dest->value.len = (size_t)(cur - dest->value.data);
-    _kdl_tok_update_doc_ptr(self, cur);
+    _update_doc_ptr(self, cur);
     dest->type = KDL_TOKEN_WORD;
     return KDL_TOKENIZER_OK;
 }
 
-static kdl_tokenizer_status _kdl_pop_comment(kdl_tokenizer *self, kdl_token *dest)
+static kdl_tokenizer_status _pop_comment(kdl_tokenizer *self, kdl_token *dest)
 {
     uint32_t c1 = 0;
     uint32_t c2 = 0;
     char const *cur = self->document.data;
     char const *next = NULL;
-    if (_kdl_tok_get_char(self, &cur, &next, &c1) != KDL_UTF8_OK) return KDL_TOKENIZER_ERROR;
+    if (_tok_get_char(self, &cur, &next, &c1) != KDL_UTF8_OK) return KDL_TOKENIZER_ERROR;
     cur = next;
-    if (_kdl_tok_get_char(self, &cur, &next, &c2) != KDL_UTF8_OK) return KDL_TOKENIZER_ERROR;
+    if (_tok_get_char(self, &cur, &next, &c2) != KDL_UTF8_OK) return KDL_TOKENIZER_ERROR;
     if (c1 != '/') return KDL_TOKENIZER_ERROR;
 
     if (c2 == '-') {
@@ -354,7 +354,7 @@ static kdl_tokenizer_status _kdl_pop_comment(kdl_tokenizer *self, kdl_token *des
         dest->value.data = self->document.data;
         dest->value.len = (size_t)2;
         dest->type = KDL_TOKEN_SLASHDASH;
-        _kdl_tok_update_doc_ptr(self, next);
+        _update_doc_ptr(self, next);
         return KDL_TOKENIZER_OK;
     } else if (c2 == '/') {
         // C++ style comment
@@ -362,7 +362,7 @@ static kdl_tokenizer_status _kdl_pop_comment(kdl_tokenizer *self, kdl_token *des
         uint32_t c = 0;
         cur = next;
         while (true) {
-            switch (_kdl_tok_get_char(self, &cur, &next, &c)) {
+            switch (_tok_get_char(self, &cur, &next, &c)) {
             case KDL_UTF8_OK:
                 break;
             case KDL_UTF8_EOF:
@@ -377,7 +377,7 @@ static kdl_tokenizer_status _kdl_pop_comment(kdl_tokenizer *self, kdl_token *des
 end_of_line:
         dest->value = self->document;
         dest->value.len = (size_t)(cur - dest->value.data);
-        _kdl_tok_update_doc_ptr(self, cur);
+        _update_doc_ptr(self, cur);
         dest->type = KDL_TOKEN_SINGLE_LINE_COMMENT;
         return KDL_TOKENIZER_OK;
     } else if (c2 == '*') {
@@ -387,7 +387,7 @@ end_of_line:
         uint32_t prev_char = 0;
         cur = next;
         while (depth > 0) {
-            switch (_kdl_tok_get_char(self, &cur, &next, &c)) {
+            switch (_tok_get_char(self, &cur, &next, &c)) {
             case KDL_UTF8_OK:
                 break;
             case KDL_UTF8_EOF: // EOF in a comment is an error
@@ -411,7 +411,7 @@ end_of_line:
         // end of comment reached
         dest->value = self->document;
         dest->value.len = (size_t)(cur - dest->value.data);
-        _kdl_tok_update_doc_ptr(self, cur);
+        _update_doc_ptr(self, cur);
         dest->type = KDL_TOKEN_MULTI_LINE_COMMENT;
         return KDL_TOKENIZER_OK;
     } else {
@@ -419,22 +419,22 @@ end_of_line:
     }
 }
 
-static kdl_tokenizer_status _kdl_pop_string(kdl_tokenizer *self, kdl_token *dest)
+static kdl_tokenizer_status _pop_string(kdl_tokenizer *self, kdl_token *dest)
 {
     uint32_t c = 0;
     char const *cur = self->document.data;
     char const *next = NULL;
-    if (_kdl_tok_get_char(self, &cur, &next, &c) != KDL_UTF8_OK || c != '"')
+    if (_tok_get_char(self, &cur, &next, &c) != KDL_UTF8_OK || c != '"')
         return KDL_TOKENIZER_ERROR;
 
     // eat the initial quote
-    _kdl_tok_update_doc_ptr(self, next);
+    _update_doc_ptr(self, next);
     cur = self->document.data;
 
     uint32_t prev_char = 0;
 
     while (true) {
-        switch (_kdl_tok_get_char(self, &cur, &next, &c)) {
+        switch (_tok_get_char(self, &cur, &next, &c)) {
         case KDL_UTF8_OK:
             break;
         case KDL_UTF8_EOF: // eof in a string is an error
@@ -456,24 +456,24 @@ static kdl_tokenizer_status _kdl_pop_string(kdl_tokenizer *self, kdl_token *dest
     // cur = the quote, next = the char after the quote
     dest->value = self->document;
     dest->value.len = (size_t)(cur - dest->value.data);
-    _kdl_tok_update_doc_ptr(self, next);
+    _update_doc_ptr(self, next);
     dest->type = KDL_TOKEN_STRING;
     return KDL_TOKENIZER_OK;
 }
 
-static kdl_tokenizer_status _kdl_pop_raw_string(kdl_tokenizer *self, kdl_token *dest)
+static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer *self, kdl_token *dest)
 {
     uint32_t c = 0;
     char const *cur = self->document.data;
     char const *next = NULL;
-    if (_kdl_tok_get_char(self, &cur, &next, &c) != KDL_UTF8_OK || c != 'r')
+    if (_tok_get_char(self, &cur, &next, &c) != KDL_UTF8_OK || c != 'r')
         return KDL_TOKENIZER_ERROR;
     cur = next;
 
     // Get all hashes, and the initial quote
     int hashes = 0;
     while (true) {
-        switch (_kdl_tok_get_char(self, &cur, &next, &c)) {
+        switch (_tok_get_char(self, &cur, &next, &c)) {
         case KDL_UTF8_OK:
             break;
         case KDL_UTF8_EOF: // eof in a string is an error
@@ -496,7 +496,7 @@ static kdl_tokenizer_status _kdl_pop_raw_string(kdl_tokenizer *self, kdl_token *
     int hashes_found = 0;
     char const* end_quote = NULL;
     while (true) {
-        switch (_kdl_tok_get_char(self, &cur, &next, &c)) {
+        switch (_tok_get_char(self, &cur, &next, &c)) {
         case KDL_UTF8_OK:
             break;
         case KDL_UTF8_EOF: // eof in a string is an error
@@ -525,7 +525,7 @@ static kdl_tokenizer_status _kdl_pop_raw_string(kdl_tokenizer *self, kdl_token *
     // end_quote = the quote, next = the char after the quote and hashes
     dest->value.data = string_start;
     dest->value.len = (size_t)(end_quote - dest->value.data);
-    _kdl_tok_update_doc_ptr(self, next);
+    _update_doc_ptr(self, next);
     dest->type = KDL_TOKEN_RAW_STRING;
     return KDL_TOKENIZER_OK;
 }

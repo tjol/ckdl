@@ -2,7 +2,7 @@
 
 #include "utf8.h"
 
-inline static bool _kdl_is_utf8_continuation(int c)
+inline static bool _is_utf8_continuation(int c)
 {
     return (c & 0xc0) == 0x80;
 }
@@ -26,7 +26,7 @@ kdl_utf8_status _kdl_pop_codepoint(kdl_str *str, uint32_t *codepoint)
         if (str->len < 2) {
             // Incomplete UTF-8 sequence
             return KDL_UTF8_INCOMPLETE;
-        } else if (!_kdl_is_utf8_continuation(s[1])) {
+        } else if (!_is_utf8_continuation(s[1])) {
             // Invalid UTF-8 sequence
             return KDL_UTF8_DECODE_ERROR;
         }
@@ -39,7 +39,7 @@ kdl_utf8_status _kdl_pop_codepoint(kdl_str *str, uint32_t *codepoint)
         if (str->len < 3) {
             // Incomplete UTF-8 sequence
             return KDL_UTF8_INCOMPLETE;
-        } else if (!_kdl_is_utf8_continuation(s[1]) || !_kdl_is_utf8_continuation(s[2])) {
+        } else if (!_is_utf8_continuation(s[1]) || !_is_utf8_continuation(s[2])) {
             // Invalid UTF-8 sequence
             return KDL_UTF8_DECODE_ERROR;
         }
@@ -52,7 +52,7 @@ kdl_utf8_status _kdl_pop_codepoint(kdl_str *str, uint32_t *codepoint)
         if (str->len < 4) {
             // Incomplete UTF-8 sequence
             return KDL_UTF8_INCOMPLETE;
-        } else if (!_kdl_is_utf8_continuation(s[1]) || !_kdl_is_utf8_continuation(s[2]) || !_kdl_is_utf8_continuation(s[3])) {
+        } else if (!_is_utf8_continuation(s[1]) || !_is_utf8_continuation(s[2]) || !_is_utf8_continuation(s[3])) {
             // Invalid UTF-8 sequence
             return KDL_UTF8_DECODE_ERROR;
         }

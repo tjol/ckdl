@@ -64,7 +64,7 @@ void kdl_destroy_emitter(kdl_emitter *self)
     }
 }
 
-static bool _kdl_emit_str(kdl_emitter *self, kdl_str s)
+static bool _emit_str(kdl_emitter *self, kdl_str s)
 {
     kdl_owned_string escaped = kdl_escape(&s, self->opt.escape_mode);
     bool ok = self->write_func(self->write_user_data, "\"", 1) == 1
@@ -74,7 +74,7 @@ static bool _kdl_emit_str(kdl_emitter *self, kdl_str s)
     return ok;
 }
 
-static bool _kdl_emit_number(kdl_emitter *self, kdl_number const *n)
+static bool _emit_number(kdl_emitter *self, kdl_number const *n)
 {
     char buf[32];
     int len = 0;
@@ -92,7 +92,7 @@ static bool _kdl_emit_number(kdl_emitter *self, kdl_number const *n)
     return false;
 }
 
-static bool _kdl_emit_identifier(kdl_emitter *self, kdl_str name)
+static bool _emit_identifier(kdl_emitter *self, kdl_str name)
 {
     bool bare = true;
     if (self->opt.identifier_mode == KDL_QUOTE_ALL_IDENTIFIERS) {
@@ -117,16 +117,16 @@ static bool _kdl_emit_identifier(kdl_emitter *self, kdl_str name)
     if (bare) {
         return self->write_func(self->write_user_data, name.data, name.len) == name.len;
     } else {
-        return _kdl_emit_str(self, name);
+        return _emit_str(self, name);
     }
 }
 
-static bool _kdl_emit_value(kdl_emitter *self, kdl_value const* v)
+static bool _emit_value(kdl_emitter *self, kdl_value const* v)
 {
     if (v->type_annotation.data != NULL)
     {
         if ((self->write_func(self->write_user_data, "(", 1) != 1)
-            || !_kdl_emit_identifier(self, v->type_annotation)
+            || !_emit_identifier(self, v->type_annotation)
             || (self->write_func(self->write_user_data, ")", 1) != 1))
             return false;
     }
@@ -134,9 +134,9 @@ static bool _kdl_emit_value(kdl_emitter *self, kdl_value const* v)
     case KDL_TYPE_NULL:
         return self->write_func(self->write_user_data, "null", 4) == 4;
     case KDL_TYPE_STRING:
-        return _kdl_emit_str(self, v->value.string);
+        return _emit_str(self, v->value.string);
     case KDL_TYPE_NUMBER:
-        return _kdl_emit_number(self, &v->value.number);
+        return _emit_number(self, &v->value.number);
     case KDL_TYPE_BOOLEAN:
         if (v->value.boolean) {
             return self->write_func(self->write_user_data, "true", 4) == 4;
@@ -147,7 +147,7 @@ static bool _kdl_emit_value(kdl_emitter *self, kdl_value const* v)
     return false;
 }
 
-static bool _kdl_emit_node_preamble(kdl_emitter *self)
+static bool _emit_node_preamble(kdl_emitter *self)
 {
     if (!self->start_of_line) {
         if (self->write_func(self->write_user_data, "\n", 1) != 1) return false;
@@ -165,30 +165,30 @@ static bool _kdl_emit_node_preamble(kdl_emitter *self)
 
 bool kdl_emit_node(kdl_emitter *self, kdl_str name)
 {
-    return _kdl_emit_node_preamble(self) && _kdl_emit_identifier(self, name);
+    return _emit_node_preamble(self) && _emit_identifier(self, name);
 }
 
 bool kdl_emit_node_with_type(kdl_emitter *self, kdl_str type, kdl_str name)
 {
-    return _kdl_emit_node_preamble(self)
+    return _emit_node_preamble(self)
         && (self->write_func(self->write_user_data, "(", 1) == 1)
-        && _kdl_emit_identifier(self, type)
+        && _emit_identifier(self, type)
         && (self->write_func(self->write_user_data, ")", 1) == 1)
-        && _kdl_emit_identifier(self, name);
+        && _emit_identifier(self, name);
 }
 
 bool kdl_emit_arg(kdl_emitter *self, kdl_value const *value)
 {
     return (self->write_func(self->write_user_data, " ", 1) == 1)
-        && _kdl_emit_value(self, value);
+        && _emit_value(self, value);
 }
 
 bool kdl_emit_property(kdl_emitter *self, kdl_str name, kdl_value const *value)
 {
     return (self->write_func(self->write_user_data, " ", 1) == 1)
-        && _kdl_emit_identifier(self, name)
+        && _emit_identifier(self, name)
         && (self->write_func(self->write_user_data, "=", 1) == 1)
-        && _kdl_emit_value(self, value);
+        && _emit_value(self, value);
 }
 
 bool kdl_start_emitting_children(kdl_emitter *self)
@@ -202,7 +202,7 @@ bool kdl_finish_emitting_children(kdl_emitter *self)
 {
     if (self->depth == 0) return false;
     --self->depth;
-    if (!_kdl_emit_node_preamble(self)) return false;
+    if (!_emit_node_preamble(self)) return false;
     self->start_of_line = true;
     return (self->write_func(self->write_user_data, "}\n", 2) == 2);
 }
