@@ -27,15 +27,15 @@ static void test_basics()
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_PROPERTY);
     ASSERT(ev->value.type == KDL_TYPE_NUMBER);
-    ASSERT(ev->value.value.number.type == KDL_NUMBER_TYPE_INTEGER);
-    ASSERT(ev->value.value.number.value.integer == 0x123);
+    ASSERT(ev->value.number.type == KDL_NUMBER_TYPE_INTEGER);
+    ASSERT(ev->value.number.integer == 0x123);
     ASSERT(ev->value.type_annotation.data == NULL);
     ASSERT(memcmp("key", ev->name.data, 3) == 0);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_ARGUMENT);
     ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, garcon, 7) == 0);
+    ASSERT(memcmp(ev->value.string.data, garcon, 7) == 0);
     ASSERT(ev->value.type_annotation.data == NULL);
     ASSERT(ev->name.data == NULL);
 
@@ -50,7 +50,7 @@ static void test_basics()
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_ARGUMENT);
     ASSERT(ev->value.type == KDL_TYPE_STRING);
-    ASSERT(memcmp(ev->value.value.string.data, garcon, 7) == 0);
+    ASSERT(memcmp(ev->value.string.data, garcon, 7) == 0);
     ASSERT(ev->value.type_annotation.data == NULL);
     ASSERT(ev->name.data == NULL);
 

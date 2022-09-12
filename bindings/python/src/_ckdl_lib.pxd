@@ -39,26 +39,18 @@ cdef extern from "kdl/value.h":
         KDL_NUMBER_TYPE_FLOATING_POINT,
         KDL_NUMBER_TYPE_STRING_ENCODED
 
-cdef union _number_union:
-    long long integer
-    double floating_point
-    kdl_str string
-
-cdef extern from "kdl/value.h":
     ctypedef struct kdl_number:
         kdl_number_type type
-        _number_union value
+        long long integer
+        double floating_point
+        kdl_str string
 
-cdef union _value_union:
-    bint boolean
-    kdl_number number
-    kdl_str string
-
-cdef extern from "kdl/value.h":
     ctypedef struct kdl_value:
         kdl_type type
         kdl_str type_annotation
-        _value_union value
+        bint boolean
+        kdl_number number
+        kdl_str string
 
 cdef extern from "kdl/parser.h":
     ctypedef enum kdl_event:

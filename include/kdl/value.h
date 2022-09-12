@@ -34,7 +34,7 @@ struct kdl_number {
         long long integer;
         double floating_point;
         kdl_str string;
-    } value;
+    };
 };
 
 // A KDL value, including its type annotation (if it has one)
@@ -45,7 +45,7 @@ struct kdl_value {
         bool boolean;
         kdl_number number;
         kdl_str string;
-    } value;
+    };
 };
 
 #ifdef __cplusplus

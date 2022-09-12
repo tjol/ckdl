@@ -80,14 +80,14 @@ static bool _emit_number(kdl_emitter *self, kdl_number const *n)
     int len = 0;
     switch (n->type) {
     case KDL_NUMBER_TYPE_INTEGER:
-        len = snprintf(buf, 32, "%lld", n->value.integer);
+        len = snprintf(buf, 32, "%lld", n->integer);
         return (int)self->write_func(self->write_user_data, buf, len) == len;
     case KDL_NUMBER_TYPE_FLOATING_POINT:
-        len = snprintf(buf, 32, "%.*g", DBL_DECIMAL_DIG, n->value.floating_point);
+        len = snprintf(buf, 32, "%.*g", DBL_DECIMAL_DIG, n->floating_point);
         return (int)self->write_func(self->write_user_data, buf, len) == len;
     case KDL_NUMBER_TYPE_STRING_ENCODED:
-        return self->write_func(self->write_user_data, n->value.string.data, n->value.string.len)
-            == n->value.string.len;
+        return self->write_func(self->write_user_data, n->string.data, n->string.len)
+            == n->string.len;
     }
     return false;
 }
@@ -134,11 +134,11 @@ static bool _emit_value(kdl_emitter *self, kdl_value const* v)
     case KDL_TYPE_NULL:
         return self->write_func(self->write_user_data, "null", 4) == 4;
     case KDL_TYPE_STRING:
-        return _emit_str(self, v->value.string);
+        return _emit_str(self, v->string);
     case KDL_TYPE_NUMBER:
-        return _emit_number(self, &v->value.number);
+        return _emit_number(self, &v->number);
     case KDL_TYPE_BOOLEAN:
-        if (v->value.boolean) {
+        if (v->boolean) {
             return self->write_func(self->write_user_data, "true", 4) == 4;
         } else {
             return self->write_func(self->write_user_data, "false", 5) == 4;

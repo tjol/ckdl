@@ -29,17 +29,17 @@ cdef _convert_kdl_value_no_type(const kdl_value* v):
     if v.type == KDL_TYPE_NULL:
         return None
     elif v.type == KDL_TYPE_BOOLEAN:
-        return v.value.boolean
+        return v.boolean
     elif v.type == KDL_TYPE_NUMBER:
-        if v.value.number.type == KDL_NUMBER_TYPE_INTEGER:
-            return v.value.number.value.integer
-        elif v.value.number.type == KDL_NUMBER_TYPE_FLOATING_POINT:
-            return v.value.number.value.floating_point
-        elif v.value.number.type == KDL_NUMBER_TYPE_STRING_ENCODED:
+        if v.number.type == KDL_NUMBER_TYPE_INTEGER:
+            return v.number.integer
+        elif v.number.type == KDL_NUMBER_TYPE_FLOATING_POINT:
+            return v.number.floating_point
+        elif v.number.type == KDL_NUMBER_TYPE_STRING_ENCODED:
             # FIXME - handle big numbers correctly
-            return _kdl_str_to_py_str(&v.value.number.value.string)
+            return _kdl_str_to_py_str(&v.number.string)
     elif v.type == KDL_TYPE_STRING:
-        return _kdl_str_to_py_str(&v.value.string)
+        return _kdl_str_to_py_str(&v.string)
     raise RuntimeError("Invalid kdl_value object!")
 
 cdef _convert_kdl_value(const kdl_value* v):
@@ -151,25 +151,25 @@ cdef kdl_value _make_kdl_value(value, kdl_owned_string* tmp_str_t, kdl_owned_str
         result.type = KDL_TYPE_NULL
     elif isinstance(value, bool):
         result.type = KDL_TYPE_BOOLEAN
-        result.value.boolean = value
+        result.boolean = value
     elif isinstance(value, int):
         # does it fit in a long long?
         result.type = KDL_TYPE_NUMBER
         if LLONG_MIN <= value <= LLONG_MAX:
-            result.value.number.type = KDL_NUMBER_TYPE_INTEGER
-            result.value.number.value.integer = value
+            result.number.type = KDL_NUMBER_TYPE_INTEGER
+            result.number.integer = value
         else:
-            result.value.number.type = KDL_NUMBER_TYPE_STRING_ENCODED
+            result.number.type = KDL_NUMBER_TYPE_STRING_ENCODED
             tmp_str_v[0] = _py_str_to_kdl_str(str(value))
-            result.value.number.value.string = kdl_borrow_str(tmp_str_v)
+            result.number.string = kdl_borrow_str(tmp_str_v)
     elif isinstance(value, float):
         result.type = KDL_TYPE_NUMBER
-        result.value.number.type = KDL_NUMBER_TYPE_FLOATING_POINT
-        result.value.number.value.floating_point = value
+        result.number.type = KDL_NUMBER_TYPE_FLOATING_POINT
+        result.number.floating_point = value
     elif isinstance(value, str):
         tmp_str_v[0] = _py_str_to_kdl_str(value)
         result.type = KDL_TYPE_STRING
-        result.value.string = kdl_borrow_str(tmp_str_v)
+        result.string = kdl_borrow_str(tmp_str_v)
     else:
         raise TypeError(str(type(value)))
 
@@ -306,7 +306,7 @@ def parse(str kdl_text):
             kdl_destroy_parser(parser)
             return Document(root_node_list)
         elif ev.event == KDL_EVENT_PARSE_ERROR:
-            raise RuntimeError(_kdl_str_to_py_str(&ev.value.value.string))
+            raise RuntimeError(_kdl_str_to_py_str(&ev.value.string))
         elif ev.event == KDL_EVENT_START_NODE:
             current_node = Node()
             current_node.name = _kdl_str_to_py_str(&ev.name)

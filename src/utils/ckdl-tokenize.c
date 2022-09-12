@@ -125,7 +125,7 @@ int main(int argc, char **argv)
         kdl_emit_node(emitter, kdl_str_from_cstr(token_type_name));
         kdl_value val = (kdl_value){
             .type = KDL_TYPE_STRING,
-            .value = { .string = token.value }
+            .string = token.value
         };
         kdl_emit_arg(emitter, &val);
     }

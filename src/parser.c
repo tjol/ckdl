@@ -94,14 +94,14 @@ static void _set_parse_error(kdl_parser *self, char const *message)
 {
     self->event.event = KDL_EVENT_PARSE_ERROR;
     self->event.value.type = KDL_TYPE_STRING;
-    self->event.value.value.string = (kdl_str){ message, strlen(message) };
+    self->event.value.string = (kdl_str){ message, strlen(message) };
 }
 
 static void _set_comment_event(kdl_parser *self, kdl_token const *token)
 {
     self->event.event = KDL_EVENT_COMMENT;
     self->event.value.type = KDL_TYPE_STRING;
-    self->event.value.value.string = token->value;
+    self->event.value.string = token->value;
 }
 
 static kdl_event_data *_next_node(kdl_parser *self, kdl_token *token);
@@ -250,7 +250,7 @@ static kdl_event_data *_next_node(kdl_parser *self, kdl_token *token)
                 // We're good, this is an identifier
                 self->state = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_START)
                     | PARSER_FLAG_TYPE_ANNOTATION_END;
-                self->event.value.type_annotation = tmp_val.value.string;
+                self->event.value.type_annotation = tmp_val.string;
                 return NULL;
             } else {
                 _set_parse_error(self, "Expected identifier or string");
@@ -300,7 +300,7 @@ static kdl_event_data *_next_node(kdl_parser *self, kdl_token *token)
                 // We're good, this is an identifier
                 self->state = PARSER_IN_NODE;
                 self->event.event = KDL_EVENT_START_NODE;
-                self->event.name = tmp_val.value.string;
+                self->event.name = tmp_val.string;
                 ++self->depth;
                 ev = _apply_slashdash(self);
                 if (ev) return ev;
@@ -362,7 +362,7 @@ static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
                 // We're good, this is an identifier
                 self->state = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_START)
                     | PARSER_FLAG_TYPE_ANNOTATION_END;
-                self->event.value.type_annotation = tmp_val.value.string;
+                self->event.value.type_annotation = tmp_val.string;
                 return NULL;
             } else {
                 _set_parse_error(self, "Expected identifier or string");
@@ -442,7 +442,7 @@ static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
                 }
                 if (tmp_val.type == KDL_TYPE_STRING) {
                     // all good
-                    self->event.name = tmp_val.value.string;
+                    self->event.name = tmp_val.string;
                     return NULL;
                 } else {
                     _set_parse_error(self, "Property keys must be strings or identifiers");
@@ -507,7 +507,7 @@ static bool _parse_value(kdl_token const *token, kdl_value *val, kdl_owned_strin
         // no parsing necessary
         *s = kdl_clone_str(&token->value);
         val->type = KDL_TYPE_STRING;
-        val->value.string = kdl_borrow_str(s);
+        val->string = kdl_borrow_str(s);
         return true;
     case KDL_TOKEN_STRING:
         // parse escapes
@@ -516,7 +516,7 @@ static bool _parse_value(kdl_token const *token, kdl_value *val, kdl_owned_strin
             return false;
         } else {
             val->type = KDL_TYPE_STRING;
-            val->value.string = kdl_borrow_str(s);
+            val->string = kdl_borrow_str(s);
             return true;
         }
     case KDL_TOKEN_WORD:
@@ -526,12 +526,12 @@ static bool _parse_value(kdl_token const *token, kdl_value *val, kdl_owned_strin
                 return true;
             } else if (memcmp("true", token->value.data, 4) == 0) {
                 val->type = KDL_TYPE_BOOLEAN;
-                val->value.boolean = true;
+                val->boolean = true;
                 return true;
             }
         } else if (token->value.len == 5 && memcmp("false", token->value.data, 4) == 0) {
             val->type = KDL_TYPE_BOOLEAN;
-            val->value.boolean = false;
+            val->boolean = false;
             return true;
         }
         // either a number or an identifier
@@ -549,7 +549,7 @@ static bool _parse_value(kdl_token const *token, kdl_value *val, kdl_owned_strin
         // this is a regular identifier
         *s = kdl_clone_str(&token->value);
         val->type = KDL_TYPE_STRING;
-        val->value.string = kdl_borrow_str(s);
+        val->string = kdl_borrow_str(s);
         return true;
     default:
         return false;
@@ -635,15 +635,15 @@ static bool _parse_decimal_integer(kdl_str number, kdl_value *val, kdl_owned_str
         // represent number as string
         *s = kdl_clone_str(&number);
         val->type = KDL_TYPE_NUMBER;
-        val->value.number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
-        val->value.number.value.string = kdl_borrow_str(s);
+        val->number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
+        val->number.string = kdl_borrow_str(s);
         return true;
     } else {
         // number is representable as long long
         if (negative) n = -n;
         val->type = KDL_TYPE_NUMBER;
-        val->value.number.type = KDL_NUMBER_TYPE_INTEGER;
-        val->value.number.value.integer = n;
+        val->number.type = KDL_NUMBER_TYPE_INTEGER;
+        val->number.integer = n;
         return true;
     }
 }
@@ -742,14 +742,14 @@ static bool _parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_strin
         }
 
         val->type = KDL_TYPE_NUMBER;
-        val->value.number.type = KDL_NUMBER_TYPE_FLOATING_POINT;
-        val->value.number.value.floating_point = n;
+        val->number.type = KDL_NUMBER_TYPE_FLOATING_POINT;
+        val->number.floating_point = n;
         return true;
     } else {
         *s = kdl_clone_str(&number);
         val->type = KDL_TYPE_NUMBER;
-        val->value.number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
-        val->value.number.value.string = kdl_borrow_str(s);
+        val->number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
+        val->number.string = kdl_borrow_str(s);
         return true;
     }
 }
@@ -799,15 +799,15 @@ static bool _parse_hex_number(kdl_str number, kdl_value *val, kdl_owned_string *
         // represent number as string
         *s = kdl_clone_str(&number);
         val->type = KDL_TYPE_NUMBER;
-        val->value.number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
-        val->value.number.value.string = kdl_borrow_str(s);
+        val->number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
+        val->number.string = kdl_borrow_str(s);
         return true;
     } else {
         // number is representable as long long
         if (negative) n = -n;
         val->type = KDL_TYPE_NUMBER;
-        val->value.number.type = KDL_NUMBER_TYPE_INTEGER;
-        val->value.number.value.integer = n;
+        val->number.type = KDL_NUMBER_TYPE_INTEGER;
+        val->number.integer = n;
         return true;
     }
 }
@@ -854,15 +854,15 @@ static bool _parse_octal_number(kdl_str number, kdl_value *val, kdl_owned_string
         // represent number as string
         *s = kdl_clone_str(&number);
         val->type = KDL_TYPE_NUMBER;
-        val->value.number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
-        val->value.number.value.string = kdl_borrow_str(s);
+        val->number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
+        val->number.string = kdl_borrow_str(s);
         return true;
     } else {
         // number is representable as long long
         if (negative) n = -n;
         val->type = KDL_TYPE_NUMBER;
-        val->value.number.type = KDL_NUMBER_TYPE_INTEGER;
-        val->value.number.value.integer = n;
+        val->number.type = KDL_NUMBER_TYPE_INTEGER;
+        val->number.integer = n;
         return true;
     }
 }
@@ -909,15 +909,15 @@ static bool _parse_binary_number(kdl_str number, kdl_value *val, kdl_owned_strin
         // represent number as string
         *s = kdl_clone_str(&number);
         val->type = KDL_TYPE_NUMBER;
-        val->value.number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
-        val->value.number.value.string = kdl_borrow_str(s);
+        val->number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
+        val->number.string = kdl_borrow_str(s);
         return true;
     } else {
         // number is representable as long long
         if (negative) n = -n;
         val->type = KDL_TYPE_NUMBER;
-        val->value.number.type = KDL_NUMBER_TYPE_INTEGER;
-        val->value.number.value.integer = n;
+        val->number.type = KDL_NUMBER_TYPE_INTEGER;
+        val->number.integer = n;
         return true;
     }
 }

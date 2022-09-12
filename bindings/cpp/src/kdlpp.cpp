@@ -20,11 +20,11 @@ namespace {
         switch (n.type)
         {
         case KDL_NUMBER_TYPE_INTEGER:
-            return n.value.integer;
+            return n.integer;
         case KDL_NUMBER_TYPE_FLOATING_POINT:
-            return n.value.floating_point;
+            return n.floating_point;
         case KDL_NUMBER_TYPE_STRING_ENCODED:
-            return std::u8string{to_u8string_view(n.value.string)};
+            return std::u8string{to_u8string_view(n.string)};
         default:
             throw TypeError("invalid kdl_number");
         }
@@ -37,11 +37,11 @@ namespace {
         case KDL_TYPE_NULL:
             return std::monostate{};
         case KDL_TYPE_BOOLEAN:
-            return val.value.boolean;
+            return val.boolean;
         case KDL_TYPE_NUMBER:
-            return Number{val.value.number};
+            return Number{val.number};
         case KDL_TYPE_STRING:
-            return std::u8string{to_u8string_view(val.value.string)};
+            return std::u8string{to_u8string_view(val.string)};
         default:
             throw TypeError("invalid kdl_value");
         }
@@ -96,13 +96,13 @@ Number::operator kdl_number() const
             using T = std::decay_t<decltype(n)>;
             if constexpr (std::is_same_v<T, long long>) {
                 result.type = KDL_NUMBER_TYPE_INTEGER;
-                result.value.integer = n;
+                result.integer = n;
             } else if constexpr (std::is_same_v<T, double>) {
                 result.type = KDL_NUMBER_TYPE_FLOATING_POINT;
-                result.value.floating_point = n;
+                result.floating_point = n;
             } else if constexpr (std::is_same_v<T, std::u8string>) {
                 result.type = KDL_NUMBER_TYPE_STRING_ENCODED;
-                result.value.string = to_kdl_str(n);
+                result.string = to_kdl_str(n);
             } else {
                 throw std::logic_error("incomplete visit");
             }
@@ -139,13 +139,13 @@ Value::operator kdl_value() const
             using T = std::decay_t<decltype(v)>;
             if constexpr (std::is_same_v<T, bool>) {
                 result.type = KDL_TYPE_BOOLEAN;
-                result.value.boolean = v;
+                result.boolean = v;
             } else if constexpr (std::is_same_v<T, Number>) {
                 result.type = KDL_TYPE_NUMBER;
-                result.value.number = (kdl_number)v;
+                result.number = (kdl_number)v;
             } else if constexpr (std::is_same_v<T, std::u8string>) {
                 result.type = KDL_TYPE_STRING;
-                result.value.string = to_kdl_str(v);
+                result.string = to_kdl_str(v);
             } else {
                 result.type = KDL_TYPE_NULL;
             }
@@ -172,7 +172,7 @@ Document Document::read_from(kdl_parser *parser)
         case KDL_EVENT_EOF:
             return doc;
         case KDL_EVENT_PARSE_ERROR:
-            throw ParseError(ev->value.value.string);
+            throw ParseError(ev->value.string);
         case KDL_EVENT_START_NODE: {
             auto name = to_u8string_view(ev->name);
             if (ev->value.type_annotation.data != nullptr) {

@@ -29,13 +29,13 @@ static void test_basics()
     kdl_value v;
     v.type = KDL_TYPE_NUMBER;
     v.type_annotation = (kdl_str){ NULL, 0 };
-    v.value.number = (kdl_number) {
+    v.number = (kdl_number) {
         .type = KDL_NUMBER_TYPE_INTEGER,
-        .value = { .integer = 1 }
+        .integer = 1
     };
     ASSERT(kdl_emit_arg(emitter, &v));
     v.type = KDL_TYPE_STRING;
-    v.value.string = kdl_str_from_cstr("b");
+    v.string = kdl_str_from_cstr("b");
     ASSERT(kdl_emit_property(emitter, kdl_str_from_cstr("a"), &v));
     ASSERT(kdl_emit_node_with_type(emitter, kdl_str_from_cstr("ta"), kdl_str_from_cstr("second-child")));
     ASSERT(kdl_finish_emitting_children(emitter));

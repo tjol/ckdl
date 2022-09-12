@@ -184,12 +184,12 @@ static void proplist_append(struct proplist *pl, kdl_str name, kdl_value const* 
 
     // clone string value (if needed)
     if (p->value.type == KDL_TYPE_STRING) {
-        p->val_str = kdl_clone_str(&p->value.value.string);
-        p->value.value.string = kdl_borrow_str(&p->val_str);
+        p->val_str = kdl_clone_str(&p->value.string);
+        p->value.string = kdl_borrow_str(&p->val_str);
     } else if (p->value.type == KDL_TYPE_NUMBER
-        && p->value.value.number.type == KDL_NUMBER_TYPE_STRING_ENCODED) {
-        p->val_str = kdl_clone_str(&p->value.value.number.value.string);
-        p->value.value.number.value.string = kdl_borrow_str(&p->val_str);
+        && p->value.number.type == KDL_NUMBER_TYPE_STRING_ENCODED) {
+        p->val_str = kdl_clone_str(&p->value.number.string);
+        p->value.number.string = kdl_borrow_str(&p->val_str);
     } else {
         p->val_str = (kdl_owned_string){ NULL, 0 };
     }

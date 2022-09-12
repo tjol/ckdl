@@ -132,7 +132,7 @@ int main(int argc, char **argv)
             kdl_value name_val = (kdl_value) {
                 .type = KDL_TYPE_STRING,
                 .type_annotation = { NULL, 0 },
-                .value = { .string = event->name }
+                .string = event->name
             };
             kdl_emit_property(emitter, name_str, &name_val);
         }
