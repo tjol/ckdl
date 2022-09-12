@@ -1,4 +1,4 @@
-# ckdl - KDL reading and writing for C, C++
+# ckdl - KDL reading and writing for C, Python, C++
 
 **ckdl** is a C library that implements reading and writing the
 [KDL Document Language](https://github.com/kdl-org/kdl).
@@ -11,8 +11,8 @@ structure relatively directly.
 
 This repository currently contains language bindings for:
 
- * C++20
  * Python
+ * C++20
 
 ### Status
 
