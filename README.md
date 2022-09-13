@@ -14,9 +14,18 @@ This repository currently contains language bindings for:
  * Python
  * C++20
 
+For details about how to build and use ckdl, check out the
+[documentation on RTD](https://ckdl.readthedocs.io/en/latest/index.html) or
+under `doc/` in this repository.
+
 ### Status
 
-ckdl is in an early stage of development. It is probably standard-compliant,
-and passes all test cases in the KDL test suite other than those that depend
-on the exact string representation of floating-point numbers or integers
-&gt; 64 bits.
+ckdl is likely standard-compliant, and passes all test cases in the KDL test
+suite other than those affected by these known issues:
+
+ * Numbers are not representable in a 64-bit signed integer (`long long`) or in a
+   `double` are not parsed at all, but are validated and passed through as strings
+   in whatever format they are in. It may be better to convert them to decimal
+   (which is also what the test suite expects)
+ * Floating-point numbers are formatted using the C `printf` facility, which, while
+   correct, does not produce the shortest decimal representation.

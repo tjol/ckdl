@@ -25,6 +25,12 @@ The ckdl project also features simple "demo" bindings for the following language
 Building ckdl
 -------------
 
+Get ckdl `from GitHub <https://github.com/tjol/ckdl>`_:
+
+.. code-block:: shell
+
+    git clone https://github.com/tjol/ckdl.git
+
 ckdl is written in portable modern C, and it should ideally run anywhere you have a resonably
 moern C compiler with at least a minimal standard library. The only really platform-dependent
 code is in the test suite, which you don't have to build if you can't.
