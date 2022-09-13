@@ -51,8 +51,9 @@ target_compile_definitions(kdl PRIVATE -DBUILDING_KDL=1)
 if(NOT BUILD_SHARED_LIBS)
     target_compile_definitions(kdl PUBLIC -DKDL_STATIC_LIB=1)
 endif()
-install(TARGETS kdl COMPONENT libkdl)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/kdl TYPE INCLUDE COMPONENT libkdl)
+include(GNUInstallDirs)
+install(TARGETS kdl DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libkdl)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/kdl DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT libkdl)
 
 add_subdirectory(src/utils)
 

@@ -15,4 +15,5 @@ add_executable(ckdl-cat-app ckdl-cat-main.c)
 target_link_libraries(ckdl-cat-app ckdl-cat)
 set_target_properties(ckdl-cat-app PROPERTIES OUTPUT_NAME ckdl-cat)
 
-install(TARGETS ckdl-cat-app ckdl-parse-events ckdl-tokenize COMPONENT ckdl-utils EXCLUDE_FROM_ALL)
+include(GNUInstallDirs)
+install(TARGETS ckdl-cat-app ckdl-parse-events ckdl-tokenize DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ckdl-utils EXCLUDE_FROM_ALL)
