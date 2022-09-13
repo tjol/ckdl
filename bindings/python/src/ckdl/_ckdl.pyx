@@ -1,4 +1,4 @@
-from _ckdl_lib cimport *
+from ._libkdl cimport *
 from libc.limits cimport LLONG_MIN, LLONG_MAX
 
 cdef str _kdl_str_to_py_str(const kdl_str* s):
@@ -12,6 +12,7 @@ cdef kdl_owned_string _py_str_to_kdl_str(str s):
     return kdl_clone_str(&borrowed)
 
 cdef class Value:
+    """A KDL value with a type annotation"""
     cdef public str type_annotation
     cdef public object value
 
@@ -51,6 +52,32 @@ cdef _convert_kdl_value(const kdl_value* v):
 
 
 cdef class Node:
+    """
+    A KDL node, with its arguments, properties and children.
+
+    The constructor supports a variety of signatures:
+
+    >>> Node("tag")
+    <Node tag>
+    >>> Node("type-annotation", "tag")
+    <Node (type-annotation)tag>
+    >>> Node("type-annotation", "tag", "arg1", "arg2")
+    <Node (type-annotation)tag; 2 args>
+    >>> Node("tag", ["arg1", "arg2"])
+    <Node tag; 2 args>
+    >>> Node(None, "tag", 1, 2, 3)
+    <Node tag; 3 args>
+    >>> Node(None, "tag", 1, 2, 3, prop1=Value("f32", 1.2))
+    <Node tag; 3 args; 1 property>
+    >>> Node(None, "tag", "arg1", Node("child1"), Node("child2"), prop=1)
+    <Node tag; 1 arg; 1 property; 2 children>
+    >>> Node(None, "tag", ["arg1", "arg2"], [Node("child1")], prop=1)
+    <Node tag; 2 args; 1 property>
+    >>> Node("tag", args=[1,2,3], properties={"key": "value"}, children=[Node("child")])
+    <Node tag; 3 args; 1 property; 1 child>
+    >>>
+    """
+
     cdef public str type_annotation
     cdef public str name
     cdef public list args
@@ -238,6 +265,10 @@ cdef bint _emit_node(kdl_emitter *emitter, Node node) except False:
     return True
 
 cdef class Document:
+    """
+    A KDL document, consisting of zero or more nodes (Node objects).
+    """
+
     cdef public list nodes
 
     def __init__(self, *args):
@@ -286,6 +317,12 @@ cdef class Document:
 
 
 def parse(str kdl_text):
+    """
+    parse(kdl_text)
+
+    Parse a KDL document (must be a str) and return a Document.
+    """
+
     cdef kdl_event_data* ev
     cdef kdl_parser* parser
     cdef kdl_str kdl_doc

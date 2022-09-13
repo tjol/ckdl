@@ -1,0 +1,8 @@
+[build-system]
+requires = [
+  "setuptools>=42",
+  "scikit-build",
+  "cmake>=3.8",
+  "ninja; platform_system!='Windows'"
+]
+build-backend = "setuptools.build_meta"

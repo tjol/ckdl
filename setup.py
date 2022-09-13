@@ -2,7 +2,8 @@ from skbuild import setup
 
 setup(
     name="ckdl",
-    packages=[],
+    package_dir={"": "bindings/python/src"},
+    packages=["ckdl"],
     cmake_args=[
         "-DBUILD_TESTS:BOOL=OFF",
         "-DBUILD_KDLPP:BOOL=OFF",
