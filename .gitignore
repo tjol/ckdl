@@ -8,3 +8,5 @@ Thumbs.db
 /out/
 /dist/
 *.egg-info
+MANIFEST.in
+/doc/_build/

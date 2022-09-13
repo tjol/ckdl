@@ -71,8 +71,6 @@ cdef class Node:
     <Node tag; 3 args; 1 property>
     >>> Node(None, "tag", "arg1", Node("child1"), Node("child2"), prop=1)
     <Node tag; 1 arg; 1 property; 2 children>
-    >>> Node(None, "tag", ["arg1", "arg2"], [Node("child1")], prop=1)
-    <Node tag; 2 args; 1 property>
     >>> Node("tag", args=[1,2,3], properties={"key": "value"}, children=[Node("child")])
     <Node tag; 3 args; 1 property; 1 child>
     >>>
