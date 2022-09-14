@@ -10,8 +10,8 @@ of pretty low-level development.
 
 In the build directory, the utilities may be found unter ``src/utils``.
 
-``ckdl-cat``
-------------
+ckdl-cat
+--------
 
 The ``ckdl-cat`` utility parses a KDL file and emits a reformatted copy of that same file.
 
@@ -29,8 +29,8 @@ The ``ckdl-cat`` utility parses a KDL file and emits a reformatted copy of that 
 
 .. _ckdl-parse-events:
 
-``ckdl-parse-events``
----------------------
+ckdl-parse-events
+-----------------
 
 The ``ckdl-parse-events`` tool reads a KDL file using the :ref:`ckdl parser <parser>`, and writes the
 :ref:`events <parse events>` the parser would generate for this KDL document to standard output.
@@ -51,8 +51,8 @@ The ``ckdl-parse-events`` tool reads a KDL file using the :ref:`ckdl parser <par
     KDL_EVENT_EOF value=null
 
 
-``ckdl-tokenize``
------------------
+ckdl-tokenize
+-------------
 
 Really only useful for hacking on ckdl itself, the ``ckdl-tokenize`` program outputs the result of
 the tokenization stage of parsing a KDL document.

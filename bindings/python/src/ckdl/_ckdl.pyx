@@ -71,6 +71,8 @@ cdef class Node:
     <Node tag; 3 args; 1 property>
     >>> Node(None, "tag", "arg1", Node("child1"), Node("child2"), prop=1)
     <Node tag; 1 arg; 1 property; 2 children>
+    >>> Node("tag", ["arg1", 2], [Node("child1"), Node("child2")], prop=1)
+    <Node tag; 2 args; 1 property; 2 children>
     >>> Node("tag", args=[1,2,3], properties={"key": "value"}, children=[Node("child")])
     <Node tag; 3 args; 1 property; 1 child>
     >>>
@@ -104,6 +106,9 @@ cdef class Node:
 
         # parse args and children from remaining positionals
         if len(args) == 1 and isinstance(args[0], list):
+            args = args[0]
+        elif len(args) == 2 and isinstance(args[0], list) and isinstance(args[1], list):
+            self.children = args[1]
             args = args[0]
         seen_nodes = False
         for obj in args:

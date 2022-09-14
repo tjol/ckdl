@@ -24,7 +24,7 @@ string's lifetime and only access it as long as the pointer is still valid. The 
 distinction is akin to ``String`` vs ``str`` in Rust or ``std::u8string`` vs ``std::u8string_view``
 in C++, though of course in C memory management is more manual than in those languages.
 
-All string and UTF-8.
+All string are UTF-8.
 
 The ckdl API mostly exposes :c:type:`kdl_str` objects with a limited lifetime. To use the string
 data in your program or library, you must normally copy the strings into a
@@ -40,7 +40,7 @@ data in your program or library, you must normally copy the strings into a
 
         .. warning::
 
-            The string is not, in general, nul-terminated. It may contain nul characters.
+            The string is not, in general, null-terminated. It may contain null characters.
 
         This pointer may be ``NULL``, which signifies the absense of a value. An empty string is
         represented by a non-NULL pointer and a :c:member:`len` of zero. (In either case the pointer
@@ -61,7 +61,7 @@ data in your program or library, you must normally copy the strings into a
 
         .. note::
 
-            The string is nul-terminated, but may also contain nul characters.
+            The string is null-terminated, but may also contain null characters.
 
     .. c:member:: size_t len
 
@@ -165,7 +165,7 @@ as a string. In ckdl, a value (with a optional type annotation) is represented a
     .. c:member:: kdl_str type_annotation
 
         The type annotation, if any. The *lack* of a type annotation is represented by a ``NULL``
-        pointer.
+        pointer in the string.
 
     .. c:union:: @value_union
 
@@ -311,7 +311,7 @@ To get a feel for what exact events are generated during parsing, you may want t
 Parser Objects
 ^^^^^^^^^^^^^^
 
-You can create a parser either for a document that you have available as a UTF-8 string
+You can create a parser either for a document that you have in the form of a UTF-8 string
 
 .. c:function:: kdl_parser *kdl_create_string_parser(kdl_str doc, kdl_parse_option opt)
 
@@ -348,7 +348,7 @@ which you must free once you're done with it, using
 If you wish, you may configure the parser to emit comments in addition to "regular" events
 
 .. c:type:: enum kdl_parse_option kdl_parse_option
-    
+
     .. c:enumerator:: KDL_DEFAULTS
 
         By default, ignore all comments

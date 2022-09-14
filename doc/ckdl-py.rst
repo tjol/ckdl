@@ -76,14 +76,14 @@ Writing
 .. code-block:: pycon
 
     >>> mydoc = ckdl.Document(
-    ...     ckdl.Node("node1", args=["argument 1", 2, None], properties={"child2-prop": True}, children=[
+    ...     ckdl.Node("node1", args=["argument 1", 2, None], properties={"node1-prop": 0xff_ff}, children=[
     ...         ckdl.Node("child1"),
     ...         ckdl.Node("child2-type", "child2", child2_prop=True)
     ...     ]),
     ...     ckdl.Node(None, "node2", "arg1", "arg2", ckdl.Node("child3"), some_property="foo")
     ... )
     >>> print(str(mydoc))
-    node1 "argument 1" 2 null child2-prop=true {
+    node1 "argument 1" 2 null node1-prop=65535 {
         child1
         (child2-type)child2 child2_prop=true
     }
@@ -117,9 +117,9 @@ and three classes to represent KDL data:
 
 .. py:class:: Value(type_annotation : str, value)
 
-    A KDL value with a type annotation values without a type annotation are represented
-    as :py:class:`NoneType`, :py:class:`bool`, :py:class:`int`, :py:class:`float`, or
-    :py:class:`str`.
+    A KDL value with a type annotation.
+
+    Values without a type annotation are represented as NoneType, bool, int, float, or str.
 
     .. py:attribute:: type_annotation
 
@@ -143,7 +143,7 @@ and three classes to represent KDL data:
 
         :type: str
 
-    .. py:attribute:: arguments
+    .. py:attribute:: args
 
         :type: list
 
@@ -163,13 +163,14 @@ and three classes to represent KDL data:
      * | ``Node([type_annotation,] name, *args, *children, **properties)``
        | the remaining positional arguments are all the node arguments, followed by the child nodes,
          and the keyword arguments are the properties, or
-     * | ``Node([type_annotation,] name, *args, *, [properties=...], [children=...])``
-       | the next positional argument is a list of all the arguments, and the keyword arguments are
-         the properties, or
-     * | ``Node([type_annotation,] name, [args=...], *, [properties=...], [children=...])``
-       | the properties are passed as a dict in the ``properties`` keyword argument, the children are
-         passed as a list in the ``children`` keyword argument, and the arguments are passed as a list
-         either in the ``args`` keyword argument, or the final positional argument.
+     * | ``Node([type_annotation,] name, [args, [children, ]] *, **properties)``
+       | the next positional arguments are lists of all the arguments and children, and the keyword
+         arguments are the properties, or
+     * | ``Node([type_annotation,] name, [args=..., [children=..., ]] *, [properties=...])``
+       | the properties are passed as a dict in the ``properties`` keyword argument, the arguments
+         are passed as a list either in the ``args`` keyword argument, or the positional argument
+         after the tag name, and the children are similarly passed as a list, either in the
+         ``children`` keyword argument, or in the positional argument following the node arguments.
 
 
     Note that when the node arguments are given as positional arguments, and the first argument is a

@@ -23,7 +23,7 @@ under `doc/` in this repository.
 ckdl is likely standard-compliant, and passes all test cases in the KDL test
 suite other than those affected by these known issues:
 
- * Numbers are not representable in a 64-bit signed integer (`long long`) or in a
+ * Numbers that are not representable in a 64-bit signed integer (`long long`) or in a
    `double` are not parsed at all, but are validated and passed through as strings
    in whatever format they are in. It may be better to convert them to decimal
    (which is also what the test suite expects)
