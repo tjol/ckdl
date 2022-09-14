@@ -732,17 +732,17 @@ static bool _parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_strin
     }
 
     // rough heuristic for numbers that fit into a double exactly
-    if (digits_before_decimal + digits_after_decimal <= 15 && exponent < 285 && exponent > -285) {
+    if (digits_before_decimal + digits_after_decimal <= 15 && explicit_exponent < 285 && explicit_exponent > -285) {
         double n = (double)decimal_mantissa;
         if (negative) n = -n;
         if (exponent_negative) explicit_exponent = -explicit_exponent;
-        int exponent = explicit_exponent - digits_after_decimal;
-        while (exponent < 0) {
-            ++exponent;
+        int net_exponent = explicit_exponent - digits_after_decimal;
+        while (net_exponent < 0) {
+            ++net_exponent;
             n *= 0.1;
         }
-        while (exponent > 0) {
-            --exponent;
+        while (net_exponent > 0) {
+            --net_exponent;
             n *= 10.0;
         }
 
@@ -751,7 +751,22 @@ static bool _parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_strin
         val->number.floating_point = n;
         return true;
     } else {
+        // Remove all underscores and pluses
         *s = kdl_clone_str(&number);
+        char const *p1 = number.    data;
+        char const *end = number.data + number.len;
+        char *p2 = s->data;
+        s->len = 0;
+        while (p1 != end) {
+            int c = *(p1++);
+            if (c != '_' && c != '+') {
+                // copy character
+                *(p2++) = c;
+                ++s->len;
+            }
+        }
+        *p2 = 0;
+
         val->type = KDL_TYPE_NUMBER;
         val->number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
         val->number.string = kdl_borrow_str(s);

@@ -37,8 +37,11 @@ cdef _convert_kdl_value_no_type(const kdl_value* v):
         elif v.number.type == KDL_NUMBER_TYPE_FLOATING_POINT:
             return v.number.floating_point
         elif v.number.type == KDL_NUMBER_TYPE_STRING_ENCODED:
-            # FIXME - handle big numbers correctly
-            return _kdl_str_to_py_str(&v.number.string)
+            s = _kdl_str_to_py_str(&v.number.string)
+            try:
+                return int(s)
+            except ValueError:
+                return float(s)
     elif v.type == KDL_TYPE_STRING:
         return _kdl_str_to_py_str(&v.string)
     raise RuntimeError("Invalid kdl_value object!")
