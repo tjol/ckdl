@@ -37,11 +37,11 @@ code is in the test suite, which you don't have to build if you can't.
 
 ckdl has been tested with:
 
-* Linux (amd64, i386, arm64, arm32v7l), with glibc and musl libc - going back as far as
+* Linux (x86_64, i386, arm64, arm32v7l), with glibc and musl libc - going back as far as
   CentOS 6
-* MacOS on M1
-* Windows 10 on amd64, with Visual Studio 2017, 2019 and 2022
-* FreeBSD 12 on amd64
+* MacOS (arm64, x86_64)
+* Windows 10 on x86_64, with Visual Studio 2017, 2019 and 2022
+* FreeBSD 12 on x86_64
 
 To build ckdl, you will need a C compiler (like GCC, Clang or Microsoft Visual C++) and
 `CMake`_ version 3.8 or later. (This should be in your system package manager if you're

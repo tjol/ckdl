@@ -29,6 +29,7 @@ public:
     const char* what() const noexcept { return m_msg; }
 };
 
+// Exception thrown on regular KDL parsing errors
 class ParseError : public std::exception {
     std::string m_msg;
 public:
@@ -37,19 +38,15 @@ public:
     const char* what() const noexcept { return m_msg.c_str(); }
 };
 
-enum class Type {
-    Null,
-    Bool,
-    Number,
-    String
-};
-
+// Ways in which a KDL number may be represented in C/C++
 enum NumberRepresentation {
     Integer = 0,
     Float,
     String
 };
 
+// A KDL number: could be a long long, a double, or a string
+// Analogous to kdl_number
 class Number {
     std::variant<long long, double, std::u8string> m_value;
 
@@ -76,6 +73,8 @@ public:
         return static_cast<NumberRepresentation>(m_value.index());
     }
 
+    // Cast the number to a fundamental arithmetic type (no bounds checking,
+    // no support for strings)
     template <_arithmetic T>
     T as() const
     {
@@ -89,11 +88,14 @@ public:
         }
     }
 
+    // Cast this C++ object to a libkdl C struct
+    // Note this object may hold a pointer to our string representation
     explicit operator kdl_number() const;
 };
 
 template <typename T> concept _into_number = requires (T t) { Number{t}; };
 
+// Mixin
 class HasTypeAnnotation {
     std::optional<std::u8string> m_type_annotation;
 protected:
@@ -116,6 +118,16 @@ public:
     bool operator!=(const HasTypeAnnotation&) const = default;
 };
 
+// KDL data types
+enum class Type {
+    Null,
+    Bool,
+    Number,
+    String
+};
+
+// A KDL value, possibly including a type annotation
+// Analogous to kdl_value
 class Value : public HasTypeAnnotation {
     std::variant<std::monostate, bool, Number, std::u8string> m_value;
 
@@ -209,6 +221,8 @@ public:
         return static_cast<Type>(m_value.index());
     }
 
+    // Return the content as a fundamental type, u8string, or u8string_view,
+    // if this object contains the right type.
     template <typename T>
     T as() const
     {
@@ -231,6 +245,7 @@ public:
     explicit operator kdl_value() const;
 };
 
+// A node with all its contents
 class Node : public HasTypeAnnotation {
     std::optional<std::u8string> m_type_annotation;
     std::u8string m_name;
@@ -285,6 +300,7 @@ public:
     std::vector<Node>& children() { return m_children; }
 };
 
+// A KDL document - consisting of several nodes.
 class Document {
     std::vector<Node> m_nodes;
 
@@ -311,6 +327,7 @@ public:
     std::u8string to_string() const;
 };
 
+// Load a KDL document from string
 Document parse(std::u8string_view kdl_text);
 
 } // namespace kdl
