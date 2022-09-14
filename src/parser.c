@@ -825,8 +825,7 @@ error:
 static bool _parse_octal_number(kdl_str number, kdl_value *val, kdl_owned_string *s)
 {
     bool negative = false;
-    bool overflow = false;
-    long long n = 0;
+    _kdl_ubigint *n = _kdl_ubigint_new(0);
 
     size_t i = 0; // index into number-string
 
@@ -844,7 +843,7 @@ static bool _parse_octal_number(kdl_str number, kdl_value *val, kdl_owned_string
     if (number.len - i < 3 || number.data[i] != '0'
                            || number.data[i+1] != 'o'
                            || number.data[i+2] == '_')
-        return false;
+        goto error;
     i += 2;
 
     // scan through entire number
@@ -852,36 +851,40 @@ static bool _parse_octal_number(kdl_str number, kdl_value *val, kdl_owned_string
         char c = number.data[i];
 
         if (c == '_') continue;
-        else if (c < '0' || c > '7') return false;
+        else if (c < '0' || c > '7') goto error;
 
         int digit = c - '0';
-        n = (n << 3) + digit;
-        if (n < 0) overflow = true;
+        n = _kdl_ubigint_multiply_inplace(n, 8);
+        n = _kdl_ubigint_add_inplace(n, digit);
     }
 
-    if (overflow) {
+    // try to reduce down to long long
+    long long n_ll;
+    if (_kdl_ubigint_as_long_long(n, &n_ll)) {
+        // number is representable as long long
+        if (negative) n_ll = -n_ll;
+        val->type = KDL_TYPE_NUMBER;
+        val->number.type = KDL_NUMBER_TYPE_INTEGER;
+        val->number.integer = n_ll;
+    } else {
         // represent number as string
-        *s = kdl_clone_str(&number);
+        *s = _kdl_ubigint_as_string_sgn(negative ? -1 : +1, n);
         val->type = KDL_TYPE_NUMBER;
         val->number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
         val->number.string = kdl_borrow_str(s);
-        return true;
-    } else {
-        // number is representable as long long
-        if (negative) n = -n;
-        val->type = KDL_TYPE_NUMBER;
-        val->number.type = KDL_NUMBER_TYPE_INTEGER;
-        val->number.integer = n;
-        return true;
     }
+    _kdl_ubigint_free(n);
+    return true;
+error:
+    _kdl_ubigint_free(n);
+    return false;
 }
 
 
 static bool _parse_binary_number(kdl_str number, kdl_value *val, kdl_owned_string *s)
 {
     bool negative = false;
-    bool overflow = false;
-    long long n = 0;
+    _kdl_ubigint *n = _kdl_ubigint_new(0);
 
     size_t i = 0; // index into number-string
 
@@ -899,7 +902,7 @@ static bool _parse_binary_number(kdl_str number, kdl_value *val, kdl_owned_strin
     if (number.len - i < 3 || number.data[i] != '0'
                            || number.data[i+1] != 'b'
                            || number.data[i+2] == '_')
-        return false;
+        goto error;
     i += 2;
 
     // scan through entire number
@@ -907,28 +910,33 @@ static bool _parse_binary_number(kdl_str number, kdl_value *val, kdl_owned_strin
         char c = number.data[i];
 
         if (c == '_') continue;
-        else if (c < '0' || c > '1') return false;
+        else if (c < '0' || c > '1') goto error;
 
         int digit = c - '0';
-        n = (n << 1) + digit;
-        if (n < 0) overflow = true;
+        n = _kdl_ubigint_multiply_inplace(n, 2);
+        n = _kdl_ubigint_add_inplace(n, digit);
     }
 
-    if (overflow) {
+    // try to reduce down to long long
+    long long n_ll;
+    if (_kdl_ubigint_as_long_long(n, &n_ll)) {
+        // number is representable as long long
+        if (negative) n_ll = -n_ll;
+        val->type = KDL_TYPE_NUMBER;
+        val->number.type = KDL_NUMBER_TYPE_INTEGER;
+        val->number.integer = n_ll;
+    } else {
         // represent number as string
-        *s = kdl_clone_str(&number);
+        *s = _kdl_ubigint_as_string_sgn(negative ? -1 : +1, n);
         val->type = KDL_TYPE_NUMBER;
         val->number.type = KDL_NUMBER_TYPE_STRING_ENCODED;
         val->number.string = kdl_borrow_str(s);
-        return true;
-    } else {
-        // number is representable as long long
-        if (negative) n = -n;
-        val->type = KDL_TYPE_NUMBER;
-        val->number.type = KDL_NUMBER_TYPE_INTEGER;
-        val->number.integer = n;
-        return true;
     }
+    _kdl_ubigint_free(n);
+    return true;
+error:
+    _kdl_ubigint_free(n);
+    return false;
 }
 
 
