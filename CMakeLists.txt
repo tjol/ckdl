@@ -31,10 +31,11 @@ else()
 endif()
 
 set(KDL_C_SOURCES
+    src/bigint.c
+    src/emitter.c
+    src/parser.c
     src/str.c
     src/tokenizer.c
-    src/parser.c
-    src/emitter.c
 )
 
 set(KDL_UTF8_C_SOURCES
