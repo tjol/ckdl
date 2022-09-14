@@ -1,6 +1,6 @@
-======================================
-ckdl - KDL reading and writing library
-======================================
+=======================
+ckdl - KDL library in C
+=======================
 
 **ckdl** is a C library that implements a parser and an emitter for the
 `KDL Document Language`_.
@@ -19,8 +19,8 @@ appropriate to their particular runtime.
 
 The ckdl project also features simple "demo" bindings for the following languages:
 
- * :doc:`Python 3 <ckdl-py>`
- * :doc:`C++ 20 <kdlpp>`
+* :doc:`Python 3 <ckdl-py>`
+* :doc:`C++ 20 <kdlpp>`
 
 Building ckdl
 -------------
@@ -37,11 +37,11 @@ code is in the test suite, which you don't have to build if you can't.
 
 ckdl has been tested with:
 
- * Linux (amd64, i386, arm64, arm32v7l), with glibc and musl libc - going back as far as
-   CentOS 6
- * MacOS on M1
- * Windows 10 on amd64, with Visual Studio 2017, 2019 and 2022
- * FreeBSD 12 on amd64
+* Linux (amd64, i386, arm64, arm32v7l), with glibc and musl libc - going back as far as
+  CentOS 6
+* MacOS on M1
+* Windows 10 on amd64, with Visual Studio 2017, 2019 and 2022
+* FreeBSD 12 on amd64
 
 To build ckdl, you will need a C compiler (like GCC, Clang or Microsoft Visual C++) and
 `CMake`_ version 3.8 or later. (This should be in your system package manager if you're
@@ -70,10 +70,10 @@ or on Windows:
 
 The CMake scripts support a few options, including:
 
- * ``-DBUILD_SHARED_LIBS=ON``: Build a shared library (so/dylib/DLL) instead of a static
-   library
- * ``-DBUILD_KDLPP=OFF``: Disable building the C++20 bindings
- * ``-DBUILD_TESTS=OFF``: Disable building the test suite
+* ``-DBUILD_SHARED_LIBS=ON``: Build a shared library (so/dylib/DLL) instead of a static
+  library
+* ``-DBUILD_KDLPP=OFF``: Disable building the C++20 bindings
+* ``-DBUILD_TESTS=OFF``: Disable building the test suite
 
 To run the test suite, run ``make test`` or ``ctest`` in the build directory.
 
@@ -82,6 +82,22 @@ want to, though most users will most likely just want to integrate the library i
 own build system. By default, this does not install the command-line utilities. To install
 those, run ``cmake --install . --component ckdl-utils`` (possibly with the appropriate value
 of the ``DESTDIR`` environment variable).
+
+Dynamic vs static library
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ckdl C library ``libkdl`` supports both dynamic linking and static linking. Which option
+you want to choose depends on your situation: When using C, C++, or a similar language, static
+libraries can be easier to work with, while when using a dynamic runtime a dynamic library
+may be your best bet (Python's ctypes and .NET's P/Invoke are examples of technologies that
+as good as require the use of a dynamic library).
+
+.. attention::
+
+    On **Windows**, if you're using the static library, and not the DLL, you must define the
+    macro ``KDL_STATIC_LIB`` before including the ckdl headers, or you'll get linking errors.
+
+    On UNIX, this is not required, but it can't hurt in portable applications and libraries.
 
 
 Contents

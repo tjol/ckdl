@@ -25,8 +25,6 @@ or your favourite `PEP 517`_ compatible tool, such as `build`_.
 .. _build: https://pypa-build.readthedocs.io/en/latest/
 .. _venv: https://docs.python.org/3/library/venv.html
 
-.. contents::
-
 The Python ``ckdl`` API
 -----------------------
 
@@ -76,10 +74,12 @@ Writing
 .. code-block:: pycon
 
     >>> mydoc = ckdl.Document(
-    ...     ckdl.Node("node1", args=["argument 1", 2, None], properties={"node1-prop": 0xff_ff}, children=[
-    ...         ckdl.Node("child1"),
-    ...         ckdl.Node("child2-type", "child2", child2_prop=True)
-    ...     ]),
+    ...     ckdl.Node("node1", args=["argument 1", 2, None],
+    ...                        properties={"node1-prop": 0xff_ff},
+    ...                        children=[
+    ...                            ckdl.Node("child1"),
+    ...                            ckdl.Node("child2-type", "child2", child2_prop=True)
+    ...                        ]),
     ...     ckdl.Node(None, "node2", "arg1", "arg2", ckdl.Node("child3"), some_property="foo")
     ... )
     >>> print(str(mydoc))
@@ -90,8 +90,6 @@ Writing
     node2 "arg1" "arg2" some_property="foo" {
         child3
     }
-
-    >>>
 
 
 API
@@ -137,40 +135,40 @@ and three classes to represent KDL data:
 
     .. py:attribute:: type_annotation
 
-        :type: str or NoneType
+        Type annotation as str or NoneType
 
     .. py:attribute:: name
 
-        :type: str
+        Node name - str
 
     .. py:attribute:: args
 
-        :type: list
+        Node args - list
 
     .. py:attribute:: properties
 
-        :type: dict
+        Node properties - dict
 
     .. py:attribute:: children
 
-        :type: list of Node
+        Child nodes - list of :py:class:`Node`
 
     The Node constructor supports a number of different signatures.
 
     If the first two arguments are strings, or None and a string, they are interpreted as the
     type annotation and the node tag name. Then, either:
 
-     * | ``Node([type_annotation,] name, *args, *children, **properties)``
-       | the remaining positional arguments are all the node arguments, followed by the child nodes,
-         and the keyword arguments are the properties, or
-     * | ``Node([type_annotation,] name, [args, [children, ]] *, **properties)``
-       | the next positional arguments are lists of all the arguments and children, and the keyword
-         arguments are the properties, or
-     * | ``Node([type_annotation,] name, [args=..., [children=..., ]] *, [properties=...])``
-       | the properties are passed as a dict in the ``properties`` keyword argument, the arguments
-         are passed as a list either in the ``args`` keyword argument, or the positional argument
-         after the tag name, and the children are similarly passed as a list, either in the
-         ``children`` keyword argument, or in the positional argument following the node arguments.
+    * | ``Node([type_annotation,] name, *args, *children, **properties)``
+      | the remaining positional arguments are all the node arguments, followed by the child nodes,
+        and the keyword arguments are the properties, or
+    * | ``Node([type_annotation,] name, [args, [children, ]] *, **properties)``
+      | the next positional arguments are lists of all the arguments and children, and the keyword
+        arguments are the properties, or
+    * | ``Node([type_annotation,] name, [args=..., [children=..., ]] *, [properties=...])``
+      | the properties are passed as a dict in the ``properties`` keyword argument, the arguments
+        are passed as a list either in the ``args`` keyword argument, or the positional argument
+        after the tag name, and the children are similarly passed as a list, either in the
+        ``children`` keyword argument, or in the positional argument following the node arguments.
 
 
     Note that when the node arguments are given as positional arguments, and the first argument is a
@@ -179,7 +177,11 @@ and three classes to represent KDL data:
 
 .. py:class:: Document(nodes)
 
-    A KDL document, consisting of zero or more nodes.
+    A KDL document, consisting of zero or more nodes.\
+
+    .. py:attribute:: nodes
+
+        The top-level nodes in the document - list of :py:class:`Node`
 
     .. py:method:: dump(self)
 

@@ -13,7 +13,7 @@
 #if defined(_WIN32)
 #    ifdef BUILDING_KDL
 #        define KDL_EXPORT __declspec(dllexport)
-#    elif !defined(KDL_STATIC_LIB) || !KDL_STATIC_LIB
+#    elif !defined(KDL_STATIC_LIB)
 #        define KDL_EXPORT __declspec(dllimport)
 #    else
 #        define KDL_EXPORT

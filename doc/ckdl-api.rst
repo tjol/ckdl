@@ -4,8 +4,6 @@
 
 .. highlight:: c
 
-.. contents::
-
 ::
 
     #include <kdl/kdl.h>

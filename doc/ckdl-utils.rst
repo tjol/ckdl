@@ -2,8 +2,6 @@
 ckdl utility programs
 =====================
 
-.. contents::
-
 ckdl comes with a few small utility programs that might be usedful during development, either of
 ckdl itself, or of libraries and applications using ckdl. They are unlikely to be useful outside
 of pretty low-level development.
