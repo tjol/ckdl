@@ -125,8 +125,6 @@ add_test(emitter_test emitter_test)
 # ignore tests that depend on the representation of bigints or floats
 # (bigints are not supported, float representation from printf is not the same as Java)
 set(FUZZY_KDL_TESTS_LIST
-    hex.kdl
-    hex_int.kdl
     negative_exponent.kdl
     negative_float.kdl
     no_decimal_exponent.kdl
