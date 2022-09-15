@@ -21,6 +21,14 @@ namespace kdl {
 
 template <typename T> concept _arithmetic = std::is_arithmetic_v<T>;
 
+class TypeError : public std::exception {
+    const char* m_msg;
+public:
+    TypeError() : m_msg{"kdlpp type error"} {}
+    TypeError(const char* msg) : m_msg{msg} {}
+    const char* what() const noexcept { return m_msg; }
+};
+
 // Exception thrown on regular KDL parsing errors
 class ParseError : public std::exception {
     std::string m_msg;
