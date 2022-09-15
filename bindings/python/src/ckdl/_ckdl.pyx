@@ -1,7 +1,7 @@
 from ._libkdl cimport *
 from libc.limits cimport LLONG_MIN, LLONG_MAX
 
-cdef class ParseError(ValueError):
+class ParseError(ValueError):
     def __init__(self, msg):
         super().__init__(msg)
 
@@ -309,11 +309,7 @@ cdef class Document:
         cdef kdl_str buf
         cdef str doc
 
-        opts.indent = 4
-        opts.escape_mode = KDL_ESCAPE_DEFAULT
-        opts.identifier_mode = KDL_PREFER_BARE_IDENTIFIERS
-
-        emitter = kdl_create_buffering_emitter(opts)
+        emitter = kdl_create_buffering_emitter(&KDL_DEFAULT_EMITTER_OPTIONS)
 
         for node in self.nodes:
             _emit_node(emitter, node)

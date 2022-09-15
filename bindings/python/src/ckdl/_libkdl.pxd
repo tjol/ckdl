@@ -86,16 +86,27 @@ cdef extern from "kdl/emitter.h":
         KDL_QUOTE_ALL_IDENTIFIERS,
         KDL_ASCII_IDENTIFIERS
 
+    ctypedef struct kdl_float_printing_options:
+        bint always_write_decimal_point
+        bint always_write_decimal_point_or_exponent
+        bint capital_e
+        bint exponent_plus
+        bint plus
+        int min_exponent
+
     ctypedef struct kdl_emitter_options:
         int indent
         kdl_escape_mode escape_mode
         kdl_identifier_emission_mode identifier_mode
+        kdl_float_printing_options float_mode
+
+    cdef kdl_emitter_options KDL_DEFAULT_EMITTER_OPTIONS
 
     ctypedef struct kdl_emitter:
         pass
 
-    cdef kdl_emitter *kdl_create_buffering_emitter(kdl_emitter_options opt)
-    cdef kdl_emitter *kdl_create_stream_emitter(kdl_write_func write_func, void *user_data, kdl_emitter_options opt)
+    cdef kdl_emitter *kdl_create_buffering_emitter(const kdl_emitter_options *opt)
+    cdef kdl_emitter *kdl_create_stream_emitter(kdl_write_func write_func, void *user_data, const kdl_emitter_options *opt)
 
     cdef void kdl_destroy_emitter(kdl_emitter *emitter)
 
