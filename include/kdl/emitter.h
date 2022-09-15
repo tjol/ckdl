@@ -17,19 +17,33 @@ enum kdl_identifier_emission_mode {
 
 typedef enum kdl_identifier_emission_mode kdl_identifier_emission_mode;
 typedef struct kdl_emitter_options kdl_emitter_options;
+typedef struct kdl_float_printing_options kdl_float_printing_options;
 typedef struct _kdl_emitter kdl_emitter;
+
+// Formatting options for floating-point numbers
+struct kdl_float_printing_options {
+    bool always_write_decimal_point;
+    bool always_write_decimal_point_or_exponent;
+    bool capital_e;
+    bool exponent_plus;
+    bool plus;
+    int min_exponent;
+};
 
 // Formatting options for a kdl_emitter
 struct kdl_emitter_options {
     int indent; // Number of spaces to indent child nodes by
     kdl_escape_mode escape_mode; // How to escape strings
     kdl_identifier_emission_mode identifier_mode; // How to quote identifiers
+    kdl_float_printing_options float_mode; // How to print floating point numbers
 };
 
+KDL_EXPORT extern const kdl_emitter_options KDL_DEFAULT_EMITTER_OPTIONS;
+
 // Create an emitter than writes into an internal buffer
-KDL_NODISCARD KDL_EXPORT kdl_emitter *kdl_create_buffering_emitter(kdl_emitter_options opt);
+KDL_NODISCARD KDL_EXPORT kdl_emitter *kdl_create_buffering_emitter(kdl_emitter_options const *opt);
 // Create an emitter that writes by calling a user-supplied function
-KDL_NODISCARD KDL_EXPORT kdl_emitter *kdl_create_stream_emitter(kdl_write_func write_func, void *user_data, kdl_emitter_options opt);
+KDL_NODISCARD KDL_EXPORT kdl_emitter *kdl_create_stream_emitter(kdl_write_func write_func, void *user_data, kdl_emitter_options const *opt);
 
 // Destroy an emitter
 KDL_EXPORT void kdl_destroy_emitter(kdl_emitter *emitter);

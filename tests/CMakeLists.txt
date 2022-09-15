@@ -122,24 +122,9 @@ add_executable(emitter_test emitter_test.c)
 target_link_libraries(emitter_test kdl test_util)
 add_test(emitter_test emitter_test)
 
-# ignore tests that depend on the representation of bigints or floats
-# (bigints are not supported, float representation from printf is not the same as Java)
+# Ignore some tests which require unsupported number representations
 set(FUZZY_KDL_TESTS_LIST
-    negative_exponent.kdl
-    negative_float.kdl
-    no_decimal_exponent.kdl
-    numeric_arg.kdl
-    numeric_prop.kdl
-    parse_all_arg_types.kdl
-    positive_exponent.kdl
-    prop_float_type.kdl
-    sci_notation_large.kdl
-    sci_notation_small.kdl
-    slashdash_negative_number.kdl
-    underscore_in_exponent.kdl
-    underscore_in_float.kdl
-    underscore_in_fraction.kdl
-    zero_float.kdl
+    no_decimal_exponent.kdl # float representation not consistent with other test cases
 )
 string(REPLACE ";" ":" FUZZY_KDL_TESTS "${FUZZY_KDL_TESTS_LIST}")
 

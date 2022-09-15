@@ -44,10 +44,16 @@ struct test_case {
 
 static void do_test_case(void *user_data)
 {
+    // configure float output to match kdl4j's test suite
+    kdl_emitter_options test_opts = KDL_DEFAULT_EMITTER_OPTIONS;
+    test_opts.float_mode.capital_e = true;
+    test_opts.float_mode.always_write_decimal_point = true;
+    test_opts.float_mode.exponent_plus = true;
+
     struct test_case *tc = (struct test_case *)user_data;
     FILE *in = fopen(tc->input_path, "r");
     ASSERT(in != NULL);
-    kdl_owned_string s = kdl_cat_file_to_string(in);
+    kdl_owned_string s = kdl_cat_file_to_string_opt(in, &test_opts);
     if (tc->ground_truth_path == NULL) {
         // parse error expected
         ASSERT2(s.data == NULL, "Parsing should fail");

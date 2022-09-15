@@ -27,15 +27,15 @@ static bool kdl_cat_impl(kdl_parser *parser, kdl_emitter *emitter);
 
 bool kdl_cat_file_to_file(FILE *in, FILE *out)
 {
+    return kdl_cat_file_to_file_opt(in, out, &KDL_DEFAULT_EMITTER_OPTIONS);
+}
+
+bool kdl_cat_file_to_file_opt(FILE *in, FILE *out, kdl_emitter_options const *opt)
+{
     bool ok = true;
 
     kdl_parser *parser = kdl_create_stream_parser(&read_func, (void*)in, KDL_DEFAULTS);
-    kdl_emitter *emitter = kdl_create_stream_emitter(&write_func, (void*)out,
-        (kdl_emitter_options){
-            .indent = 4,
-            .escape_mode = KDL_ESCAPE_CONTROL | KDL_ESCAPE_NEWLINE | KDL_ESCAPE_TAB,
-            .identifier_mode = KDL_PREFER_BARE_IDENTIFIERS
-        });
+    kdl_emitter *emitter = kdl_create_stream_emitter(&write_func, (void*)out, opt);
 
     if (parser == NULL || emitter == NULL) {
         ok = false;
@@ -50,14 +50,15 @@ bool kdl_cat_file_to_file(FILE *in, FILE *out)
 
 kdl_owned_string kdl_cat_file_to_string(FILE *in)
 {
+    return kdl_cat_file_to_string_opt(in, &KDL_DEFAULT_EMITTER_OPTIONS);
+}
+
+kdl_owned_string kdl_cat_file_to_string_opt(FILE *in, kdl_emitter_options const *opt)
+{
     kdl_owned_string result = { NULL, 0 };
 
     kdl_parser *parser = kdl_create_stream_parser(&read_func, (void*)in, KDL_DEFAULTS);
-    kdl_emitter *emitter = kdl_create_buffering_emitter((kdl_emitter_options){
-            .indent = 4,
-            .escape_mode = KDL_ESCAPE_CONTROL | KDL_ESCAPE_NEWLINE | KDL_ESCAPE_TAB,
-            .identifier_mode = KDL_PREFER_BARE_IDENTIFIERS
-        });
+    kdl_emitter *emitter = kdl_create_buffering_emitter(opt);
 
     bool ok = true;
     if (parser == NULL || emitter == NULL) {

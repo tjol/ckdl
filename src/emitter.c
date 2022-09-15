@@ -4,14 +4,24 @@
 #include "grammar.h"
 #include "utf8.h"
 
-#include <float.h>
+#include <math.h>
 #include <stdio.h>
 
 #define INITIAL_BUFFER_SIZE 4096
 
-#ifndef DBL_DECIMAL_DIG
-#define DBL_DECIMAL_DIG 10
-#endif
+const kdl_emitter_options KDL_DEFAULT_EMITTER_OPTIONS = {
+    .indent = 4,
+    .escape_mode = KDL_ESCAPE_DEFAULT,
+    .identifier_mode = KDL_PREFER_BARE_IDENTIFIERS,
+    .float_mode = (kdl_float_printing_options){
+        .always_write_decimal_point = false,
+        .always_write_decimal_point_or_exponent = true,
+        .capital_e = false,
+        .exponent_plus = false,
+        .plus = false,
+        .min_exponent = 4
+    }
+};
 
 struct _kdl_emitter
 {
@@ -32,10 +42,10 @@ static size_t _buffer_write_func(void *user_data, char const *data, size_t nbyte
         return 0;
 }
 
-kdl_emitter *kdl_create_buffering_emitter(kdl_emitter_options opt)
+kdl_emitter *kdl_create_buffering_emitter(kdl_emitter_options const *opt)
 {
     kdl_emitter *self = malloc(sizeof(kdl_emitter));
-    self->opt = opt;
+    self->opt = *opt;
     self->write_func = &_buffer_write_func;
     self->write_user_data = &self->buf;
     self->depth = 0;
@@ -44,10 +54,10 @@ kdl_emitter *kdl_create_buffering_emitter(kdl_emitter_options opt)
     return self;
 }
 
-kdl_emitter *kdl_create_stream_emitter(kdl_write_func write_func, void *user_data, kdl_emitter_options opt)
+kdl_emitter *kdl_create_stream_emitter(kdl_write_func write_func, void *user_data, kdl_emitter_options const *opt)
 {
     kdl_emitter *self = malloc(sizeof(kdl_emitter));
-    self->opt = opt;
+    self->opt = *opt;
     self->write_func = write_func;
     self->write_user_data = user_data;
     self->depth = 0;
@@ -74,17 +84,125 @@ static bool _emit_str(kdl_emitter *self, kdl_str s)
     return ok;
 }
 
+static kdl_owned_string _float_to_string(double f, kdl_float_printing_options const *opts)
+{
+    bool negative = f < 0.0;
+    f = fabs(f);
+    int exponent = floor(log10(f));
+    double exp_factor = 1.0;
+    if (abs(exponent) < opts->min_exponent) {
+        // don't use scientific notation
+        exponent = 0;
+    } else {
+        // do use scientific notation
+        exp_factor = pow(10.0, exponent);
+    }
+
+    int integer_part = (int)floor(f / exp_factor);
+
+    // f is now the positive fractional part as displayed
+    _kdl_write_buffer buf = _kdl_new_write_buffer(32);
+    if (negative) _kdl_buf_push_char(&buf, '-');
+    else if (opts->plus) _kdl_buf_push_char(&buf, '+');
+
+    // Write the integer part
+    buf.str_len += snprintf(buf.buf + buf.str_len, buf.buf_len - buf.str_len, "%d", integer_part);
+    // Write the decimal part if required
+    double f2 = integer_part * exp_factor;
+    bool written_point = false;
+    int zeros = 0;
+    int nines = 0;
+    int queued_digit = -1;
+    double pos = 0.1 * exp_factor;
+
+    while (f + pos != f && f2 < f) { // while this digit makes a difference
+        double remainder = f - f2;
+
+        int next_digit = floor(remainder / pos);
+
+        while (f2 + (next_digit + 1) * pos <= f) ++next_digit;
+
+        f2 += next_digit * pos;
+
+        if (next_digit == 0) {
+            ++zeros;
+        } else if (next_digit == 9) {
+            ++nines;
+        } else {
+            // write the queued digit
+            if (queued_digit >= 0 || zeros != 0 || nines != 0) {
+                if (!written_point) {
+                    _kdl_buf_push_char(&buf, '.');
+                    written_point = true;
+                }
+                if (queued_digit >= 0) _kdl_buf_push_char(&buf, '0' + queued_digit);
+                while (zeros != 0) {
+                    _kdl_buf_push_char(&buf, '0');
+                    --zeros;
+                }
+                while (nines != 0) {
+                    _kdl_buf_push_char(&buf, '9');
+                    --nines;
+                }
+            }
+            // queue this one
+            queued_digit = next_digit;
+        }
+
+        pos /= 10.0;
+    }
+    // Write the queued digit (if any)
+    if (queued_digit != -1) {
+        if (!written_point) {
+            _kdl_buf_push_char(&buf, '.');
+            written_point = true;
+        }
+        if (nines != 0) {
+            ++queued_digit;
+        }
+        _kdl_buf_push_char(&buf, '0' + queued_digit);
+    }
+    // Adding more decimal digits now makes no difference to the number.
+
+    // Add ".0" IFF requested
+    if (!written_point && opts->always_write_decimal_point) {
+        _kdl_buf_push_chars(&buf, ".0", 2);
+        written_point = true;
+    }
+
+    // Add exponent (if any)
+    if (exponent != 0) {
+        char exp_buf[32];
+        int exp_len = snprintf(exp_buf, 32, "%d", exponent);
+        _kdl_buf_push_char(&buf, opts->capital_e ? 'E' : 'e');
+        if (exponent >= 0 && opts->exponent_plus) {
+            _kdl_buf_push_char(&buf, '+');
+        }
+        _kdl_buf_push_chars(&buf, exp_buf, exp_len);
+    } else if (!written_point && opts->always_write_decimal_point_or_exponent) {
+        // Always write either an exponent or a decimal point, to mark this
+        // number as float
+        _kdl_buf_push_chars(&buf, ".0", 2);
+    }
+    return _kdl_buf_to_string(&buf);
+}
+
 static bool _emit_number(kdl_emitter *self, kdl_number const *n)
 {
-    char buf[32];
-    int len = 0;
+    char int_buf[32];
+    int int_len = 0;
+    kdl_owned_string float_str;
+    bool ok;
+
     switch (n->type) {
     case KDL_NUMBER_TYPE_INTEGER:
-        len = snprintf(buf, 32, "%lld", n->integer);
-        return (int)self->write_func(self->write_user_data, buf, len) == len;
+        int_len = snprintf(int_buf, 32, "%lld", n->integer);
+        return (int)self->write_func(self->write_user_data, int_buf, int_len) == int_len;
     case KDL_NUMBER_TYPE_FLOATING_POINT:
-        len = snprintf(buf, 32, "%.*g", DBL_DECIMAL_DIG, n->floating_point);
-        return (int)self->write_func(self->write_user_data, buf, len) == len;
+        float_str = _float_to_string(n->floating_point, &self->opt.float_mode);
+        ok = self->write_func(self->write_user_data, float_str.data, float_str.len) == float_str.len;
+        kdl_free_string(&float_str);
+        return ok;
     case KDL_NUMBER_TYPE_STRING_ENCODED:
         return self->write_func(self->write_user_data, n->string.data, n->string.len)
             == n->string.len;

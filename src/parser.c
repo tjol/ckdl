@@ -7,6 +7,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <math.h>
 
 enum _kdl_parser_state {
     // Basic states
@@ -733,17 +735,20 @@ static bool _parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_strin
 
     // rough heuristic for numbers that fit into a double exactly
     if (digits_before_decimal + digits_after_decimal <= 15 && explicit_exponent < 285 && explicit_exponent > -285) {
+        // "strip zeros"
+        while (decimal_mantissa % 10 == 0 && digits_after_decimal > 0) {
+            decimal_mantissa /= 10;
+            --digits_after_decimal;
+        }
         double n = (double)decimal_mantissa;
         if (negative) n = -n;
         if (exponent_negative) explicit_exponent = -explicit_exponent;
         int net_exponent = explicit_exponent - digits_after_decimal;
-        while (net_exponent < 0) {
-            ++net_exponent;
-            n *= 0.1;
+        if (net_exponent < 0) {
+            n /= pow(10.0, -net_exponent);
         }
-        while (net_exponent > 0) {
-            --net_exponent;
-            n *= 10.0;
+        if (net_exponent > 0) {
+            n *= pow(10.0, net_exponent);
         }
 
         val->type = KDL_TYPE_NUMBER;
@@ -751,15 +756,16 @@ static bool _parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_strin
         val->number.floating_point = n;
         return true;
     } else {
-        // Remove all underscores and pluses
+        // Remove all underscores and the initial plus
         *s = kdl_clone_str(&number);
-        char const *p1 = number.    data;
+        char const *p1 = number.data;
         char const *end = number.data + number.len;
         char *p2 = s->data;
         s->len = 0;
+        if (p1 != end && *p1 == '+') ++p1;
         while (p1 != end) {
             int c = *(p1++);
-            if (c != '_' && c != '+') {
+            if (c != '_') {
                 // copy character
                 *(p2++) = c;
                 ++s->len;

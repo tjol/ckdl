@@ -7,11 +7,10 @@
 
 static void test_basics()
 {
-    kdl_emitter *emitter = kdl_create_buffering_emitter((kdl_emitter_options) {
-        .indent = 3,
-        .escape_mode = KDL_ESCAPE_DEFAULT,
-        .identifier_mode = KDL_PREFER_BARE_IDENTIFIERS
-    });
+    kdl_emitter_options emitter_opt = KDL_DEFAULT_EMITTER_OPTIONS;
+    emitter_opt.indent = 3;
+    emitter_opt.float_mode.always_write_decimal_point_or_exponent = false;
+    kdl_emitter *emitter = kdl_create_buffering_emitter(&emitter_opt);
 
     char const *expected =
         "\xf0\x9f\x92\xa9\n"
@@ -30,8 +29,8 @@ static void test_basics()
     v.type = KDL_TYPE_NUMBER;
     v.type_annotation = (kdl_str){ NULL, 0 };
     v.number = (kdl_number) {
-        .type = KDL_NUMBER_TYPE_INTEGER,
-        .integer = 1
+        .type = KDL_NUMBER_TYPE_FLOATING_POINT,
+        .floating_point = 1.0
     };
     ASSERT(kdl_emit_arg(emitter, &v));
     v.type = KDL_TYPE_STRING;

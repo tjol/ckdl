@@ -381,7 +381,7 @@ Like the parser, the emitter supports two IO models: it can either write to an i
 give you a string at the end, or it can write its data on the fly by calling a writer function you
 supply.
 
-.. c:function:: kdl_emitter *kdl_create_buffering_emitter(kdl_emitter_options opt)
+.. c:function:: kdl_emitter *kdl_create_buffering_emitter(kdl_emitter_options const *opt)
 
     Create an emitter than writes into an internal buffer. Read the buffer using
     :c:func:`kdl_get_emitter_buffer` after calling :c:func:`kdl_emit_end`.
@@ -393,11 +393,13 @@ supply.
     Pointer to a function that writes to some destination, such as a file. It should return exactly
     ``nbytes``, or 0 in case of an error.
 
-    :param opt: Emitter configuration
-
-.. c:function:: kdl_emitter *kdl_create_stream_emitter(kdl_write_func write_func, void *user_data, kdl_emitter_options opt)
+.. c:function:: kdl_emitter *kdl_create_stream_emitter(kdl_write_func write_func, void *user_data, kdl_emitter_options const *opt)
 
     Create an emitter that writes by calling a user-supplied function
+
+    :param write_func: Function to call for writing
+    :param user_data: First argument of write_func
+    :param opt: Emitter configuration
 
 You will interact with the emitter through a pointer to an opaque :c:type:`kdl_emitter` structure.
 
@@ -419,15 +421,21 @@ text.
 
     .. c:member:: int indent
 
-        Number of spaces to indent child nodes by
+        Number of spaces to indent child nodes by (default: 4)
 
     .. c:member:: kdl_escape_mode escape_mode
 
         Configuration for :c:func:`kdl_escape`: which characters should be escaped in regular strings?
+        (default: :c:enumerator:`KDL_ESCAPE_DEFAULT`)
 
     .. c:member:: kdl_identifier_emission_mode identifier_mode
 
         How should identifiers (i.e., node names, type annotations and property keys) be rendered?
+        (default: :c:enumerator:`KDL_PREFER_BARE_IDENTIFIERS`)
+
+    .. c:member::kdl_float_printing_options float_mode
+
+        How exactly should doubles be formatted?
 
 .. c:type:: enum kdl_identifier_emission_mode kdl_identifier_emission_mode
 
@@ -442,6 +450,37 @@ text.
     .. c:enumerator:: KDL_ASCII_IDENTIFIERS
 
         Allow only ASCII in bare identifiers
+
+.. c:type:: struct kdl_float_printing_options kdl_float_printing_options
+
+    .. c:member:: bool always_write_decimal_point
+
+        Write ".0" if there would otherwise be no decimal point (default: false)
+
+    .. c:member:: bool always_write_decimal_point_or_exponent
+
+        Write ".0" if there would otherwise be neither a decimal point nor an exponent (i.e.,
+        1.0 is written as "1.0", not "1", but 1.0e+6 is written as "1e6") (default: true)
+
+    .. c:member:: bool capital_e
+
+        Use ``E`` instead of ``e`` to introduce the exponent. (default: false)
+
+    .. c:member:: bool exponent_plus
+
+        Always write the exponent with a sign: ``1e+6`` instead of ``1e6`` (default: false)
+
+    .. c:member:: bool plus
+
+        Always write a sign in front of the number: ``+1.0`` instead of ``1.0`` (default: false)
+
+    .. c:member:: int min_exponent
+
+        The absolute power of 10 above which to use scientific notation (default: 4)
+
+.. c:var:: extern const kdl_emitter_options KDL_DEFAULT_EMITTER_OPTIONS
+
+    Default configuration for the emitter.
 
 The emitter has a number of methods to write KDL nodes, arguments and properties:
 

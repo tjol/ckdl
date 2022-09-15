@@ -61,12 +61,7 @@ int main(int argc, char **argv)
     }
 
     kdl_parser *parser = kdl_create_stream_parser(&read_func, (void*)in, parse_opts);
-    kdl_emitter *emitter = kdl_create_stream_emitter(&write_func, NULL,
-        (kdl_emitter_options){
-            .indent = 4,
-            .escape_mode = KDL_ESCAPE_CONTROL | KDL_ESCAPE_NEWLINE | KDL_ESCAPE_TAB,
-            .identifier_mode = KDL_PREFER_BARE_IDENTIFIERS
-        });
+    kdl_emitter *emitter = kdl_create_stream_emitter(&write_func, NULL, &KDL_DEFAULT_EMITTER_OPTIONS);
 
     if (parser == NULL || emitter == NULL) {
         fprintf(stderr, "Initialization error\n");

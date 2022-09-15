@@ -40,12 +40,7 @@ int main(int argc, char **argv)
     }
 
     kdl_tokenizer *tokenizer = kdl_create_stream_tokenizer(&read_func, (void*)in);
-    kdl_emitter *emitter = kdl_create_stream_emitter(&write_func, NULL,
-        (kdl_emitter_options){
-            .indent = 4,
-            .escape_mode = KDL_ESCAPE_ASCII_MODE,
-            .identifier_mode = KDL_ASCII_IDENTIFIERS
-        });
+    kdl_emitter *emitter = kdl_create_stream_emitter(&write_func, NULL, &KDL_DEFAULT_EMITTER_OPTIONS);
 
     if (tokenizer == NULL || emitter == NULL) {
         fprintf(stderr, "Initialization error\n");

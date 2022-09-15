@@ -20,8 +20,8 @@ under `doc/` in this repository.
 
 ### Status
 
-ckdl is likely standard-compliant, and passes all test cases in the KDL test
-suite other than those affected by these known issues:
+ckdl passes all test cases in the KDL test suite except for one where a number is
+formatted a little differently.
 
- * Floating-point numbers are formatted using the C `printf` facility, which, while
-   correct, does not produce the shortest decimal representation.
+It's reasonable to suspect that ckdl is *close* to being standard-compliant, but
+of course it's always possible there are bugs affecting some finer details.

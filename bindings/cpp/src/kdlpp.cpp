@@ -210,8 +210,7 @@ Document Document::read_from(kdl_parser *parser)
 
 std::u8string Document::to_string() const
 {
-    kdl_emitter_options opt = { 4, KDL_ESCAPE_DEFAULT, KDL_PREFER_BARE_IDENTIFIERS };
-    kdl_emitter* emitter = kdl_create_buffering_emitter(opt);
+    kdl_emitter* emitter = kdl_create_buffering_emitter(&KDL_DEFAULT_EMITTER_OPTIONS);
     emit_nodes(emitter, m_nodes);
     auto result = std::u8string{to_u8string_view(kdl_get_emitter_buffer(emitter))};
     kdl_destroy_emitter(emitter);
