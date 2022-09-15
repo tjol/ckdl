@@ -1,6 +1,10 @@
 from ._libkdl cimport *
 from libc.limits cimport LLONG_MIN, LLONG_MAX
 
+cdef class ParseError(ValueError):
+    def __init__(self, msg):
+        super().__init__(msg)
+
 cdef str _kdl_str_to_py_str(const kdl_str* s):
     return s.data[:s.len].decode("utf-8")
 
@@ -349,7 +353,7 @@ def parse(str kdl_text):
             kdl_destroy_parser(parser)
             return Document(root_node_list)
         elif ev.event == KDL_EVENT_PARSE_ERROR:
-            raise RuntimeError(_kdl_str_to_py_str(&ev.value.string))
+            raise ParseError(_kdl_str_to_py_str(&ev.value.string))
         elif ev.event == KDL_EVENT_START_NODE:
             current_node = Node()
             current_node.name = _kdl_str_to_py_str(&ev.name)

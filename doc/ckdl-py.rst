@@ -110,6 +110,12 @@ The ``ckdl`` package is relatively simple. It provides one function
     :param kdl_doc: The KDL document to parse
     :type kdl_doc: str
     :rtype: Document
+    :raises: :py:exc:`ParseError`
+
+.. py:exception:: ParseError
+
+    Thrown by :py:func:`parse` when the CKDL parser cannot parse the document (generally
+    because it's ill-formed).
 
 and three classes to represent KDL data:
 

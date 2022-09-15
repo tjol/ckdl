@@ -26,7 +26,7 @@ namespace {
         case KDL_NUMBER_TYPE_STRING_ENCODED:
             return std::u8string{to_u8string_view(n.string)};
         default:
-            throw TypeError("invalid kdl_number");
+            throw std::logic_error("invalid kdl_number");
         }
     }
 
@@ -43,7 +43,7 @@ namespace {
         case KDL_TYPE_STRING:
             return std::u8string{to_u8string_view(val.string)};
         default:
-            throw TypeError("invalid kdl_value");
+            throw std::logic_error("invalid kdl_value");
         }
     }
 
