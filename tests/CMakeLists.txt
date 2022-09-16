@@ -108,6 +108,7 @@ if(NOT KDL_TEST_CASES_ROOT)
 endif()
 
 add_library(test_util STATIC test_util.c)
+target_compile_options(test_util PUBLIC ${KDL_COMPILE_OPTIONS})
 target_include_directories(test_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(utf8_test utf8_test.c)

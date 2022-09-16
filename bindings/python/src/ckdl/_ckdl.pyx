@@ -30,6 +30,11 @@ cdef class Value:
     def __str__(self):
         return str(Document(Node("-", [self])))[2:].strip()
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+            and other.type_annotation == self.type_annotation
+            and other.value == self.value)
+
 cdef _convert_kdl_value_no_type(const kdl_value* v):
     if v.type == KDL_TYPE_NULL:
         return None
@@ -173,6 +178,14 @@ cdef class Node:
     def __str__(self):
         return str(Document(self))
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+            and other.type_annotation == self.type_annotation
+            and other.name == self.name
+            and other.args == self.args
+            and other.properties == self.properties
+            and other.children == self.children)
+
 cdef kdl_value _make_kdl_value(value, kdl_owned_string* tmp_str_t, kdl_owned_string* tmp_str_v):
     cdef kdl_value result
     result.type_annotation.data = NULL
@@ -302,14 +315,19 @@ cdef class Document:
     def __str__(self):
         return self.dump()
 
-    def dump(self):
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.nodes == other.nodes
+
+    def dump(self, EmitterOptions opts=EmitterOptions()):
         """Convert to KDL"""
         cdef kdl_emitter *emitter
-        cdef kdl_emitter_options opts
+        cdef kdl_emitter_options c_opts
         cdef kdl_str buf
         cdef str doc
 
-        emitter = kdl_create_buffering_emitter(&KDL_DEFAULT_EMITTER_OPTIONS)
+        c_opts = opts._to_c_struct()
+
+        emitter = kdl_create_buffering_emitter(&c_opts)
 
         for node in self.nodes:
             _emit_node(emitter, node)
@@ -321,6 +339,107 @@ cdef class Document:
         kdl_destroy_emitter(emitter)
         return doc
 
+cpdef enum EscapeMode:
+    minimal = KDL_ESCAPE_MINIMAL
+    control = KDL_ESCAPE_CONTROL
+    newline = KDL_ESCAPE_NEWLINE
+    tab = KDL_ESCAPE_TAB
+    ascii_mode = KDL_ESCAPE_ASCII_MODE
+    default = KDL_ESCAPE_DEFAULT
+
+cdef class FloatMode:
+    cdef public bint always_write_decimal_point
+    cdef public bint always_write_decimal_point_or_exponent
+    cdef public bint capital_e
+    cdef public bint exponent_plus
+    cdef public bint plus
+    cdef public int min_exponent
+
+    def __init__(
+            self, *,
+            always_write_decimal_point=None,
+            always_write_decimal_point_or_exponent=None,
+            capital_e=None,
+            exponent_plus=None,
+            plus=None,
+            min_exponent=None):
+        cdef kdl_float_printing_options* defaults = &KDL_DEFAULT_EMITTER_OPTIONS.float_mode
+        if always_write_decimal_point is not None:
+            self.always_write_decimal_point = always_write_decimal_point
+        else:
+            self.always_write_decimal_point = defaults.always_write_decimal_point
+        if always_write_decimal_point_or_exponent is not None:
+            self.always_write_decimal_point_or_exponent = always_write_decimal_point_or_exponent
+        else:
+            self.always_write_decimal_point_or_exponent = defaults.always_write_decimal_point_or_exponent
+        if capital_e is not None:
+            self.capital_e = capital_e
+        else:
+            self.capital_e = defaults.capital_e
+        if exponent_plus is not None:
+            self.exponent_plus = exponent_plus
+        else:
+            self.exponent_plus = defaults.exponent_plus
+        if plus is not None:
+            self.plus = plus
+        else:
+            self.plus = defaults.plus
+        if min_exponent is not None:
+            self.min_exponent = min_exponent
+        else:
+            self.min_exponent = defaults.min_exponent
+
+    cdef kdl_float_printing_options _to_c_struct(self):
+        cdef kdl_float_printing_options res
+        res.always_write_decimal_point = self.always_write_decimal_point
+        res.always_write_decimal_point_or_exponent = self.always_write_decimal_point_or_exponent
+        res.capital_e = self.capital_e
+        res.exponent_plus = self.exponent_plus
+        res.plus = self.plus
+        res.min_exponent = self.min_exponent
+        return res
+
+cpdef enum IdentifierMode:
+    prefer_bare_identifiers = KDL_PREFER_BARE_IDENTIFIERS
+    quote_all_identifiers = KDL_QUOTE_ALL_IDENTIFIERS
+    ascii_identifiers = KDL_ASCII_IDENTIFIERS
+
+cdef class EmitterOptions:
+    cdef public int indent
+    cdef public EscapeMode escape_mode
+    cdef public IdentifierMode identifier_mode
+    cdef public FloatMode float_mode
+
+    def __init__(
+            self, *,
+            indent=None,
+            escape_mode=None,
+            identifier_mode=None,
+            float_mode=None):
+        if indent is not None:
+            self.indent = indent
+        else:
+            self.indent = KDL_DEFAULT_EMITTER_OPTIONS.indent
+        if escape_mode is not None:
+            self.escape_mode = escape_mode
+        else:
+            self.escape_mode = <EscapeMode>KDL_DEFAULT_EMITTER_OPTIONS.escape_mode
+        if identifier_mode is not None:
+            self.identifier_mode = identifier_mode
+        else:
+            self.identifier_mode = <IdentifierMode>KDL_DEFAULT_EMITTER_OPTIONS.identifier_mode
+        if float_mode is not None:
+            self.float_mode = float_mode
+        else:
+            self.float_mode = FloatMode()
+
+    cdef kdl_emitter_options _to_c_struct(self):
+        cdef kdl_emitter_options res
+        res.indent = self.indent
+        res.escape_mode = <kdl_escape_mode>self.escape_mode
+        res.identifier_mode = <kdl_identifier_emission_mode>self.identifier_mode
+        res.float_mode = self.float_mode._to_c_struct()
+        return res
 
 def parse(str kdl_text):
     """

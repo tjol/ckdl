@@ -11,9 +11,11 @@ project(ckdl C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_EXTENSIONS OFF)
 
+set(KDL_COMPILE_OPTIONS)
+
 if(MSVC)
     string(REGEX REPLACE "/W3" "/W4" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-    add_compile_options(/wd4996 /wd5105)
+    list(APPEND KDL_COMPILE_OPTIONS /wd4996 /wd5105)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
     # try GCC-like options
@@ -25,7 +27,7 @@ else()
     foreach(flag ${warning_flags})
         check_c_compiler_flag("-${flag}" "COMPILER_FLAG_${flag}")
         if(${COMPILER_FLAG_${flag}})
-            add_compile_options("-${flag}")
+            list(APPEND KDL_COMPILE_OPTIONS "-${flag}")
         endif()
     endforeach()
 endif()
@@ -58,9 +60,11 @@ set(KDL_UTF8_C_SOURCES
 )
 
 add_library(kdl-utf8 STATIC ${KDL_UTF8_C_SOURCES})
+target_compile_options(kdl-utf8 PRIVATE ${KDL_COMPILE_OPTIONS})
 target_include_directories(kdl-utf8 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_library(kdl ${KDL_C_SOURCES})
+target_compile_options(kdl PRIVATE ${KDL_COMPILE_OPTIONS})
 target_link_libraries(kdl PRIVATE kdl-utf8 math)
 target_include_directories(kdl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_definitions(kdl PRIVATE -DBUILDING_KDL=1)
