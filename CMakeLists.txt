@@ -30,6 +30,21 @@ else()
     endforeach()
 endif()
 
+# Check for math library
+include(CheckSymbolExists)
+add_library(math INTERFACE)
+check_symbol_exists(floor "math.h" HAVE_FLOOR)
+if (NOT HAVE_FLOOR)
+    message(STATUS "Trying to link with libm")
+    set(CMAKE_REQUIRED_LIBRARIES m)
+    check_symbol_exists(floor "math.h" HAVE_FLOOR_LIBM)
+    if (NOT HAVE_FLOOR_LIBM)
+        message(FATAL_ERROR "floor() missing (could not find C math library)")
+    else()
+        target_link_libraries(math INTERFACE m)
+    endif()
+endif()
+
 set(KDL_C_SOURCES
     src/bigint.c
     src/emitter.c
@@ -46,7 +61,7 @@ add_library(kdl-utf8 STATIC ${KDL_UTF8_C_SOURCES})
 target_include_directories(kdl-utf8 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_library(kdl ${KDL_C_SOURCES})
-target_link_libraries(kdl kdl-utf8)
+target_link_libraries(kdl PRIVATE kdl-utf8 math)
 target_include_directories(kdl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_definitions(kdl PRIVATE -DBUILDING_KDL=1)
 if(NOT BUILD_SHARED_LIBS)
