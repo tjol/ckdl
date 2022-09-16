@@ -68,9 +68,12 @@ target_compile_options(kdl PRIVATE ${KDL_COMPILE_OPTIONS})
 target_link_libraries(kdl PRIVATE kdl-utf8 math)
 target_include_directories(kdl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_definitions(kdl PRIVATE -DBUILDING_KDL=1)
+
 if(NOT BUILD_SHARED_LIBS)
     target_compile_definitions(kdl PUBLIC -DKDL_STATIC_LIB=1)
+    target_compile_definitions(kdl-utf8 PUBLIC -DKDL_STATIC_LIB=1)
 endif()
+
 include(GNUInstallDirs)
 install(TARGETS kdl DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libkdl)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/kdl DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT libkdl)
