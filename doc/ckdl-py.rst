@@ -101,7 +101,12 @@ API
 
 .. py:currentmodule:: ckdl
 
-The ``ckdl`` package is relatively simple. It provides one function
+The ``ckdl`` package is relatively simple. It provides one function to parse KDL,
+three classes to represent data, and some classes to optionally configure the
+emitter.
+
+Parsing
+"""""""
 
 .. py:function:: parse(kdl_doc)
 
@@ -117,7 +122,8 @@ The ``ckdl`` package is relatively simple. It provides one function
     Thrown by :py:func:`parse` when the CKDL parser cannot parse the document (generally
     because it's ill-formed).
 
-and three classes to represent KDL data:
+Data types
+""""""""""
 
 .. py:class:: Value(type_annotation : str, value)
 
@@ -189,11 +195,88 @@ and three classes to represent KDL data:
 
         The top-level nodes in the document - list of :py:class:`Node`
 
-    .. py:method:: dump(self)
+    .. py:method:: dump(self[, opts : EmitterOptions])
 
         Serialize the document to KDL
+
+        :param opts: (optional) Options for the ckdl emitter
 
     .. py:method:: __str__(self)
 
         See dump()
+
+Emitter configuration
+"""""""""""""""""""""
+
+.. py:class:: EmitterOptions(*, indent=None, escape_mode=None, identifier_mode=None, float_mode=None)
+
+    .. py:attribute:: indent
+
+        Number of spaces to indent child nodes by (default: 4)
+
+        :type: int
+
+    .. py:attribute:: escape_mode
+
+        Which characters should be escaped in regular strings?
+
+        :type: EscapeMode
+
+    .. py:attribute:: identifier_mode
+
+        How should identifiers (i.e., node names, type annotations and property keys) be rendered?
+
+        :type: IdentifierMode
+
+    .. py:attribute:: float_mode
+
+        How exactly should doubles be formatted?
+
+        :type: FloatMode
+
+.. py:class:: EscapeMode
+
+    Enum
+
+    .. py:attribute:: minimal
+    .. py:attribute:: control
+    .. py:attribute:: newline
+    .. py:attribute:: tab
+    .. py:attribute:: ascii_mode
+    .. py:attribute:: default
+
+.. py:class:: IdentifierMode
+
+    Enum
+
+    .. py:attribute:: prefer_bare_identifiers
+    .. py:attribute:: quote_all_identifiers
+    .. py:attribute:: ascii_identifiers
+
+
+.. py:class:: FloatMode(*, always_write_decimal_point=None, always_write_decimal_point_or_exponent=None, capital_e=None, exponent_plus=None, plus=None, min_exponent=None)
+
+    .. py:attribute:: always_write_decimal_point
+
+        :type: bool
+
+    .. py:attribute:: always_write_decimal_point_or_exponent
+
+        :type: bool
+
+    .. py:attribute:: capital_e
+
+        :type: bool
+
+    .. py:attribute:: exponent_plus
+
+        :type: bool
+
+    .. py:attribute:: plus
+
+        :type: bool
+
+    .. py:attribute:: min_exponent
+
+        :type: int
 
