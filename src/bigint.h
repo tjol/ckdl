@@ -8,8 +8,8 @@
 #include <sys/types.h>
 
 struct _kdl_ubigint {
-	size_t n_digits;
-	uint32_t num[];
+    size_t n_digits;
+    uint32_t num[];
 };
 
 typedef struct _kdl_ubigint _kdl_ubigint;

@@ -20,20 +20,20 @@ Reading
 """""""
 
 .. literalinclude:: ../bindings/cpp/tests/kdlpp_test.cpp
-	:language: cpp
-	:start-after: begin kdlpp reading demo
-	:end-before: end kdlpp reading demo
-	:dedent:
+    :language: cpp
+    :start-after: begin kdlpp reading demo
+    :end-before: end kdlpp reading demo
+    :dedent:
 
 
 Writing
 """""""
 
 .. literalinclude:: ../bindings/cpp/tests/kdlpp_test.cpp
-	:language: cpp
-	:start-after: begin kdlpp writing demo
-	:end-before: end kdlpp writing demo
-	:dedent:
+    :language: cpp
+    :start-after: begin kdlpp writing demo
+    :end-before: end kdlpp writing demo
+    :dedent:
 
 API
 ^^^
