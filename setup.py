@@ -12,7 +12,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3"
     ],
-    license = { "file": "COPYING" },
+    license="MIT License",
     package_dir={"": "bindings/python/src"},
     packages=["ckdl"],
     cmake_args=[
