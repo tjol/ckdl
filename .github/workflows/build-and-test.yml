@@ -8,10 +8,10 @@ on:
 
 jobs:
   build_c:
-    name: Build and test C and C++ libraries
+    name: C, C++
     strategy:
       matrix:
-        build_type: [Release, Debug]
+        build_type: [ Release, Debug ]
         os: [ ubuntu-22.04, windows-2022, macos-12 ]
     runs-on: ${{ matrix.os }}
     steps:
@@ -28,10 +28,10 @@ jobs:
       run: ctest -C ${{ matrix.build_type }}
 
   build_cython:
-    name: Build and test Python package
+    name: Python
     strategy:
       matrix:
-        python-version: [ "3.7", "3.10" ]
+        python-version: [ "3.7", "3.8", "3.9", "3.10" ]
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
