@@ -11,12 +11,14 @@
 #endif
 
 #if defined(_WIN32)
-#    ifdef BUILDING_KDL
-#        define KDL_EXPORT __declspec(dllexport)
-#    elif !defined(KDL_STATIC_LIB)
-#        define KDL_EXPORT __declspec(dllimport)
-#    else
+#    ifdef KDL_STATIC_LIB
 #        define KDL_EXPORT
+#    else
+#        ifdef BUILDING_KDL
+#            define KDL_EXPORT __declspec(dllexport)
+#        else
+#            define KDL_EXPORT __declspec(dllimport)
+#        endif
 #    endif
 #elif defined(__GNUC__) && __GNUC__ >= 4
 #    define KDL_EXPORT __attribute__((visibility("default")))
