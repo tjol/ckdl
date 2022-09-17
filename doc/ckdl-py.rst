@@ -4,25 +4,21 @@
 
 .. highlight:: shell-session
 
-Build and install the ``ckdl`` Python Package from source using ``pip``::
+Install the ``ckdl`` Python Package from source using ``pip``::
 
-    % pip install . # where "." is the path to the ckdl sources
+    % pip install ckdl
 
-or build a `wheel <PEP 427>`_ with
+You can also build and install from source using pip::
 
-::
+    % pip install path/to/ckdl/source
 
-    % python3 setup.py bdist_wheel
-
-or your favourite `PEP 517`_ compatible tool, such as `build`_.
+or some other `PEP 517`_ compatible tool.
 
 .. note::
 
     As always, it is recommended to work in a `venv`_
 
-.. _PEP 427: https://peps.python.org/pep-0427/
 .. _PEP 517: https://peps.python.org/pep-0517/
-.. _build: https://pypa-build.readthedocs.io/en/latest/
 .. _venv: https://docs.python.org/3/library/venv.html
 
 The Python ``ckdl`` API
