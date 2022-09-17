@@ -4,11 +4,12 @@
 
 .. highlight:: shell-session
 
-Install the ``ckdl`` Python Package from source using ``pip``::
+Download and install the `ckdl <https://pypi.org/project/ckdl/>`_
+Python Package using ``pip``::
 
     % pip install ckdl
 
-You can also build and install from source using pip::
+You can also build and install from source using ``pip``::
 
     % pip install path/to/ckdl/source
 
