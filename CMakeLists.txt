@@ -47,6 +47,28 @@ if (NOT HAVE_FLOOR)
     endif()
 endif()
 
+# Check for anonymous unions (C11 feature)
+include(CheckCSourceCompiles)
+check_c_source_compiles("
+struct s {
+    int i;
+    union {
+        int j;
+        long k;
+    };
+};
+int main()
+{
+    struct s s = { .i = 1, .k = 0L };
+    return 0;
+}
+" HAVE_C11_ANONYMOUS_UNIONS)
+
+if (NOT HAVE_C11_ANONYMOUS_UNIONS)
+    message(FATAL_ERROR "C compiler does not support C11 anonymous unions. "
+        "Please use a newer C compiler with support for the C11 standard.")
+endif()
+
 set(KDL_C_SOURCES
     src/bigint.c
     src/emitter.c
