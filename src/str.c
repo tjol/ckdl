@@ -1,6 +1,7 @@
 #include "kdl/common.h"
 #include "str.h"
 #include "utf8.h"
+#include "compiler_compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,7 +9,7 @@
 
 #define BUFFER_SIZE_INCREMENT 512
 
-KDL_EXPORT extern inline kdl_str kdl_borrow_str(kdl_owned_string const *str);
+KDL_EXPORT_EXTERN_INLINE kdl_str kdl_borrow_str(kdl_owned_string const *str);
 
 kdl_str kdl_str_from_cstr(char const *s)
 {

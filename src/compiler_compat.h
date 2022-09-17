@@ -9,4 +9,10 @@
 #define _fallthrough_
 #endif
 
+#if defined(_WIN32) && defined(__GNUC__) && !defined(KDL_STATIC_LIB)
+#define KDL_EXPORT_EXTERN_INLINE __declspec(dllexport) extern inline
+#else
+#define KDL_EXPORT_EXTERN_INLINE extern inline
+#endif
+
 #endif // KDL_INTERNAL_COMPILER_COMPAT_H_
