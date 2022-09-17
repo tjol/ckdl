@@ -43,7 +43,7 @@ struct kdl_owned_string {
 };
 
 // Get a reference to an owned string
-KDL_EXPORT inline kdl_str kdl_borrow_str(kdl_owned_string const *str)
+KDL_EXPORT_INLINE kdl_str kdl_borrow_str(kdl_owned_string const *str)
 {
     kdl_str result = { str->data, str->len };
     return result;
