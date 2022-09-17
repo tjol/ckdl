@@ -1,0 +1,49 @@
+name: Build and test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build_c:
+    name: C, C++
+    strategy:
+      matrix:
+        build_type: [ Release, Debug ]
+        os: [ ubuntu-22.04, windows-2022, macos-12 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }}
+
+    - name: Test
+      working-directory: ${{ github.workspace }}/build
+      run: ctest -C ${{ matrix.build_type }}
+
+  build_cython:
+    name: Python
+    strategy:
+      matrix:
+        python-version: [ "3.7", "3.8", "3.9", "3.10" ]
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Build wheel
+      run: |
+        python -m pip install --upgrade pip build
+        python -m build -w
+    - name: Install wheel
+      run: python -m pip install dist/*.whl
+    - name: Test
+      run: python bindings/python/tests/ckdl_test.py

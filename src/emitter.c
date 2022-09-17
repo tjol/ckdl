@@ -108,26 +108,38 @@ static kdl_owned_string _float_to_string(double f, kdl_float_printing_options co
     // Write the integer part
     buf.str_len += snprintf(buf.buf + buf.str_len, buf.buf_len - buf.str_len, "%d", integer_part);
     // Write the decimal part if required
-    double f2 = integer_part * exp_factor;
+    double f_intpart = integer_part * exp_factor;
     bool written_point = false;
     int zeros = 0;
     int nines = 0;
     int queued_digit = -1;
+    unsigned long long fractional_part_so_far = 0;
     double pos = 0.1 * exp_factor;
 
-    while (f + pos != f && f2 < f) { // while this digit makes a difference
-        double remainder = f - f2;
+    double f_so_far = f_intpart;
+
+    while (f + pos != f && f_so_far < f) { // while this digit makes a difference
+        double remainder = f - f_so_far;
 
         int next_digit = floor(remainder / pos);
+        fractional_part_so_far = 10 * fractional_part_so_far + next_digit;
 
-        while (f2 + (next_digit + 1) * pos <= f) ++next_digit;
+        while (f_intpart + (fractional_part_so_far + 1) * pos <= f) {
+            ++next_digit;
+            ++fractional_part_so_far;
+        }
 
-        f2 += next_digit * pos;
+        f_so_far = f_intpart + fractional_part_so_far * pos;
 
         if (next_digit == 0) {
             ++zeros;
         } else if (next_digit == 9) {
             ++nines;
+        } else if (next_digit >= 10) {
+            fprintf(stderr, "- ckdl WARNING - _float_to_string calculated digit > 9\n");
+            int overflow = next_digit - 9;
+            next_digit -= overflow;
+            fractional_part_so_far -= overflow;
         } else {
             // write the queued digit
             if (queued_digit >= 0 || zeros != 0 || nines != 0) {

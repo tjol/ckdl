@@ -43,9 +43,9 @@ ckdl has been tested with:
 * Windows 10 on x86_64, with Visual Studio 2017, 2019 and 2022
 * FreeBSD 12 on x86_64
 
-To build ckdl, you will need a C compiler (like GCC, Clang or Microsoft Visual C++) and
-`CMake`_ version 3.8 or later. (This should be in your system package manager if you're
-using Linux, BSD, or `Homebrew`_ on Mac)
+To build ckdl, you will need a C compiler supporting C11 (like GCC 4.6+, Clang or Microsoft
+Visual C++) and `CMake`_ version 3.8 or later. (This should be in your system package manager
+if you're using Linux, BSD, or `Homebrew`_ on Mac)
 
 .. _CMake: https://cmake.org
 .. _Homebrew: https://brew.sh
