@@ -1,6 +1,6 @@
 # ckdl - KDL reading and writing for C, Python, C++
 
-**ckdl** is a C library that implements reading and writing the
+**ckdl** is a C (C11) library that implements reading and writing the
 [KDL Document Language](https://github.com/kdl-org/kdl).
 
 ckdl provides a simple “streaming“ API, inspired by SAX, instead of reading the
