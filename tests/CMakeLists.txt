@@ -135,3 +135,9 @@ target_compile_definitions(example_doc_test PRIVATE
     "KDL_TEST_CASES_ROOT=\"${KDL_TEST_CASES_ROOT}\""
     "FUZZY_KDL_TESTS=\"${FUZZY_KDL_TESTS}\"")
 add_test(NAME example_doc_test COMMAND "$<TARGET_FILE:example_doc_test>" "${KDL_TEST_CASES_ROOT}")
+
+if (WIN32 AND BUILD_SHARED_LIBS)
+    # Copy kdl.dll to the test folder so that the tests work
+    add_custom_command(TARGET example_doc_test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:kdl> $<TARGET_FILE_DIR:example_doc_test>)
+endif()
