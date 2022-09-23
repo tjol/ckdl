@@ -78,6 +78,7 @@ void kdl_destroy_emitter(kdl_emitter *self)
     if (self->buf.buf != NULL) {
         _kdl_free_write_buffer(&self->buf);
     }
+    free(self);
 }
 
 static bool _emit_str(kdl_emitter *self, kdl_str s)

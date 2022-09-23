@@ -61,6 +61,7 @@ void assert_utf8_string(char const *in_ptr, size_t in_len, uint32_t const *out_p
     ASSERT(buf_end == buf + in_len);
     ASSERT(*buf_end == (char)(-1));
     ASSERT(0 == memcmp(buf, in_ptr, in_len));
+    free(buf);
 }
 
 static void test_utf8_ascii()

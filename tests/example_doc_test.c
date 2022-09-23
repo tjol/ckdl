@@ -71,6 +71,7 @@ static void do_test_case(void *user_data)
             free(buf);
         }
     }
+    kdl_free_string(&s);
     fclose(in);
 }
 

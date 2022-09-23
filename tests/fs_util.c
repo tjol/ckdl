@@ -65,11 +65,11 @@ void get_files_in_dir(char const *dir_path, char ***filelist, size_t *n_files, b
     size_t count = 0;
 
 #if defined(HAVE_DIRENT)
-    DIR *input_dir_p = opendir(dir_path);
-    if (input_dir_p == NULL) goto error;
+    DIR *dir_p = opendir(dir_path);
+    if (dir_p == NULL) goto error;
     struct dirent *de;
-    while ((de = readdir(input_dir_p)) != NULL) {
-        if (!regular_only || is_regular_file(input_dir_p, de)) {
+    while ((de = readdir(dir_p)) != NULL) {
+        if (!regular_only || is_regular_file(dir_p, de)) {
             char const *fn = de->d_name;
 
 #elif defined(HAVE_WIN32_FILE_API)
@@ -112,6 +112,7 @@ void get_files_in_dir(char const *dir_path, char ***filelist, size_t *n_files, b
 #if defined(HAVE_DIRENT)
         }
     }
+    closedir(dir_p);
 #elif defined(HAVE_WIN32_FILE_API)
         }
         if (!FindNextFileA(h_find, &find_data)) break;

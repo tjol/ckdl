@@ -84,6 +84,7 @@ void kdl_destroy_parser(kdl_parser *self)
     kdl_free_string(&self->tmp_string_type);
     kdl_free_string(&self->tmp_string_key);
     kdl_free_string(&self->tmp_string_value);
+    free(self);
 }
 
 static void _reset_event(kdl_parser *self)
