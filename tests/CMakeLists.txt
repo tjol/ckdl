@@ -43,24 +43,42 @@ else()
     endif()
 endif()
 
-# Check for dirent + DT_REG
-check_symbol_exists(DT_REG "dirent.h" HAVE_DIRENT LANGUAGE C)
+# Check for dirent (POSIX) and d_type (Linux/BSD)
+check_symbol_exists(readdir "dirent.h" HAVE_DIRENT LANGUAGE C)
 if(HAVE_DIRENT)
     add_definitions(-DHAVE_DIRENT)
+
+    # Sanity check: is openat() available? (modern POSIX)
     check_symbol_exists(openat "fcntl.h" HAVE_OPENAT)
     if(NOT HAVE_OPENAT)
         message(FATAL_ERROR "openat() not found")
+    endif()
+
+    # Check for optional BSD/Linux Function(s)
+    check_symbol_exists(fstatat "fcntl.h" HAVE_FSTATAT)
+    if(HAVE_FSTATAT)
+        add_definitions(-DHAVE_FSTATAT)
+    endif()
+
+    # Check for optional BSD dirent attributes
+
+    # File type field (Linux, BSD incl. macOS)
+    CHECK_STRUCT_HAS_MEMBER("struct dirent" d_type "dirent.h" HAVE_DIRENT_D_TYPE LANGUAGE C)
+    if(HAVE_DIRENT_D_TYPE)
+        add_definitions(-DHAVE_DIRENT_D_TYPE)
+    endif()
+    # Name length field (BSD incl. macOS)
+    CHECK_STRUCT_HAS_MEMBER("struct dirent" d_namlen dirent.h HAVE_DIRENT_D_NAMLEN LANGUAGE C)
+    if(HAVE_DIRENT_D_NAMLEN)
+        add_definitions(-DHAVE_DIRENT_D_NAMLEN)
     endif()
 else()
     check_symbol_exists(FindFirstFileA "windows.h" HAVE_WIN32_FILE_API)
     if(HAVE_WIN32_FILE_API)
         add_definitions(-DHAVE_WIN32_FILE_API)
+    else()
+        message(FATAL_ERROR "No filesystem API found, cannot build tests!")
     endif()
-endif()
-# Check for d_namlen (optional Darwin feature)
-CHECK_STRUCT_HAS_MEMBER("struct dirent" d_namlen dirent.h HAVE_D_NAMLEN LANGUAGE C)
-if(HAVE_D_NAMLEN)
-    add_definitions(-DHAVE_D_NAMLEN)
 endif()
 
 # Download test data
@@ -107,7 +125,7 @@ if(NOT KDL_TEST_CASES_ROOT)
     endif()
 endif()
 
-add_library(test_util STATIC test_util.c)
+add_library(test_util STATIC test_util.c fs_util.c)
 target_compile_options(test_util PUBLIC ${KDL_COMPILE_OPTIONS})
 target_include_directories(test_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

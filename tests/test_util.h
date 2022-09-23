@@ -1,5 +1,5 @@
-#ifndef KDL_TEST_H_
-#define KDL_TEST_H_
+#ifndef KDL_TEST_TEST_UTIL_H_
+#define KDL_TEST_TEST_UTIL_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,4 +25,4 @@ extern void TEST_MAIN();
 }
 #endif // __cplusplus
 
-#endif // KDL_TEST_H_
+#endif // KDL_TEST_TEST_UTIL_H_

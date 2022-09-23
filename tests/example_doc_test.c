@@ -1,4 +1,5 @@
 #include "test_util.h"
+#include "fs_util.h"
 
 #include "ckdl-cat.h"
 
@@ -8,10 +9,6 @@
 #include <stdlib.h>
 #include <errno.h>
 
-// POSIX, but supported on Windows
-#include <fcntl.h>
-#include <sys/stat.h>
-
 // UNIX and Windows-specific file APIs
 #if defined(CHDIR_IN_UNISTD_H)
 #include <unistd.h>
@@ -19,15 +16,8 @@
 #include <direct.h>
 #endif
 
-#if defined(HAVE_DIRENT)
-#include <dirent.h>
-#elif defined(HAVE_WIN32_FILE_API)
-#include <windows.h>
-#endif
-
-#ifndef O_PATH
-#define O_PATH O_RDONLY
-#endif
+#include <fcntl.h>
+#include <sys/stat.h>
 
 static int strcmp_p(void const *s1, void const *s2)
 {
@@ -84,104 +74,6 @@ static void do_test_case(void *user_data)
     fclose(in);
 }
 
-#ifdef HAVE_DIRENT
-static bool is_regular_file(DIR *d, struct dirent *de)
-{
-    struct stat st;
-    int dfd, ffd;
-    switch (de->d_type) {
-    case DT_REG:
-        return true;
-    case DT_UNKNOWN:
-        // must stat
-        dfd = dirfd(d);
-        ffd = openat(dfd, de->d_name, O_PATH);
-        fstat(ffd, &st);
-        close(ffd);
-        return (st.st_mode & S_IFREG) != 0;
-    default:
-        return false;
-    }
-}
-#endif
-
-static void get_test_file_list(char const *input_dir, char ***filelist, size_t *n_files)
-{
-    // count files and file lengths
-    size_t n_files_ = 0;
-    size_t longest_filename = 0;
-#if defined(HAVE_DIRENT)
-    DIR *input_dir_p = opendir(input_dir);
-    ASSERT(input_dir_p != NULL);
-    struct dirent *de;
-    while ((de = readdir(input_dir_p)) != NULL) {
-        if (is_regular_file(input_dir_p, de)) {
-            ++n_files_;
-#ifdef HAVE_D_NAMLEN
-            size_t fn_len = de->d_namlen;
-#else
-            size_t fn_len = strlen(de->d_name);
-#endif
-            if (fn_len > longest_filename)
-                longest_filename = fn_len;
-        }
-    }
-#elif defined(HAVE_WIN32_FILE_API)
-    WIN32_FIND_DATAA find_data;
-    size_t input_dirname_len = strlen(input_dir);
-    char *input_glob = malloc(input_dirname_len + 3);
-    memcpy(input_glob, input_dir, input_dirname_len);
-    memcpy(input_glob + input_dirname_len, "/*", 3);
-    HANDLE h_find = FindFirstFileA(input_glob, &find_data);
-    while (h_find != INVALID_HANDLE_VALUE) {
-        if ((find_data.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_DEVICE)) == 0) {
-            ++n_files_;
-            size_t fn_len = strlen(find_data.cFileName);
-            if (fn_len > longest_filename)
-                longest_filename = fn_len;
-        }
-        if (!FindNextFileA(h_find, &find_data)) break;
-    }
-    FindClose(h_find);
-#endif
-
-    // allocate file list
-    size_t fn_buf_len = n_files_ * (longest_filename + 1);
-    size_t filenames_len = n_files_ * sizeof(char *);
-    char **filenames = malloc(filenames_len + fn_buf_len);
-    char *fn_buf = (char *)filenames + filenames_len;
-    char **filenames_end = (char**)fn_buf;
-    char *fn_buf_end = fn_buf;
-    char *fn_buf_very_end = fn_buf + fn_buf_len;
-    char **fn_p = filenames;
-#if defined(HAVE_DIRENT)
-    rewinddir(input_dir_p);
-    while ((de = readdir(input_dir_p)) != NULL && (fn_p < filenames_end)) {
-        if (is_regular_file(input_dir_p, de)) {
-            char const *fn = de->d_name;
-#elif defined(HAVE_WIN32_FILE_API)
-    h_find = FindFirstFileA(input_glob, &find_data);
-    while (h_find != INVALID_HANDLE_VALUE && (fn_p < filenames_end)) {
-        if ((find_data.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_DEVICE)) == 0) {
-            char const *fn = find_data.cFileName;
-#endif
-            *(fn_p++) = fn_buf_end;
-            fn_buf_end += snprintf(fn_buf_end, fn_buf_very_end - fn_buf_end, "%s", fn) + 1;
-#if defined(HAVE_DIRENT)
-        }
-    }
-#elif defined(HAVE_WIN32_FILE_API)
-        }
-        if (!FindNextFileA(h_find, &find_data)) break;
-    }
-    FindClose(h_find);
-    free(input_glob);
-#endif
-    // return result
-    *n_files = (fn_p - filenames);
-    *filelist = filenames;
-}
-
 void TEST_MAIN()
 {
     // figure out where the test data is
@@ -225,7 +117,7 @@ void TEST_MAIN()
 
     char **filenames;
     size_t n_files;
-    get_test_file_list(input_dir, &filenames, &n_files);
+    get_files_in_dir(input_dir, &filenames, &n_files, true);
 
     // sort file names
     qsort(filenames, n_files, sizeof(char*), strcmp_p);
