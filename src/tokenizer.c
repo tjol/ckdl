@@ -66,7 +66,6 @@ static size_t _refill_tokenizer(kdl_tokenizer *self)
     // Move whatever data is left unparsed to the top of the buffer
     memmove(self->buffer, self->document.data, self->document.len);
     self->document.data = self->buffer;
-    char *end = self->buffer + self->document.len;
     size_t len_available = self->buffer_size - self->document.len;
     if (len_available < MIN_BUFFER_SIZE) {
         // Need more room
@@ -79,6 +78,7 @@ static size_t _refill_tokenizer(kdl_tokenizer *self)
             len_available = MIN_BUFFER_SIZE;
         }
     }
+    char *end = self->buffer + self->document.len;
 
     size_t read_count = self->read_func(self->read_user_data, end, len_available);
     self->document.len += read_count;
