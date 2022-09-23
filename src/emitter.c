@@ -45,18 +45,24 @@ static size_t _buffer_write_func(void *user_data, char const *data, size_t nbyte
 kdl_emitter *kdl_create_buffering_emitter(kdl_emitter_options const *opt)
 {
     kdl_emitter *self = malloc(sizeof(kdl_emitter));
+    if (self == NULL) return NULL;
     self->opt = *opt;
     self->write_func = &_buffer_write_func;
     self->write_user_data = &self->buf;
     self->depth = 0;
     self->start_of_line = true;
     self->buf = _kdl_new_write_buffer(INITIAL_BUFFER_SIZE);
+    if (self->buf.buf == NULL) {
+        free(self);
+        return NULL;
+    }
     return self;
 }
 
 kdl_emitter *kdl_create_stream_emitter(kdl_write_func write_func, void *user_data, kdl_emitter_options const *opt)
 {
     kdl_emitter *self = malloc(sizeof(kdl_emitter));
+    if (self == NULL) return NULL;
     self->opt = *opt;
     self->write_func = write_func;
     self->write_user_data = user_data;

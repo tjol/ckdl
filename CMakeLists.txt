@@ -69,8 +69,12 @@ if (NOT HAVE_C11_ANONYMOUS_UNIONS)
         "Please use a newer C compiler with support for the C11 standard.")
 endif()
 
+# Check for platform-specific functions we might use
+check_symbol_exists(reallocf "stdlib.h" HAVE_REALLOCF)
+
 set(KDL_C_SOURCES
     src/bigint.c
+    src/compat.c
     src/emitter.c
     src/parser.c
     src/str.c
@@ -90,6 +94,9 @@ target_compile_options(kdl PRIVATE ${KDL_COMPILE_OPTIONS})
 target_link_libraries(kdl PRIVATE kdl-utf8 math)
 target_include_directories(kdl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_definitions(kdl PRIVATE -DBUILDING_KDL=1)
+if(HAVE_REALLOCF)
+    target_compile_definitions(kdl PRIVATE -DHAVE_REALLOCF)
+endif()
 
 if(NOT BUILD_SHARED_LIBS)
     target_compile_definitions(kdl PUBLIC -DKDL_STATIC_LIB=1)

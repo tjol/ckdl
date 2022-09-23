@@ -1,4 +1,5 @@
 #include "bigint.h"
+#include "compat.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +11,7 @@
 _kdl_ubigint *_kdl_ubigint_new(uint32_t initial_value)
 {
     _kdl_ubigint *i = malloc(sizeof(_kdl_ubigint) + sizeof(uint32_t));
+    if (i == NULL) return NULL;
     i->n_digits = 1;
     i->num[0] = initial_value;
     return i;
@@ -19,6 +21,7 @@ _kdl_ubigint *_kdl_ubigint_dup(_kdl_ubigint const *value)
 {
     size_t size = sizeof(_kdl_ubigint) + value->n_digits * sizeof(uint32_t);
     _kdl_ubigint *i = malloc(size);
+    if (i == NULL) return NULL;
     memcpy(i, value, size);
     return i;
 }
@@ -39,17 +42,13 @@ _kdl_ubigint *_kdl_ubigint_add_inplace(_kdl_ubigint *a, unsigned int b)
     }
     if (carry != 0) {
         // overflow
-        _kdl_ubigint *new_a = realloc(a,
+        a = reallocf(a,
             sizeof(_kdl_ubigint) + (++a->n_digits) * sizeof(uint32_t));
-        if (new_a != NULL) {
-            new_a->num[new_a->n_digits - 1] = carry;
-        } else {
-            free(a);
+        if (a != NULL) {
+            a->num[a->n_digits - 1] = carry;
         }
-        return new_a;
-    } else {
-        return a;
     }
+	return a;
 }
 
 // a *= b
@@ -65,17 +64,13 @@ _kdl_ubigint *_kdl_ubigint_multiply_inplace(_kdl_ubigint *a, unsigned int b)
     }
     if (carry != 0) {
         // overflow
-        _kdl_ubigint *new_a = realloc(a,
+        a = reallocf(a,
             sizeof(_kdl_ubigint) + (++a->n_digits) * sizeof(uint32_t));
-        if (new_a != NULL) {
-            new_a->num[new_a->n_digits - 1] = carry;
-        } else {
-            free(a);
+        if (a != NULL) {
+            a->num[a->n_digits - 1] = carry;
         }
-        return new_a;
-    } else {
-        return a;
     }
+    return a;
 }
 
 uint32_t _kdl_ubigint_divide_inplace(_kdl_ubigint *a, uint32_t b)
@@ -117,8 +112,11 @@ kdl_owned_string _kdl_ubigint_as_string(_kdl_ubigint *i)
 kdl_owned_string _kdl_ubigint_as_string_sgn(int sign, _kdl_ubigint *i)
 {
     i = _kdl_ubigint_dup(i);
+    if (i == NULL) goto error;
+
     size_t max_digits = i->n_digits * 10; // max 10 decimal digits per 32 bits
     char *buf = malloc(max_digits);
+    if (buf == NULL) goto error;
     char *p = buf;
     // write the number backwards
     while (i->n_digits > 1 || i->num[0] != 0) {
@@ -130,10 +128,14 @@ kdl_owned_string _kdl_ubigint_as_string_sgn(int sign, _kdl_ubigint *i)
     size_t len = p - buf;
     if (sign < 0) ++len;
     char *buf2 = malloc(len + 1);
+    if (buf2 == NULL) goto error;
     char *p2 = buf2;
     if (sign < 0) *(p2++) = '-';
     while (p > buf) *(p2++) = *(--p);
     *p2 = '\0';
     free(buf);
     return (kdl_owned_string){ buf2, len };
+
+error:
+	return (kdl_owned_string){ NULL, 0 };
 }

@@ -1,5 +1,5 @@
-#ifndef KDL_INTERNAL_COMPILER_COMPAT_H_
-#define KDL_INTERNAL_COMPILER_COMPAT_H_
+#ifndef KDL_INTERNAL_COMPAT_H_
+#define KDL_INTERNAL_COMPAT_H_
 
 #if defined(__cplusplus)
 #define _fallthrough_ [[fallthrough]]
@@ -9,4 +9,9 @@
 #define _fallthrough_
 #endif
 
-#endif // KDL_INTERNAL_COMPILER_COMPAT_H_
+#if !defined(HAVE_REALLOCF)
+#include <stddef.h>
+void *reallocf(void *ptr, size_t size);
+#endif
+
+#endif // KDL_INTERNAL_COMPAT_H_

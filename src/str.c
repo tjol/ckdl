@@ -1,7 +1,7 @@
 #include "kdl/common.h"
 #include "str.h"
 #include "utf8.h"
-#include "compiler_compat.h"
+#include "compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,9 +20,13 @@ kdl_owned_string kdl_clone_str(kdl_str const *s)
 {
     kdl_owned_string result;
     result.data = malloc(s->len + 1);
-    memcpy(result.data, s->data, s->len);
-    result.data[s->len] = '\0';
-    result.len = s->len;
+    if (result.data != NULL) {
+        memcpy(result.data, s->data, s->len);
+        result.data[s->len] = '\0';
+        result.len = s->len;
+    } else {
+        result.len = 0;
+    }
     return result;
 }
 
@@ -57,8 +61,10 @@ bool _kdl_buf_push_chars(_kdl_write_buffer *buf, char const *s, size_t count)
     if (buf->buf_len - buf->str_len < count) {
         size_t increment = BUFFER_SIZE_INCREMENT >= count ? BUFFER_SIZE_INCREMENT : count;
         buf->buf_len += increment;
-        buf->buf = realloc(buf->buf, buf->buf_len);
-        if (buf->buf == NULL) return false;
+        buf->buf = reallocf(buf->buf, buf->buf_len);
+        if (buf->buf == NULL) {
+            return false;
+        }
     }
     memcpy(buf->buf + buf->str_len, s, count);
     buf->str_len += count;
@@ -76,8 +82,10 @@ bool _kdl_buf_push_codepoint(_kdl_write_buffer *buf, uint32_t c)
     if (buf->buf_len - buf->str_len < 4) {
         size_t increment = BUFFER_SIZE_INCREMENT >= 4 ? BUFFER_SIZE_INCREMENT : 4;
         buf->buf_len += increment;
-        buf->buf = realloc(buf->buf, buf->buf_len);
-        if (buf->buf == NULL) return false;
+        buf->buf = reallocf(buf->buf, buf->buf_len);
+        if (buf->buf == NULL) {
+            return false;
+        }
     }
     size_t pushed = _kdl_push_codepoint(c, buf->buf + buf->str_len);
     if (pushed == 0) {
@@ -90,7 +98,7 @@ bool _kdl_buf_push_codepoint(_kdl_write_buffer *buf, uint32_t c)
 
 kdl_owned_string _kdl_buf_to_string(_kdl_write_buffer *buf)
 {
-    kdl_owned_string s = { realloc(buf->buf, buf->str_len + 1), buf->str_len };
+    kdl_owned_string s = { reallocf(buf->buf, buf->str_len + 1), buf->str_len };
     if (s.data == NULL) s.len = 0;
     buf->buf = NULL;
     buf->buf_len = 0;

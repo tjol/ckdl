@@ -2,7 +2,7 @@
 #include "kdl/common.h"
 #include "kdl/tokenizer.h"
 
-#include "compiler_compat.h"
+#include "compat.h"
 #include "bigint.h"
 
 #include <stdlib.h>
@@ -606,6 +606,7 @@ static bool _parse_decimal_integer(kdl_str number, kdl_value *val, kdl_owned_str
 {
     bool negative = false;
     _kdl_ubigint *n = _kdl_ubigint_new(0);
+    if (n == NULL) return false;
 
     size_t i = 0; // index into number-string
 
@@ -785,6 +786,7 @@ static bool _parse_hex_number(kdl_str number, kdl_value *val, kdl_owned_string *
 {
     bool negative = false;
     _kdl_ubigint *n = _kdl_ubigint_new(0);
+    if (n == NULL) return false;
 
     size_t i = 0; // index into number-string
 
@@ -847,6 +849,7 @@ static bool _parse_octal_number(kdl_str number, kdl_value *val, kdl_owned_string
 {
     bool negative = false;
     _kdl_ubigint *n = _kdl_ubigint_new(0);
+    if (n == NULL) return false;
 
     size_t i = 0; // index into number-string
 
@@ -906,6 +909,7 @@ static bool _parse_binary_number(kdl_str number, kdl_value *val, kdl_owned_strin
 {
     bool negative = false;
     _kdl_ubigint *n = _kdl_ubigint_new(0);
+    if (n == NULL) return false;
 
     size_t i = 0; // index into number-string
 
