@@ -52,7 +52,9 @@ void get_files_in_dir(char const *dir_path, char ***filelist, size_t *n_files, b
 {
     size_t list_buf_len = 4096;
     char *list_buf = malloc(list_buf_len);
+    if (list_buf == NULL) goto error;
     char *list_ptr = list_buf;
+    char *list_buf_tmp;
     size_t count = 0;
 
 #if defined(HAVE_DIRENT)
@@ -68,6 +70,7 @@ void get_files_in_dir(char const *dir_path, char ***filelist, size_t *n_files, b
     // prepare a glob pattern for FindFile
     size_t dir_path_len = strlen(dir_path);
     char *glob = malloc(dir_path_len + 3);
+    if (glob == NULL) goto error;
     memcpy(glob, dir_path, dir_path_len);
     memcpy(glob + dir_path_len, "/*", 3);
     HANDLE h_find = FindFirstFileA(glob, &find_data);
@@ -92,9 +95,15 @@ void get_files_in_dir(char const *dir_path, char ***filelist, size_t *n_files, b
                 while (increment <= fn_len) increment <<= 1;
                 size_t offset = list_ptr - list_buf;
                 list_buf_len += increment;
-                list_buf = realloc(list_buf, list_buf_len);
+                list_buf_tmp = realloc(list_buf, list_buf_len);
+                if (list_buf_tmp == NULL) {
+                    free(list_buf);
+                    list_buf = NULL;
+                    break;
+                } else {
+                    list_buf = list_buf_tmp;
+                }
                 list_ptr = list_buf + offset;
-                if (list_buf == NULL) goto error;
             }
             memcpy(list_ptr, fn, fn_len);
             list_ptr += fn_len;
@@ -111,13 +120,15 @@ void get_files_in_dir(char const *dir_path, char ***filelist, size_t *n_files, b
     FindClose(h_find);
     free(glob);
 #endif
+    if (list_buf == NULL) goto error;
 
     // We now have a null-terminated list of `count` file names
     // Prepare a buffer starting with `count` pointers, followed by the actual data
     size_t data_offset = count * sizeof(char*);
     size_t data_len = list_ptr - list_buf;
-    list_buf = realloc(list_buf, data_offset + data_len);
-    if (list_buf == NULL) goto error;
+    list_buf_tmp = realloc(list_buf, data_offset + data_len);
+    if (list_buf_tmp == NULL) goto error;
+    else list_buf = list_buf_tmp;
     list_ptr = list_buf + data_offset;
     memmove(list_ptr, list_buf, data_len);
 
@@ -131,9 +142,11 @@ void get_files_in_dir(char const *dir_path, char ***filelist, size_t *n_files, b
     // Return it
     *filelist = list;
     *n_files = count;
+
     return;
 
 error:
     *filelist = NULL;
     *n_files = 0;
+    if (list_buf != NULL) free(list_buf);
 }
