@@ -413,8 +413,13 @@ static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
         case KDL_TOKEN_WORD:
         case KDL_TOKEN_STRING:
         case KDL_TOKEN_RAW_STRING:
+        {
+            kdl_owned_string tmp_str = { NULL, 0 };
             // either a property key, or a property value, or an argument
             if (self->event.name.data == NULL && self->event.value.type_annotation.data == NULL) {
+                // the call to kdl_pop_token will invalidate the old token's value - clone it
+                tmp_str = kdl_clone_str(&token->value);
+                token->value = kdl_borrow_str(&tmp_str);
                 // property key only possible if we don't already have one, and if we don't
                 // yet have a type annotation (values are annotated, keys are not)
                 // -> Check the next token
@@ -432,6 +437,7 @@ static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
                 case KDL_TOKENIZER_ERROR:
                     // parse error
                     _set_parse_error(self, "Parse error");
+                    kdl_free_string(&tmp_str);
                     return &self->event;
                 }
             }
@@ -440,7 +446,9 @@ static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
                 // Parse the property name
                 self->state |= PARSER_FLAG_IN_PROPERTY;
                 kdl_value tmp_val;
-                if (!_parse_value(token, &tmp_val, &self->tmp_string_key)) {
+                bool parse_ok = _parse_value(token, &tmp_val, &self->tmp_string_key);
+                kdl_free_string(&tmp_str);
+                if (!parse_ok) {
                     _set_parse_error(self, "Error parsing property key");
                     return &self->event;
                 }
@@ -454,7 +462,9 @@ static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
                 }
             } else {
                 // Parse the argument
-                if (!_parse_value(token, &self->event.value, &self->tmp_string_value)) {
+                bool parse_ok = _parse_value(token, &self->event.value, &self->tmp_string_value);
+                kdl_free_string(&tmp_str);
+                if (!parse_ok) {
                     _set_parse_error(self, "Error parsing argument");
                     return &self->event;
                 }
@@ -475,6 +485,7 @@ static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
                 if (ev) return ev;
                 else return NULL;
             }
+        }
         case KDL_TOKEN_START_TYPE:
             // only one type allowed!
             if (self->event.value.type_annotation.data != NULL) {

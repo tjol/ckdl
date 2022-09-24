@@ -6,7 +6,8 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define MIN_BUFFER_SIZE 4096
+#define MIN_BUFFER_SIZE 1024
+#define BUFFER_SIZE_INCREMENT 4096
 
 struct _kdl_tokenizer {
     kdl_str document;
@@ -55,12 +56,12 @@ static size_t _refill_tokenizer(kdl_tokenizer *self)
     if (self->read_func == NULL) return 0;
 
     if (self->buffer == NULL) {
-        self->buffer = malloc(MIN_BUFFER_SIZE);
+        self->buffer = malloc(BUFFER_SIZE_INCREMENT);
         if (self->buffer == NULL) {
             // memory allocation failed
             return 0;
         }
-        self->buffer_size = MIN_BUFFER_SIZE;
+        self->buffer_size = BUFFER_SIZE_INCREMENT;
         self->document.len = 0;
     }
     // Move whatever data is left unparsed to the top of the buffer
@@ -69,13 +70,15 @@ static size_t _refill_tokenizer(kdl_tokenizer *self)
     size_t len_available = self->buffer_size - self->document.len;
     if (len_available < MIN_BUFFER_SIZE) {
         // Need more room
-        char *new_buffer = realloc(self->buffer, self->document.len + MIN_BUFFER_SIZE);
+        size_t new_buf_size = self->buffer_size + BUFFER_SIZE_INCREMENT;
+        char *new_buffer = realloc(self->buffer, new_buf_size);
         if (new_buffer == NULL) {
             return 0;
         } else {
             self->buffer = new_buffer;
+            self->buffer_size = new_buf_size;
             self->document.data = new_buffer;
-            len_available = MIN_BUFFER_SIZE;
+            len_available = self->buffer_size - self->document.len;
         }
     }
     char *end = self->buffer + self->document.len;
@@ -201,7 +204,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
         // Could be the start of a new token
         if (_kdl_is_whitespace(c)) {
             // find whitespace run
-            char const *ws_start = cur;
+            size_t ws_start_offset = cur - self->document.data;
             cur = next;
             while (_tok_get_char(self, &cur, &next, &c) == KDL_UTF8_OK
                 && _kdl_is_whitespace(c)) {
@@ -210,8 +213,8 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *self, kdl_token *dest)
             }
             // cur is now the first non-whitespace character.
             dest->type = KDL_TOKEN_WHITESPACE;
-            dest->value.data = ws_start;
-            dest->value.len = cur - ws_start;
+            dest->value.data = self->document.data + ws_start_offset;
+            dest->value.len = cur - dest->value.data;
             _update_doc_ptr(self, cur);
             return KDL_TOKENIZER_OK;
         } else if (_kdl_is_newline(c)) {
@@ -491,10 +494,11 @@ static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer *self, kdl_token *dest
         }
     }
 
-    char const* string_start = cur = next;
+    cur = next;
+    size_t string_start_offset = cur - self->document.data;
     // Scan the string itself
     int hashes_found = 0;
-    char const* end_quote = NULL;
+    size_t end_quote_offset = 0;
     while (true) {
         switch (_tok_get_char(self, &cur, &next, &c)) {
         case KDL_UTF8_OK:
@@ -504,16 +508,16 @@ static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer *self, kdl_token *dest
             return KDL_TOKENIZER_ERROR;
         }
 
-        if (end_quote != NULL && c == '#') {
+        if (end_quote_offset != 0 && c == '#') {
             ++hashes_found;
         } else if (c == '"') {
-            end_quote = cur;
+            end_quote_offset = cur - self->document.data;
             hashes_found = 0;
         } else {
-            end_quote = NULL;
+            end_quote_offset = 0;
         }
 
-        if (end_quote != NULL && hashes_found == hashes) {
+        if (end_quote_offset != 0 && hashes_found == hashes) {
             // end of string!
             break;
         } else {
@@ -523,8 +527,8 @@ static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer *self, kdl_token *dest
     }
 
     // end_quote = the quote, next = the char after the quote and hashes
-    dest->value.data = string_start;
-    dest->value.len = (size_t)(end_quote - dest->value.data);
+    dest->value.data = self->document.data + string_start_offset;
+    dest->value.len = end_quote_offset - string_start_offset;
     _update_doc_ptr(self, next);
     dest->type = KDL_TOKEN_RAW_STRING;
     return KDL_TOKENIZER_OK;
