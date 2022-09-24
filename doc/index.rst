@@ -37,10 +37,10 @@ code is in the test suite, which you don't have to build if you can't.
 
 ckdl has been tested with:
 
-* Linux (x86_64, i386, arm64, arm32v7l), with glibc and musl libc - going back as far as
+* Linux (x86_64, x86, arm64, arm32v7l), with glibc and musl libc - going back as far as
   CentOS 6
 * MacOS (arm64, x86_64)
-* Windows 10 on x86_64, with Visual Studio 2017, 2019 and 2022
+* Windows 10 (x86_64, x86), using Microsoft Visual C++ and Mingw-w64
 * FreeBSD 12 on x86_64
 * NetBSD 5 on x86_64
 * Illumos (OmniOS) on x86_64
