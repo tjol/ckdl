@@ -46,7 +46,7 @@ endif()
 # Check for dirent (POSIX) and related features
 check_symbol_exists(readdir "dirent.h" HAVE_DIRENT LANGUAGE C)
 if(HAVE_DIRENT)
-    add_definitions(-DHAVE_DIRENT)
+    set(USE_DIRENT ON)
 
     # Check for fstatat() (modern POSIX, but may be behind a feature test macro)
     # Note: Illumos (OmniOS r151038 LTS) has a bug where you can't include
@@ -60,9 +60,14 @@ if(HAVE_DIRENT)
         if(HAVE_FSTATAT_ATFILE)
             add_definitions(-D_ATFILE_SOURCE)
         else()
-            message(FATAL_ERROR "fstatat() not found")
+            set(USE_DIRENT OFF)
         endif()
     endif()
+
+endif()
+
+if(USE_DIRENT)
+    add_definitions(-DHAVE_DIRENT)
 
     # Check for optional BSD dirent attributes
 
@@ -81,7 +86,7 @@ else()
     if(HAVE_WIN32_FILE_API)
         add_definitions(-DHAVE_WIN32_FILE_API)
     else()
-        message(FATAL_ERROR "No filesystem API found, cannot build tests!")
+        message(FATAL_ERROR "No usable filesystem API found, cannot build tests!")
     endif()
 endif()
 
