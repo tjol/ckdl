@@ -1,11 +1,16 @@
 #include "fs_util.h"
 
 #if defined(HAVE_DIRENT)
-#include <dirent.h>
+#  include <dirent.h>
 #elif defined(HAVE_WIN32_FILE_API)
-#pragma warning(push, 0)
-#include <windows.h>
-#pragma warning(pop)
+// MSVC generates warnings in Windows.h, which, frankly, is just embarrassing
+#  ifdef _MSC_VER
+#    pragma warning(push, 0)
+#  endif
+#  include <windows.h>
+#  ifdef _MSC_VER
+#    pragma warning(pop)
+#  endif
 #endif
 
 #include <stdlib.h>
