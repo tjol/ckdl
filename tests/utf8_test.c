@@ -64,24 +64,24 @@ void assert_utf8_string(char const *in_ptr, size_t in_len, uint32_t const *out_p
     free(buf);
 }
 
-static void test_utf8_ascii()
+static void test_utf8_ascii(void)
 {
     ASSERT_UTF8_STRING(ASCII_IN, ASCII_OUT);
     ASSERT_UTF8_STRING(ASCII_CONTROL_IN, ASCII_CONTROL_OUT);
 }
 
-static void test_utf8_bmp()
+static void test_utf8_bmp(void)
 {
     ASSERT_UTF8_STRING(LATIN1_IN, LATIN1_OUT);
     ASSERT_UTF8_STRING(RUSSIAN_IN, RUSSIAN_OUT);
 }
 
-static void test_utf8_emoji()
+static void test_utf8_emoji(void)
 {
     ASSERT_UTF8_STRING(EMOJI_IN, EMOJI_OUT);
 }
 
-static void test_utf8_invalid()
+static void test_utf8_invalid(void)
 {
     uint32_t codepoint = 0;
     size_t count = sizeof(INVALID) / sizeof(char const*);
@@ -91,7 +91,7 @@ static void test_utf8_invalid()
     }
 }
 
-static void test_utf8_incomplete()
+static void test_utf8_incomplete(void)
 {
     uint32_t codepoint = 0;
     size_t count = sizeof(INCOMPLETE) / sizeof(char const*);
@@ -101,7 +101,7 @@ static void test_utf8_incomplete()
     }
 }
 
-void TEST_MAIN()
+void TEST_MAIN(void)
 {
     run_test("UTF8: ASCII", &test_utf8_ascii);
     run_test("UTF8: BMP", &test_utf8_bmp);

@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-static void test_basics()
+static void test_basics(void)
 {
     char const *const kdl_text =
         "node1 key=0x123 \"gar\xc3\xa7on\" ;"
@@ -102,7 +102,7 @@ static void test_basics()
     kdl_destroy_parser(parser);
 }
 
-static void test_slashdash()
+static void test_slashdash(void)
 {
     char const *const kdl_text =
         "node1 /-key=0x123\n"
@@ -190,7 +190,7 @@ static void test_slashdash()
     kdl_destroy_parser(parser);
 }
 
-static void test_unbalanced_brace()
+static void test_unbalanced_brace(void)
 {
     char const *const kdl_text =
         "node1 {";
@@ -210,7 +210,7 @@ static void test_unbalanced_brace()
     kdl_destroy_parser(parser);
 }
 
-static void test_identifier_arg()
+static void test_identifier_arg(void)
 {
     char const *const kdl_text =
         "node1 \"arg1\" arg2";
@@ -233,7 +233,7 @@ static void test_identifier_arg()
     kdl_destroy_parser(parser);
 }
 
-static void test_number_type()
+static void test_number_type(void)
 {
     char const *const kdl_text =
         "node1; (12)node2;";
@@ -256,7 +256,7 @@ static void test_number_type()
     kdl_destroy_parser(parser);
 }
 
-void TEST_MAIN()
+void TEST_MAIN(void)
 {
     run_test("Parser: basics", &test_basics);
     run_test("Parser: slashdash", &test_slashdash);

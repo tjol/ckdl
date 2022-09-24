@@ -13,13 +13,13 @@ extern "C" {
 #define ASSERT2(q, msg) assert_true((q), msg, __FILE__  "("  _stringify(__LINE__)  ")")
 void assert_true(bool assertion, char const *assertion_s, char const *context);
 
-void run_test(char const *name, void (*func)());
+void run_test(char const *name, void (*func)(void));
 void run_test_d(char const *name, void (*func)(void *), void *user_data);
 
-int test_argc();
+int test_argc(void);
 char const *test_arg(int idx);
 
-extern void TEST_MAIN();
+extern void TEST_MAIN(void);
 
 #ifdef __cplusplus
 }

@@ -23,9 +23,15 @@ void assert_true(bool assertion, char const *assertion_s, char const *context)
     }
 }
 
-void run_test(char const *name, void (*func)())
+static void _call_noarg_test(void* func_ptr_ptr)
 {
-    run_test_d(name, (void (*)(void *))func, NULL);
+    void (*func)(void) = *(void (**)(void))func_ptr_ptr;
+    func();
+}
+
+void run_test(char const *name, void (*func)(void))
+{
+    run_test_d(name, _call_noarg_test, (void*)(&func));
 }
 
 void run_test_d(char const *name, void (*func)(void *), void *user_data)
@@ -50,7 +56,7 @@ void run_test_d(char const *name, void (*func)(void *), void *user_data)
 static int ARGC;
 static char const *const *ARGV;
 
-int test_argc()
+int test_argc(void)
 {
     return ARGC;
 }

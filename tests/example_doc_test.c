@@ -75,7 +75,7 @@ static void do_test_case(void *user_data)
     fclose(in);
 }
 
-void TEST_MAIN()
+void TEST_MAIN(void)
 {
     // figure out where the test data is
     char const *test_cases_root;

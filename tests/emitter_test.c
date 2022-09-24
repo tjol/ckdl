@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 
-static void test_basics()
+static void test_basics(void)
 {
     kdl_emitter_options emitter_opt = KDL_DEFAULT_EMITTER_OPTIONS;
     emitter_opt.indent = 3;
@@ -48,7 +48,7 @@ static void test_basics()
     kdl_destroy_emitter(emitter);
 }
 
-void TEST_MAIN()
+void TEST_MAIN(void)
 {
     run_test("Emitter: basics", &test_basics);
 }
