@@ -7,7 +7,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BUFFER_SIZE_INCREMENT 512
+// No buffering in Debug mode to find more bugs
+#ifdef KDL_DEBUG
+#  define MIN_BUFFER_SIZE 1
+#  define BUFFER_SIZE_INCREMENT 1
+#else
+#  define BUFFER_SIZE_INCREMENT 1024
+#endif
 
 KDL_EXPORT extern inline kdl_str kdl_borrow_str(kdl_owned_string const *str);
 

@@ -6,8 +6,14 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define MIN_BUFFER_SIZE 1024
-#define BUFFER_SIZE_INCREMENT 4096
+// No buffering in Debug mode to find more bugs
+#ifdef KDL_DEBUG
+#  define MIN_BUFFER_SIZE 1
+#  define BUFFER_SIZE_INCREMENT 1
+#else
+#  define MIN_BUFFER_SIZE 1024
+#  define BUFFER_SIZE_INCREMENT 4096
+#endif
 
 struct _kdl_tokenizer {
     kdl_str document;
