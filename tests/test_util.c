@@ -34,7 +34,7 @@ void run_test_d(char const *name, void (*func)(void *), void *user_data)
     run_test_active = true;
     switch (setjmp(run_test_env)) {
     case 0:
-        // notmal execution - run the test!
+        // normal execution - run the test!
         func(user_data);
         fprintf(stderr, "TEST %s - passed\n", name);
         break;
