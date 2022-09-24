@@ -15,7 +15,7 @@ set(KDL_COMPILE_OPTIONS)
 
 if(MSVC)
     string(REGEX REPLACE "/W3" "/W4" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-    list(APPEND KDL_COMPILE_OPTIONS /wd4996 /wd5105)
+    list(APPEND KDL_COMPILE_OPTIONS /wd4200 /wd4996)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
     # try GCC-like options

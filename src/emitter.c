@@ -95,7 +95,7 @@ static kdl_owned_string _float_to_string(double f, kdl_float_printing_options co
 {
     bool negative = f < 0.0;
     f = fabs(f);
-    int exponent = floor(log10(f));
+    int exponent = (int)floor(log10(f));
     double exp_factor = 1.0;
     if (abs(exponent) < opts->min_exponent) {
         // don't use scientific notation
@@ -128,7 +128,7 @@ static kdl_owned_string _float_to_string(double f, kdl_float_printing_options co
     while (f + pos != f && f_so_far < f) { // while this digit makes a difference
         double remainder = f - f_so_far;
 
-        int next_digit = floor(remainder / pos);
+        int next_digit = (int)floor(remainder / pos);
         fractional_part_so_far = 10 * fractional_part_so_far + next_digit;
 
         while (f_intpart + (fractional_part_so_far + 1) * pos <= f) {
@@ -154,7 +154,7 @@ static kdl_owned_string _float_to_string(double f, kdl_float_printing_options co
                     _kdl_buf_push_char(&buf, '.');
                     written_point = true;
                 }
-                if (queued_digit >= 0) _kdl_buf_push_char(&buf, '0' + queued_digit);
+                if (queued_digit >= 0) _kdl_buf_push_char(&buf, (char)('0' + queued_digit));
                 while (zeros != 0) {
                     _kdl_buf_push_char(&buf, '0');
                     --zeros;
@@ -179,7 +179,7 @@ static kdl_owned_string _float_to_string(double f, kdl_float_printing_options co
         if (nines != 0) {
             ++queued_digit;
         }
-        _kdl_buf_push_char(&buf, '0' + queued_digit);
+        _kdl_buf_push_char(&buf, (char)('0' + queued_digit));
     }
     // Adding more decimal digits now makes no difference to the number.
 

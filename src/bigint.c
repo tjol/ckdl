@@ -45,7 +45,7 @@ _kdl_ubigint *_kdl_ubigint_add_inplace(_kdl_ubigint *a, unsigned int b)
         a = reallocf(a,
             sizeof(_kdl_ubigint) + (++a->n_digits) * sizeof(uint32_t));
         if (a != NULL) {
-            a->num[a->n_digits - 1] = carry;
+            a->num[a->n_digits - 1] = (uint32_t)(carry & DIGIT_BITMASK);
         }
     }
 	return a;
@@ -76,14 +76,14 @@ _kdl_ubigint *_kdl_ubigint_multiply_inplace(_kdl_ubigint *a, unsigned int b)
 uint32_t _kdl_ubigint_divide_inplace(_kdl_ubigint *a, uint32_t b)
 {
     uint64_t rem = 0;
-    for (int i = a->n_digits - 1; i >= 0; --i) {
+    for (int i = (int)a->n_digits - 1; i >= 0; --i) {
         uint64_t tmp = a->num[i] + (rem << 32);
         rem = tmp % b;
-        a->num[i] = tmp / b;
+        a->num[i] = (uint32_t)(tmp / b);
     }
     // shrink the number if possible
     while (a->n_digits > 1 && a->num[a->n_digits - 1] == 0) --a->n_digits;
-    return rem;
+    return (uint32_t)rem;
 }
 
 bool _kdl_ubigint_as_long_long(_kdl_ubigint *i, long long *dest)
@@ -97,7 +97,7 @@ bool _kdl_ubigint_as_long_long(_kdl_ubigint *i, long long *dest)
 
     // ok, we're sure it fits.
     *dest = 0;
-    for (int k = i->n_digits - 1; k >= 0; --k) {
+    for (int k = (int)i->n_digits - 1; k >= 0; --k) {
         *dest <<= DIGIT_BITS;
         *dest += i->num[k];
     }
@@ -121,7 +121,7 @@ kdl_owned_string _kdl_ubigint_as_string_sgn(int sign, _kdl_ubigint *i)
     // write the number backwards
     while (i->n_digits > 1 || i->num[0] != 0) {
         uint32_t digit = _kdl_ubigint_divide_inplace(i, 10);
-        *(p++) = '0' + digit;
+        *(p++) = (char)('0' + digit);
     }
     _kdl_ubigint_free(i);
     // flip the number and add the sign

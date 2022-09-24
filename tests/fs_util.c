@@ -3,7 +3,9 @@
 #if defined(HAVE_DIRENT)
 #include <dirent.h>
 #elif defined(HAVE_WIN32_FILE_API)
+#pragma warning(push, 0)
 #include <windows.h>
+#pragma warning(pop)
 #endif
 
 #include <stdlib.h>

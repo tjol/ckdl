@@ -769,7 +769,7 @@ static bool _parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_strin
             int c = *(p1++);
             if (c != '_') {
                 // copy character
-                *(p2++) = c;
+                *(p2++) = (char)c;
                 ++s->len;
             }
         }
