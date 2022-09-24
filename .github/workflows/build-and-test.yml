@@ -55,6 +55,9 @@ jobs:
       CXXFLAGS: "-m32"
       LDFLAGS: "-m32"
     steps:
+    - name: Install Multilib support
+      run: sudo apt-get install -y gcc-multilib g++-multilib
+
     - uses: actions/checkout@v3
 
     - name: Configure
