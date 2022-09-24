@@ -15,15 +15,10 @@
 
 #include <unistd.h>
 
-// O_PATH is a Linux extension
-#ifndef O_PATH
-#define O_PATH O_RDONLY
-#endif
-
 static inline bool is_regular_file(DIR *d, struct dirent *de)
 {
     struct stat st;
-    int dfd, ffd;
+    int dfd;
 #ifdef HAVE_DIRENT_D_TYPE
     switch (de->d_type) {
     case DT_REG:
@@ -32,13 +27,7 @@ static inline bool is_regular_file(DIR *d, struct dirent *de)
 #endif
         // must stat
         dfd = dirfd(d);
-#ifdef HAVE_FSTATAT
         fstatat(dfd, de->d_name, &st, AT_SYMLINK_NOFOLLOW);
-#else
-        ffd = openat(dfd, de->d_name, O_PATH);
-        fstat(ffd, &st);
-        close(ffd);
-#endif
         return (st.st_mode & S_IFREG) != 0;
 
 #ifdef HAVE_DIRENT_D_TYPE
