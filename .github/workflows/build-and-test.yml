@@ -27,6 +27,52 @@ jobs:
       working-directory: ${{ github.workspace }}/build
       run: ctest -C ${{ matrix.build_type }}
 
+  build_c_so:
+    name: C, C++ Shared Library
+    strategy:
+      matrix:
+        os: [ ubuntu-22.04, windows-2022, macos-12 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
+
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build --config Release
+
+    - name: Test
+      working-directory: ${{ github.workspace }}/build
+      run: ctest -C Release
+
+  build_mingw32:
+    name: Mingw32
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        msystem: mingw32
+        install: >-
+          mingw-w64-i686-gcc
+          mingw-w64-i686-cmake
+          mingw-w64-i686-ninja
+          git
+    - uses: actions/checkout@v3
+    - name: Configure
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
+
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build --config Release
+
+    - name: Test
+      working-directory: ${{ github.workspace }}/build
+      run: ctest -C Release
+
   build_cython:
     name: Python
     strategy:
