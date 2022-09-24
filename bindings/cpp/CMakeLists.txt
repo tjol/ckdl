@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.17)
+# CMake 3.12 introduced cxx_std_20
+cmake_minimum_required(VERSION 3.12)
 project(kdlpp CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -8,8 +9,25 @@ include(CheckTypeSize)
 set(CMAKE_EXTRA_INCLUDE_FILES "string_view")
 check_type_size(std::u8string_view U8STRING_VIEW LANGUAGE CXX)
 unset(CMAKE_EXTRA_INCLUDE_FILES)
-if(NOT HAVE_U8STRING_VIEW)
-    message(WARNING "kdlpp requires a C++20 compiler with std::u8string_view")
+
+if(HAVE_U8STRING_VIEW)
+    include(CheckCXXSourceCompiles)
+    # Check for C++20 concepts
+    check_cxx_source_compiles("
+        template<typename T> concept foo = true;
+        int main() { return 0; }"
+        HAVE_CONCEPTS)
+    check_cxx_source_compiles("
+        struct A {
+            int i;
+            bool operator==(const A& other) const = default;
+        };
+        int main() { return 0; }"
+        HAVE_DEFAULT_COMPARISONS)
+endif()
+
+if(NOT HAVE_U8STRING_VIEW OR NOT HAVE_CONCEPTS OR NOT HAVE_DEFAULT_COMPARISONS)
+    message(WARNING "kdlpp requires a C++20 compiler")
     message(WARNING "Not building kdlpp")
     set(BUILD_KDLPP OFF CACHE BOOL "Build C++ binding (kdlpp)" FORCE)
 else()
