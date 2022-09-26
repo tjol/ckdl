@@ -91,13 +91,16 @@ else()
 endif()
 
 # Download test data
-if(NOT KDL_TEST_CASES_ROOT)
+set(DOWNLOAD_TEST_DATA ON CACHE BOOL "Download test data")
+
+if(NOT KDL_TEST_CASES_ROOT AND DOWNLOAD_TEST_DATA)
     message(STATUS "Downloading KDL test cases from GitHub")
 
     set(KDL_GIT_URL "https://github.com/kdl-org/kdl.git")
     set(KDL_TGZ_URL "https://github.com/kdl-org/kdl/archive/refs/heads/main.tar.gz")
     find_package(Git)
 
+    set(GIT_CHECKOUT_OK OFF)
     if(Git_FOUND)
         set(CHECKOUT "${CMAKE_CURRENT_BINARY_DIR}/kdl")
         if(EXISTS "${CHECKOUT}/.git/HEAD")
@@ -107,30 +110,60 @@ if(NOT KDL_TEST_CASES_ROOT)
             if(NOT GIT_PULL_RESULT EQUAL 0)
                 message(WARNING "git pull failed")
             endif()
+            set(GIT_CHECKOUT_OK ON)
         else()
             execute_process(COMMAND ${GIT_EXECUTABLE} clone ${KDL_GIT_URL} "${CHECKOUT}"
                 RESULT_VARIABLE GIT_CLONE_RESULT)
-            if(NOT GIT_CLONE_RESULT EQUAL 0)
-                message(FATAL_ERROR "git clone failed")
+            if(GIT_CLONE_RESULT EQUAL 0)
+                set(GIT_CHECKOUT_OK ON)
+            else()
+                message(WARNING "git clone failed")
             endif()
         endif()
+    endif()
+    if(GIT_CHECKOUT_OK)
         set(KDL_TEST_CASES_ROOT "${CHECKOUT}/tests/test_cases" CACHE PATH "kdl-org test cases location")
     else()
+        set(DOWNLOAD_OK OFF)
         set(TGZ_FILE ${CMAKE_CURRENT_BINARY_DIR}/kdl.tar.gz)
         if(EXISTS ${TGZ_FILE})
             message(STATUS "${TGZ_FILE} already exists")
+            set(DOWNLOAD_OK ON)
         else()
+            message(STATUS "Downloading ${KDL_TGZ_URL}")
             file(DOWNLOAD ${KDL_TGZ_URL} ${TGZ_FILE}.dl STATUS DOWNLOAD_STATUS)
             list(GET DOWNLOAD_STATUS 0 DOWNLOAD_STATUS_CODE)
             if(DOWNLOAD_STATUS_CODE EQUAL 0)
                 file(RENAME ${TGZ_FILE}.dl ${TGZ_FILE})
+                set(DOWNLOAD_OK ON)
             else()
-                message(FATAL_ERROR "Download failed: ${DOWNLOAD_STATUS}")
+                message(WARNING "Download failed: ${DOWNLOAD_STATUS}")
             endif()
         endif()
 
-        file(ARCHIVE_EXTRACT INPUT ${TGZ_FILE} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-        set(KDL_TEST_CASES_ROOT "${CMAKE_CURRENT_BINARY_DIR}/kdl-main/tests/test_cases" CACHE PATH "kdl-org test cases location")
+        if(DOWNLOAD_OK)
+            if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.18)
+                message(STATUS "Extracting ${TGZ_FILE}")
+                file(ARCHIVE_EXTRACT INPUT ${TGZ_FILE} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+                set(KDL_TEST_CASES_ROOT "${CMAKE_CURRENT_BINARY_DIR}/kdl-main/tests/test_cases" CACHE PATH "kdl-org test cases location")
+            else()
+                # Old version of CMake, try tar
+                find_program(TAR_EXECUTABLE tar)
+                if(TAR_EXECUTABLE STREQUAL TAR_EXECUTABLE-NOTFOUND)
+                    message(WARNING "tar not found, can't extract test data")
+                else()
+                    message(STATUS "Extracting ${TGZ_FILE} using ${TAR_EXECUTABLE}")
+                    execute_process(COMMAND ${TAR_EXECUTABLE} xzf ${TGZ_FILE}
+                        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                        RESULT_VARIABLE EXTRACT_RESULT)
+                    if(EXTRACT_RESULT EQUAL 0)
+                        set(KDL_TEST_CASES_ROOT "${CMAKE_CURRENT_BINARY_DIR}/kdl-main/tests/test_cases" CACHE PATH "kdl-org test cases location")
+                    else()
+                        message(WARNING "Extracting test data failed")
+                    endif()
+                endif()
+            endif()
+        endif()
     endif()
 endif()
 
@@ -150,18 +183,22 @@ add_executable(emitter_test emitter_test.c)
 target_link_libraries(emitter_test kdl test_util)
 add_test(emitter_test emitter_test)
 
-# Ignore some tests which require unsupported number representations
-set(FUZZY_KDL_TESTS_LIST
-    no_decimal_exponent.kdl # float representation not consistent with other test cases
-)
-string(REPLACE ";" ":" FUZZY_KDL_TESTS "${FUZZY_KDL_TESTS_LIST}")
+if(KDL_TEST_CASES_ROOT)
+    # Ignore some tests which require unsupported number representations
+    set(FUZZY_KDL_TESTS_LIST
+        no_decimal_exponent.kdl # float representation not consistent with other test cases
+    )
+    string(REPLACE ";" ":" FUZZY_KDL_TESTS "${FUZZY_KDL_TESTS_LIST}")
 
-add_executable(example_doc_test example_doc_test.c)
-target_link_libraries(example_doc_test kdl test_util ckdl-cat)
-target_compile_definitions(example_doc_test PRIVATE
-    "KDL_TEST_CASES_ROOT=\"${KDL_TEST_CASES_ROOT}\""
-    "FUZZY_KDL_TESTS=\"${FUZZY_KDL_TESTS}\"")
-add_test(NAME example_doc_test COMMAND "$<TARGET_FILE:example_doc_test>" "${KDL_TEST_CASES_ROOT}")
+    add_executable(example_doc_test example_doc_test.c)
+    target_link_libraries(example_doc_test kdl test_util ckdl-cat)
+    target_compile_definitions(example_doc_test PRIVATE
+        "KDL_TEST_CASES_ROOT=\"${KDL_TEST_CASES_ROOT}\""
+        "FUZZY_KDL_TESTS=\"${FUZZY_KDL_TESTS}\"")
+    add_test(NAME example_doc_test COMMAND "$<TARGET_FILE:example_doc_test>" "${KDL_TEST_CASES_ROOT}")
+else()
+    message(WARNING "Test data not available, not running KDL test suite.")
+endif()
 
 if (WIN32 AND BUILD_SHARED_LIBS)
     # Copy kdl.dll to the test folder so that the tests work

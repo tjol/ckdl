@@ -76,6 +76,7 @@ The CMake scripts support a few options, including:
   library
 * ``-DBUILD_KDLPP=OFF``: Disable building the C++20 bindings
 * ``-DBUILD_TESTS=OFF``: Disable building the test suite
+* ``-DDOWNLOAD_TEST_DATA=OFF``: Don't download test data from GitHub during configure
 
 To run the test suite, run ``make test`` or ``ctest`` in the build directory.
 
