@@ -278,7 +278,7 @@ static bool _emit_value(kdl_emitter *self, kdl_value const* v)
         if (v->boolean) {
             return self->write_func(self->write_user_data, "true", 4) == 4;
         } else {
-            return self->write_func(self->write_user_data, "false", 5) == 4;
+            return self->write_func(self->write_user_data, "false", 5) == 5;
         }
     }
     return false;
