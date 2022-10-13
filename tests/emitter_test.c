@@ -48,7 +48,43 @@ static void test_basics(void)
     kdl_destroy_emitter(emitter);
 }
 
+static void test_data_types(void)
+{
+    kdl_emitter *emitter = kdl_create_buffering_emitter(&KDL_DEFAULT_EMITTER_OPTIONS);
+
+    kdl_emit_node(emitter, kdl_str_from_cstr("-"));
+
+    ASSERT(kdl_emit_arg(emitter, &(kdl_value){
+        .type = KDL_TYPE_NUMBER,
+        .number = (kdl_number){ .type = KDL_NUMBER_TYPE_INTEGER, .integer = -100 }
+    }));
+    ASSERT(kdl_emit_arg(emitter, &(kdl_value){
+        .type = KDL_TYPE_STRING,
+        .string = kdl_str_from_cstr("abc")
+    }));
+    ASSERT(kdl_emit_arg(emitter, &(kdl_value){
+        .type = KDL_TYPE_BOOLEAN,
+        .boolean = true
+    }));
+    ASSERT(kdl_emit_arg(emitter, &(kdl_value){
+        .type = KDL_TYPE_BOOLEAN,
+        .boolean = false
+    }));
+    ASSERT(kdl_emit_arg(emitter, &(kdl_value){
+        .type = KDL_TYPE_NULL
+    }));
+    ASSERT(kdl_emit_end(emitter));
+
+    kdl_str result = kdl_get_emitter_buffer(emitter);
+
+    char const *expected = "- -100 \"abc\" true false null\n";
+    kdl_str expected_str = kdl_str_from_cstr(expected);
+    ASSERT(expected_str.len == result.len);
+    ASSERT(memcmp(result.data, expected_str.data, result.len) == 0);
+}
+
 void TEST_MAIN(void)
 {
     run_test("Emitter: basics", &test_basics);
+    run_test("Emitter: all types", &test_data_types);
 }

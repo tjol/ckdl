@@ -116,7 +116,7 @@ static bool kdl_cat_impl(kdl_parser *parser, kdl_emitter *emitter)
             in_node_list = true;
             break;
         case KDL_EVENT_ARGUMENT:
-            kdl_emit_arg(emitter, &ev->value);
+            if (!kdl_emit_arg(emitter, &ev->value)) return false;
             break;
         case KDL_EVENT_PROPERTY:
             proplist_append(&props, ev->name, &ev->value);
