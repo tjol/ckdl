@@ -52,7 +52,7 @@ int main(int argc, char **argv)
         kdl_token token;
         kdl_tokenizer_status status = kdl_pop_token(tokenizer, &token);
         if (status == KDL_TOKENIZER_ERROR) {
-            kdl_emit_end(emitter);
+            (void)kdl_emit_end(emitter);
             fprintf(stderr, "Tokenization error\n");
             have_error = true;
             break;
@@ -117,12 +117,12 @@ int main(int argc, char **argv)
             break;
         }
 
-        kdl_emit_node(emitter, kdl_str_from_cstr(token_type_name));
+        (void)kdl_emit_node(emitter, kdl_str_from_cstr(token_type_name));
         kdl_value val = (kdl_value){
             .type = KDL_TYPE_STRING,
             .string = token.value
         };
-        kdl_emit_arg(emitter, &val);
+        (void)kdl_emit_arg(emitter, &val);
     }
 
     kdl_destroy_emitter(emitter);

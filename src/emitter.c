@@ -74,7 +74,7 @@ kdl_emitter *kdl_create_stream_emitter(kdl_write_func write_func, void *user_dat
 
 void kdl_destroy_emitter(kdl_emitter *self)
 {
-    kdl_emit_end(self);
+    (void)kdl_emit_end(self);
     if (self->buf.buf != NULL) {
         _kdl_free_write_buffer(&self->buf);
     }

@@ -21,7 +21,7 @@ struct proplist {
 
 static void proplist_clear(struct proplist *pl);
 static void proplist_append(struct proplist *pl, kdl_str name, kdl_value const* value);
-static void proplist_emit(kdl_emitter *emitter, struct proplist *pl);
+static KDL_NODISCARD bool proplist_emit(kdl_emitter *emitter, struct proplist *pl);
 
 static bool kdl_cat_impl(kdl_parser *parser, kdl_emitter *emitter);
 
@@ -93,7 +93,7 @@ static bool kdl_cat_impl(kdl_parser *parser, kdl_emitter *emitter)
             return false;
         case KDL_EVENT_START_NODE:
             if (!in_node_list) {
-                proplist_emit(emitter, &props);
+                if (!proplist_emit(emitter, &props)) return false;
                 proplist_clear(&props);
                 if (!kdl_start_emitting_children(emitter)) return false;
             }
@@ -110,7 +110,7 @@ static bool kdl_cat_impl(kdl_parser *parser, kdl_emitter *emitter)
                 if (!kdl_finish_emitting_children(emitter)) return false;
             } else {
                 // regular end to childless node
-                proplist_emit(emitter, &props);
+                if (!proplist_emit(emitter, &props)) return false;
                 proplist_clear(&props);
             }
             in_node_list = true;
@@ -199,14 +199,14 @@ static void proplist_append(struct proplist *pl, kdl_str name, kdl_value const* 
 static struct prop *overwriting_merge(struct prop *out,
     struct prop *left, struct prop *right, struct prop *end);
 
-static void proplist_emit(kdl_emitter *emitter, struct proplist *pl)
+static bool proplist_emit(kdl_emitter *emitter, struct proplist *pl)
 {
     // We need to emit the properties without duplicates, in lexical order
     // do a merge sort which overwrites duplicates
     struct prop *props = pl->props;
     struct prop *dest = malloc(sizeof(struct prop) * pl->count);
     if (dest == NULL) {
-        return;
+        return false;
     }
 
     size_t count = pl->count;
@@ -238,8 +238,10 @@ static void proplist_emit(kdl_emitter *emitter, struct proplist *pl)
     for (size_t i = 0; i < count; ++i) {
         struct prop *p = &props[i];
         if (p->name.data != NULL)
-            kdl_emit_property(emitter, kdl_borrow_str(&p->name), &p->value);
+            if (!kdl_emit_property(emitter, kdl_borrow_str(&p->name), &p->value)) return false;
     }
+
+    return true;
 }
 
 static int kdl_str_cmp(kdl_owned_string const *s1, kdl_owned_string const *s2)

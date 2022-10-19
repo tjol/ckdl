@@ -38,6 +38,16 @@ public:
     const char* what() const noexcept { return m_msg.c_str(); }
 };
 
+// Exception thrown on KDL emitter errors (should never occur)
+class EmitterError : public std::exception {
+    std::string m_msg;
+public:
+    EmitterError(std::string msg) : m_msg{std::move(msg)} {}
+    EmitterError() : EmitterError{"The KDL emitter encountered an error"} {}
+    const char* what() const noexcept { return m_msg.c_str(); }
+};
+
+
 // Ways in which a KDL number may be represented in C/C++
 enum NumberRepresentation {
     Integer = 0,

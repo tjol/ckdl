@@ -51,28 +51,28 @@ namespace {
     {
         for (const auto& node : nodes) {
             if (node.type_annotation().has_value()) {
-                kdl_emit_node_with_type(emitter,
-                                        to_kdl_str(*node.type_annotation()),
-                                        to_kdl_str(node.name()));
+                if (!kdl_emit_node_with_type(emitter,
+                                             to_kdl_str(*node.type_annotation()),
+                                             to_kdl_str(node.name()))) throw EmitterError{};
             } else {
-                kdl_emit_node(emitter, to_kdl_str(node.name()));
+                if (!kdl_emit_node(emitter, to_kdl_str(node.name()))) throw EmitterError{};
             }
 
             for (const auto& arg : node.args()) {
                 auto v = (kdl_value)arg;
-                kdl_emit_arg(emitter, &v);
+                if (!kdl_emit_arg(emitter, &v)) throw EmitterError{};
             }
 
             for (const auto& [key, value] : node.properties())
             {
                 auto v = (kdl_value)value;
-                kdl_emit_property(emitter, to_kdl_str(key), &v);
+                if (!kdl_emit_property(emitter, to_kdl_str(key), &v)) throw EmitterError{};
             }
 
             if (!node.children().empty()) {
-                kdl_start_emitting_children(emitter);
+                if (!kdl_start_emitting_children(emitter)) throw EmitterError{};
                 emit_nodes(emitter, node.children());
-                kdl_finish_emitting_children(emitter);
+                if (!kdl_finish_emitting_children(emitter)) throw EmitterError{};
             }
         }
     }
@@ -211,6 +211,7 @@ Document Document::read_from(kdl_parser *parser)
 std::u8string Document::to_string() const
 {
     kdl_emitter* emitter = kdl_create_buffering_emitter(&KDL_DEFAULT_EMITTER_OPTIONS);
+    if (emitter == nullptr) throw EmitterError{"Error initializing the KDL emitter"};
     emit_nodes(emitter, m_nodes);
     auto result = std::u8string{to_u8string_view(kdl_get_emitter_buffer(emitter))};
     kdl_destroy_emitter(emitter);
@@ -224,6 +225,7 @@ Document parse(std::u8string_view kdl_text)
         kdl_text.size()
     };
     kdl_parser *parser = kdl_create_string_parser(text, KDL_DEFAULTS);
+    if (parser == nullptr) throw std::runtime_error("Error initializing the KDL parser");
     auto doc = Document::read_from(parser);
     kdl_destroy_parser(parser);
     return doc;

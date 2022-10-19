@@ -52,7 +52,8 @@ static void test_data_types(void)
 {
     kdl_emitter *emitter = kdl_create_buffering_emitter(&KDL_DEFAULT_EMITTER_OPTIONS);
 
-    kdl_emit_node(emitter, kdl_str_from_cstr("-"));
+    ASSERT(emitter);
+    ASSERT(kdl_emit_node(emitter, kdl_str_from_cstr("-")));
 
     ASSERT(kdl_emit_arg(emitter, &(kdl_value){
         .type = KDL_TYPE_NUMBER,

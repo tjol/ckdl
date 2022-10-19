@@ -119,9 +119,9 @@ int main(int argc, char **argv)
         kdl_str event_name_str = kdl_str_from_cstr(event_name);
 
         if (slashdash) {
-            kdl_emit_node_with_type(emitter, slashdash_type_str, event_name_str);
+            (void)kdl_emit_node_with_type(emitter, slashdash_type_str, event_name_str);
         } else {
-            kdl_emit_node(emitter, event_name_str);
+            (void)kdl_emit_node(emitter, event_name_str);
         }
         if (event->name.data != NULL) {
             kdl_value name_val = (kdl_value) {
@@ -129,10 +129,10 @@ int main(int argc, char **argv)
                 .type_annotation = { NULL, 0 },
                 .string = event->name
             };
-            kdl_emit_property(emitter, name_str, &name_val);
+            (void)kdl_emit_property(emitter, name_str, &name_val);
         }
 
-        kdl_emit_property(emitter, value_str, &event->value);
+        (void)kdl_emit_property(emitter, value_str, &event->value);
 
 
         if (have_error || eof) break;
