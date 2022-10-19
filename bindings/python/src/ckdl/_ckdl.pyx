@@ -5,6 +5,10 @@ class ParseError(ValueError):
     def __init__(self, msg):
         super().__init__(msg)
 
+class EmitterError(RuntimeError):
+    def __init__(self, msg="The KDL emitter encountered an error"):
+        super().__init__(msg)
+
 cdef str _kdl_str_to_py_str(const kdl_str* s):
     return s.data[:s.len].decode("utf-8")
 
@@ -193,7 +197,7 @@ cdef kdl_value _make_kdl_value(value, kdl_owned_string* tmp_str_t, kdl_owned_str
     if isinstance(value, Value):
         # We have a type annotation
         if tmp_str_t == NULL:
-            raise RuntimeError("Nested Value objects are not allowed")
+            raise TypeError("Nested Value objects are not allowed")
         tmp_str_t[0] = _py_str_to_kdl_str(value.type_annotation)
         result = _make_kdl_value(value.value, NULL, tmp_str_v)
         result.type_annotation = kdl_borrow_str(tmp_str_t)
@@ -233,7 +237,8 @@ cdef bint _emit_arg(kdl_emitter *emitter, arg) except False:
     val_str.data = NULL
 
     v = _make_kdl_value(arg, &type_str, &val_str)
-    kdl_emit_arg(emitter, &v)
+    if not kdl_emit_arg(emitter, &v):
+        raise EmitterError()
 
     kdl_free_string(&type_str)
     kdl_free_string(&val_str)
@@ -251,7 +256,8 @@ cdef bint _emit_prop(kdl_emitter *emitter, key, value) except False:
 
     name_str = _py_str_to_kdl_str(key)
     v = _make_kdl_value(value, &type_str, &val_str)
-    kdl_emit_property(emitter, kdl_borrow_str(&name_str), &v)
+    if not kdl_emit_property(emitter, kdl_borrow_str(&name_str), &v):
+        raise EmitterError()
 
     kdl_free_string(&name_str)
     kdl_free_string(&type_str)
@@ -266,10 +272,12 @@ cdef bint _emit_node(kdl_emitter *emitter, Node node) except False:
     name = _py_str_to_kdl_str(node.name)
     if node.type_annotation is not None:
         type_annotation = _py_str_to_kdl_str(node.type_annotation)
-        kdl_emit_node_with_type(emitter, kdl_borrow_str(&type_annotation), kdl_borrow_str(&name))
+        if not kdl_emit_node_with_type(emitter, kdl_borrow_str(&type_annotation), kdl_borrow_str(&name)):
+            raise EmitterError()
         kdl_free_string(&type_annotation)
     else:
-        kdl_emit_node(emitter, kdl_borrow_str(&name))
+        if not kdl_emit_node(emitter, kdl_borrow_str(&name)):
+            raise EmitterError()
 
     kdl_free_string(&name)
 
@@ -283,7 +291,8 @@ cdef bint _emit_node(kdl_emitter *emitter, Node node) except False:
         kdl_start_emitting_children(emitter)
         for child in node.children:
             _emit_node(emitter, child)
-        kdl_finish_emitting_children(emitter)
+        if not kdl_finish_emitting_children(emitter):
+            raise EmitterError()
 
     return True
 
@@ -328,11 +337,14 @@ cdef class Document:
         c_opts = opts._to_c_struct()
 
         emitter = kdl_create_buffering_emitter(&c_opts)
+        if emitter == NULL:
+            raise EmitterError("Error creating emitter")
 
         for node in self.nodes:
             _emit_node(emitter, node)
 
-        kdl_emit_end(emitter)
+        if not kdl_emit_end(emitter):
+            raise EmitterError()
         buf = kdl_get_emitter_buffer(emitter)
         doc = _kdl_str_to_py_str(&buf)
 
