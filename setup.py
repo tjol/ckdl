@@ -55,7 +55,7 @@ from skbuild import setup
 
 setup(
     name="ckdl",
-    version="0.1",
+    version="0.1.1",
     description="KDL parser and writer with a C back-end",
     long_description=__doc__,
     long_description_content_type="text/markdown",
@@ -66,7 +66,7 @@ setup(
     },
     keywords="kdl parser configuration",
     classifiers = [
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 3 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3"
