@@ -89,16 +89,17 @@ of the ``DESTDIR`` environment variable).
 Dynamic vs static library
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The ckdl C library ``libkdl`` supports both dynamic linking and static linking. Which option
-you want to choose depends on your situation: When using C, C++, or a similar language, static
-libraries can be easier to work with, while when using a dynamic runtime a dynamic library
-may be your best bet (Python's ctypes and .NET's P/Invoke are examples of technologies that
-as good as require the use of a dynamic library).
+The ckdl C library ``libkdl`` and the C++ bindings ``libkdlpp`` support both dynamic linking
+and static linking. Which option you want to choose depends on your situation: When using C,
+C++, or a similar language, static libraries can be easier to work with, while when using a
+dynamic runtime a dynamic library may be your best bet (Python's ctypes and .NET's P/Invoke
+are examples of technologies that as good as require the use of a dynamic library).
 
 .. attention::
 
     On **Windows**, if you're using the static library, and not the DLL, you must define the
-    macro ``KDL_STATIC_LIB`` before including the ckdl headers, or you'll get linking errors.
+    macro ``KDL_STATIC_LIB`` before including the ckdl headers, and ``KDLPP_STATIC_LIB``
+    before including the kdlpp header, or you'll get linking errors.
 
     On UNIX, this is not required, but it can't hurt in portable applications and libraries.
 

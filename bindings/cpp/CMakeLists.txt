@@ -40,11 +40,19 @@ if(BUILD_KDLPP)
         src/kdlpp.cpp
     )
 
-    add_library(kdlpp STATIC ${KDLPP_CXX_SOURCES})
+    add_library(kdlpp ${KDLPP_CXX_SOURCES})
+
     target_compile_options(kdlpp PRIVATE ${KDL_COMPILE_OPTIONS})
+    target_compile_definitions(kdlpp PRIVATE BUILDING_KDLPP=1)
+
     target_include_directories(kdlpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_link_libraries(kdlpp PUBLIC kdl)
     target_compile_features(kdlpp PUBLIC cxx_std_20)
+
+    if(NOT BUILD_SHARED_LIBS)
+        target_compile_definitions(kdlpp PUBLIC KDLPP_STATIC_LIB=1)
+    endif()
+
     install(TARGETS kdlpp COMPONENT libkdlpp)
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/kdlpp.h TYPE INCLUDE COMPONENT libkdlpp)
 
