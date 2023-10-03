@@ -258,27 +258,29 @@ static bool _emit_identifier(kdl_emitter *self, kdl_str name)
     }
 }
 
+#define _write_string_literal_ok(self, s) (self->write_func(self->write_user_data, ("" s ""), sizeof(s)-1) == sizeof(s)-1)
+
 static bool _emit_value(kdl_emitter *self, kdl_value const* v)
 {
     if (v->type_annotation.data != NULL)
     {
-        if ((self->write_func(self->write_user_data, "(", 1) != 1)
-            || !_emit_identifier(self, v->type_annotation)
-            || (self->write_func(self->write_user_data, ")", 1) != 1))
+        if (!(_write_string_literal_ok(self, "(")
+            && _emit_identifier(self, v->type_annotation)
+            && _write_string_literal_ok(self, ")")))
             return false;
     }
     switch (v->type) {
     case KDL_TYPE_NULL:
-        return self->write_func(self->write_user_data, "null", 4) == 4;
+        return _write_string_literal_ok(self, "null");
     case KDL_TYPE_STRING:
         return _emit_str(self, v->string);
     case KDL_TYPE_NUMBER:
         return _emit_number(self, &v->number);
     case KDL_TYPE_BOOLEAN:
         if (v->boolean) {
-            return self->write_func(self->write_user_data, "true", 4) == 4;
+            return _write_string_literal_ok(self, "true");
         } else {
-            return self->write_func(self->write_user_data, "false", 5) == 5;
+            return _write_string_literal_ok(self, "false");
         }
     }
     return false;
@@ -287,14 +289,14 @@ static bool _emit_value(kdl_emitter *self, kdl_value const* v)
 static bool _emit_node_preamble(kdl_emitter *self)
 {
     if (!self->start_of_line) {
-        if (self->write_func(self->write_user_data, "\n", 1) != 1) return false;
+        if (!_write_string_literal_ok(self, "\n")) return false;
     }
     int indent = 0;
     for (int d = 0; d < self->depth; ++d) {
         indent += self->opt.indent;
     }
     for (int i = 0; i < indent; ++i) {
-        if (self->write_func(self->write_user_data, " ", 1) != 1) return false;
+        if (!_write_string_literal_ok(self, " ")) return false;
     }
     self->start_of_line = false;
     return true;
@@ -308,23 +310,23 @@ bool kdl_emit_node(kdl_emitter *self, kdl_str name)
 bool kdl_emit_node_with_type(kdl_emitter *self, kdl_str type, kdl_str name)
 {
     return _emit_node_preamble(self)
-        && (self->write_func(self->write_user_data, "(", 1) == 1)
+        && _write_string_literal_ok(self, "(")
         && _emit_identifier(self, type)
-        && (self->write_func(self->write_user_data, ")", 1) == 1)
+        && _write_string_literal_ok(self, ")")
         && _emit_identifier(self, name);
 }
 
 bool kdl_emit_arg(kdl_emitter *self, kdl_value const *value)
 {
-    return (self->write_func(self->write_user_data, " ", 1) == 1)
+    return _write_string_literal_ok(self, " ")
         && _emit_value(self, value);
 }
 
 bool kdl_emit_property(kdl_emitter *self, kdl_str name, kdl_value const *value)
 {
-    return (self->write_func(self->write_user_data, " ", 1) == 1)
+    return (_write_string_literal_ok(self, " "))
         && _emit_identifier(self, name)
-        && (self->write_func(self->write_user_data, "=", 1) == 1)
+        && _write_string_literal_ok(self, "=")
         && _emit_value(self, value);
 }
 
@@ -332,7 +334,7 @@ bool kdl_start_emitting_children(kdl_emitter *self)
 {
     self->start_of_line = true;
     ++self->depth;
-    return (self->write_func(self->write_user_data, " {\n", 3) == 3);
+    return (_write_string_literal_ok(self, " {\n"));
 }
 
 bool kdl_finish_emitting_children(kdl_emitter *self)
@@ -341,7 +343,7 @@ bool kdl_finish_emitting_children(kdl_emitter *self)
     --self->depth;
     if (!_emit_node_preamble(self)) return false;
     self->start_of_line = true;
-    return (self->write_func(self->write_user_data, "}\n", 2) == 2);
+    return (_write_string_literal_ok(self, "}\n"));
 }
 
 bool kdl_emit_end(kdl_emitter *self)
@@ -350,7 +352,7 @@ bool kdl_emit_end(kdl_emitter *self)
         if (!kdl_finish_emitting_children(self)) return false;
     }
     if (!self->start_of_line) {
-        if (self->write_func(self->write_user_data, "\n", 1) != 1) return false;
+        if (!_write_string_literal_ok(self, "\n")) return false;
         self->start_of_line = true;
     }
     return true;

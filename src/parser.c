@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <math.h>
 
+#define _str_equals_literal(k, l) ((k).len == (sizeof(l "") - 1) && 0 == memcmp(("" l), (k).data, (sizeof(l) - 1)))
+
 enum _kdl_parser_state {
     // Basic states
     PARSER_OUTSIDE_NODE,
@@ -535,16 +537,14 @@ static bool _parse_value(kdl_token const *token, kdl_value *val, kdl_owned_strin
             return true;
         }
     case KDL_TOKEN_WORD:
-        if (token->value.len == 4) {
-            if (memcmp("null", token->value.data, 4) == 0) {
-                val->type = KDL_TYPE_NULL;
-                return true;
-            } else if (memcmp("true", token->value.data, 4) == 0) {
-                val->type = KDL_TYPE_BOOLEAN;
-                val->boolean = true;
-                return true;
-            }
-        } else if (token->value.len == 5 && memcmp("false", token->value.data, 4) == 0) {
+        if (_str_equals_literal(token->value, "null")) {
+            val->type = KDL_TYPE_NULL;
+            return true;
+        } else if (_str_equals_literal(token->value, "true")) {
+            val->type = KDL_TYPE_BOOLEAN;
+            val->boolean = true;
+            return true;
+        } else if (_str_equals_literal(token->value, "false")) {
             val->type = KDL_TYPE_BOOLEAN;
             val->boolean = false;
             return true;
