@@ -37,6 +37,7 @@ template <typename T> concept _arithmetic = std::is_arithmetic_v<T>;
 
 class TypeError : public std::exception {
     const char* m_msg;
+
 public:
     TypeError() : m_msg{"kdlpp type error"} {}
     TypeError(const char* msg) : m_msg{msg} {}
@@ -46,6 +47,7 @@ public:
 // Exception thrown on regular KDL parsing errors
 class KDLPP_EXPORT ParseError : public std::exception {
     std::string m_msg;
+
 public:
     ParseError(kdl_str const& msg);
     ParseError(std::string msg) : m_msg{std::move(msg)} {}
@@ -55,12 +57,12 @@ public:
 // Exception thrown on KDL emitter errors (should never occur)
 class EmitterError : public std::exception {
     std::string m_msg;
+
 public:
     EmitterError(std::string msg) : m_msg{std::move(msg)} {}
     EmitterError() : EmitterError{"The KDL emitter encountered an error"} {}
     const char* what() const noexcept { return m_msg.c_str(); }
 };
-
 
 // Ways in which a KDL number may be represented in C/C++
 enum NumberRepresentation {
@@ -117,14 +119,16 @@ public:
     explicit operator kdl_number() const;
 };
 
-template <typename T> concept _into_number = requires (T t) { Number{t}; };
+template <typename T> concept _into_number = requires(T t) { Number{t}; };
 
 // Mixin
 class HasTypeAnnotation {
     std::optional<std::u8string> m_type_annotation;
+
 protected:
     HasTypeAnnotation() = default;
     HasTypeAnnotation(std::u8string_view t) : m_type_annotation{t} {}
+
 public:
     const std::optional<std::u8string>& type_annotation() const { return m_type_annotation; }
 
@@ -133,10 +137,7 @@ public:
         m_type_annotation = std::u8string{type_annotation};
     }
 
-    void remove_type_annotation()
-    {
-        m_type_annotation.reset();
-    }
+    void remove_type_annotation() { m_type_annotation.reset(); }
 
     bool operator==(const HasTypeAnnotation&) const = default;
     bool operator!=(const HasTypeAnnotation&) const = default;
@@ -165,11 +166,7 @@ public:
     Value(Number n) : m_value{std::move(n)} {}
     Value(_into_number auto n) : m_value{Number{n}} {}
 
-    Value(std::u8string_view type_annotation, bool b)
-        : HasTypeAnnotation{type_annotation},
-          m_value{b}
-    {
-    }
+    Value(std::u8string_view type_annotation, bool b) : HasTypeAnnotation{type_annotation}, m_value{b} {}
     Value(std::u8string_view type_annotation, std::u8string_view s)
         : HasTypeAnnotation{type_annotation},
           m_value{std::u8string{s}}
@@ -240,30 +237,30 @@ public:
 
     void set_to_null() { m_value = std::monostate{}; }
 
-    Type type() const noexcept
-    {
-        return static_cast<Type>(m_value.index());
-    }
+    Type type() const noexcept { return static_cast<Type>(m_value.index()); }
 
     // Return the content as a fundamental type, u8string, or u8string_view,
     // if this object contains the right type.
     template <typename T>
     T as() const
     {
-        return std::visit([](auto const& v) -> T {
-            using V = std::decay_t<decltype(v)>;
-            if constexpr (std::is_same_v<V, T>) {
-                return v;
-            } else if constexpr (std::is_same_v<V const&, T>) {
-                return v;
-            } else if constexpr (std::is_arithmetic_v<T> && std::is_same_v<V, Number>) {
-                return v.template as<T>();
-            } else if constexpr (std::is_same_v<T, std::u8string_view> && std::is_same_v<V, std::u8string>) {
-                return T{v};
-            } else {
-                throw TypeError("incompatible types");
-            }
-        }, m_value);
+        return std::visit(
+            [](auto const& v) -> T {
+                using V = std::decay_t<decltype(v)>;
+                if constexpr (std::is_same_v<V, T>) {
+                    return v;
+                } else if constexpr (std::is_same_v<V const&, T>) {
+                    return v;
+                } else if constexpr (std::is_arithmetic_v<T> && std::is_same_v<V, Number>) {
+                    return v.template as<T>();
+                } else if constexpr (std::is_same_v<T, std::u8string_view>
+                    && std::is_same_v<V, std::u8string>) {
+                    return T{v};
+                } else {
+                    throw TypeError("incompatible types");
+                }
+            },
+            m_value);
     }
 
     explicit operator kdl_value() const;
@@ -288,9 +285,9 @@ public:
     {
     }
     Node(std::u8string_view name,
-            std::vector<Value> args,
-            std::map<std::u8string, Value, std::less<>> properties,
-            std::vector<Node> children)
+        std::vector<Value> args,
+        std::map<std::u8string, Value, std::less<>> properties,
+        std::vector<Node> children)
         : m_name{name},
           m_args{std::move(args)},
           m_properties{std::move(properties)},
@@ -298,10 +295,10 @@ public:
     {
     }
     Node(std::u8string_view type_annotation,
-            std::u8string_view name,
-            std::vector<Value> args,
-            std::map<std::u8string, Value, std::less<>> properties,
-            std::vector<Node> children)
+        std::u8string_view name,
+        std::vector<Value> args,
+        std::map<std::u8string, Value, std::less<>> properties,
+        std::vector<Node> children)
         : HasTypeAnnotation{type_annotation},
           m_name{name},
           m_args{std::move(args)},
@@ -329,7 +326,7 @@ class KDLPP_EXPORT Document {
     std::vector<Node> m_nodes;
 
 public:
-    static Document read_from(kdl_parser *parser);
+    static Document read_from(kdl_parser* parser);
 
     Document() = default;
     Document(Document const&) = default;

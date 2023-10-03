@@ -2,8 +2,8 @@
 #define KDL_H_
 
 #include "common.h"
+#include "emitter.h"
 #include "parser.h"
 #include "tokenizer.h"
-#include "emitter.h"
 
 #endif // KDL_H_

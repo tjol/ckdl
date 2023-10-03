@@ -2,23 +2,22 @@
 
 #include "test_util.h"
 
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 static void test_basics(void)
 {
     kdl_emitter_options emitter_opt = KDL_DEFAULT_EMITTER_OPTIONS;
     emitter_opt.indent = 3;
     emitter_opt.float_mode.always_write_decimal_point_or_exponent = false;
-    kdl_emitter *emitter = kdl_create_buffering_emitter(&emitter_opt);
+    kdl_emitter* emitter = kdl_create_buffering_emitter(&emitter_opt);
 
-    char const *expected =
-        "\xf0\x9f\x92\xa9\n"
-        "node2 {\n"
-        "   \"first child\" 1 a=\"b\"\n"
-        "   (ta)second-child\n"
-        "}\n"
-        "node3\n";
+    char const* expected = "\xf0\x9f\x92\xa9\n"
+                           "node2 {\n"
+                           "   \"first child\" 1 a=\"b\"\n"
+                           "   (ta)second-child\n"
+                           "}\n"
+                           "node3\n";
     kdl_str expected_str = kdl_str_from_cstr(expected);
 
     ASSERT(kdl_emit_node(emitter, kdl_str_from_cstr("\xf0\x9f\x92\xa9")));
@@ -27,11 +26,8 @@ static void test_basics(void)
     ASSERT(kdl_emit_node(emitter, kdl_str_from_cstr("first child")));
     kdl_value v;
     v.type = KDL_TYPE_NUMBER;
-    v.type_annotation = (kdl_str){ NULL, 0 };
-    v.number = (kdl_number) {
-        .type = KDL_NUMBER_TYPE_FLOATING_POINT,
-        .floating_point = 1.0
-    };
+    v.type_annotation = (kdl_str){NULL, 0};
+    v.number = (kdl_number){.type = KDL_NUMBER_TYPE_FLOATING_POINT, .floating_point = 1.0};
     ASSERT(kdl_emit_arg(emitter, &v));
     v.type = KDL_TYPE_STRING;
     v.string = kdl_str_from_cstr("b");
@@ -50,35 +46,25 @@ static void test_basics(void)
 
 static void test_data_types(void)
 {
-    kdl_emitter *emitter = kdl_create_buffering_emitter(&KDL_DEFAULT_EMITTER_OPTIONS);
+    kdl_emitter* emitter = kdl_create_buffering_emitter(&KDL_DEFAULT_EMITTER_OPTIONS);
 
     ASSERT(emitter);
     ASSERT(kdl_emit_node(emitter, kdl_str_from_cstr("-")));
 
-    ASSERT(kdl_emit_arg(emitter, &(kdl_value){
-        .type = KDL_TYPE_NUMBER,
-        .number = (kdl_number){ .type = KDL_NUMBER_TYPE_INTEGER, .integer = -100 }
+    ASSERT(kdl_emit_arg(emitter,
+        &(kdl_value){
+            .type = KDL_TYPE_NUMBER,
+            .number = (kdl_number){.type = KDL_NUMBER_TYPE_INTEGER, .integer = -100}
     }));
-    ASSERT(kdl_emit_arg(emitter, &(kdl_value){
-        .type = KDL_TYPE_STRING,
-        .string = kdl_str_from_cstr("abc")
-    }));
-    ASSERT(kdl_emit_arg(emitter, &(kdl_value){
-        .type = KDL_TYPE_BOOLEAN,
-        .boolean = true
-    }));
-    ASSERT(kdl_emit_arg(emitter, &(kdl_value){
-        .type = KDL_TYPE_BOOLEAN,
-        .boolean = false
-    }));
-    ASSERT(kdl_emit_arg(emitter, &(kdl_value){
-        .type = KDL_TYPE_NULL
-    }));
+    ASSERT(kdl_emit_arg(emitter, &(kdl_value){.type = KDL_TYPE_STRING, .string = kdl_str_from_cstr("abc")}));
+    ASSERT(kdl_emit_arg(emitter, &(kdl_value){.type = KDL_TYPE_BOOLEAN, .boolean = true}));
+    ASSERT(kdl_emit_arg(emitter, &(kdl_value){.type = KDL_TYPE_BOOLEAN, .boolean = false}));
+    ASSERT(kdl_emit_arg(emitter, &(kdl_value){.type = KDL_TYPE_NULL}));
     ASSERT(kdl_emit_end(emitter));
 
     kdl_str result = kdl_get_emitter_buffer(emitter);
 
-    char const *expected = "- -100 \"abc\" true false null\n";
+    char const* expected = "- -100 \"abc\" true false null\n";
     kdl_str expected_str = kdl_str_from_cstr(expected);
     ASSERT(expected_str.len == result.len);
     ASSERT(memcmp(result.data, expected_str.data, result.len) == 0);

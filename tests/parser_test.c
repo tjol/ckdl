@@ -6,19 +6,18 @@
 
 static void test_basics(void)
 {
-    char const *const kdl_text =
-        "node1 key=0x123 \"gar\xc3\xa7on\" ;"
-        "node2 \\ // COMMENT\n"
-        "    \"gar\\u{e7}on\"\n"
-        "node3 { (t)child1; child2\n"
-        "child3 }";
-    char const *const garcon = "gar\xc3\xa7on";
+    char const* const kdl_text = "node1 key=0x123 \"gar\xc3\xa7on\" ;"
+                                 "node2 \\ // COMMENT\n"
+                                 "    \"gar\\u{e7}on\"\n"
+                                 "node3 { (t)child1; child2\n"
+                                 "child3 }";
+    char const* const garcon = "gar\xc3\xa7on";
 
     kdl_str doc = kdl_str_from_cstr(kdl_text);
-    kdl_parser *parser = kdl_create_string_parser(doc, 0);
+    kdl_parser* parser = kdl_create_string_parser(doc, 0);
 
     // test all events
-    kdl_event_data *ev;
+    kdl_event_data* ev;
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
@@ -104,16 +103,15 @@ static void test_basics(void)
 
 static void test_slashdash(void)
 {
-    char const *const kdl_text =
-        "node1 /-key=0x123\n"
-        "/- node2 { (t)child1; child2; child3 }\n"
-        "node3";
+    char const* const kdl_text = "node1 /-key=0x123\n"
+                                 "/- node2 { (t)child1; child2; child3 }\n"
+                                 "node3";
 
     kdl_str doc = kdl_str_from_cstr(kdl_text);
-    kdl_parser *parser = kdl_create_string_parser(doc, 0);
+    kdl_parser* parser = kdl_create_string_parser(doc, 0);
 
     // test all events
-    kdl_event_data *ev;
+    kdl_event_data* ev;
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
@@ -192,14 +190,13 @@ static void test_slashdash(void)
 
 static void test_unbalanced_brace(void)
 {
-    char const *const kdl_text =
-        "node1 {";
+    char const* const kdl_text = "node1 {";
 
     kdl_str doc = kdl_str_from_cstr(kdl_text);
-    kdl_parser *parser = kdl_create_string_parser(doc, 0);
+    kdl_parser* parser = kdl_create_string_parser(doc, 0);
 
     // test all events
-    kdl_event_data *ev;
+    kdl_event_data* ev;
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
@@ -212,14 +209,13 @@ static void test_unbalanced_brace(void)
 
 static void test_identifier_arg(void)
 {
-    char const *const kdl_text =
-        "node1 \"arg1\" arg2";
+    char const* const kdl_text = "node1 \"arg1\" arg2";
 
     kdl_str doc = kdl_str_from_cstr(kdl_text);
-    kdl_parser *parser = kdl_create_string_parser(doc, 0);
+    kdl_parser* parser = kdl_create_string_parser(doc, 0);
 
     // test all events
-    kdl_event_data *ev;
+    kdl_event_data* ev;
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
@@ -235,14 +231,13 @@ static void test_identifier_arg(void)
 
 static void test_number_type(void)
 {
-    char const *const kdl_text =
-        "node1; (12)node2;";
+    char const* const kdl_text = "node1; (12)node2;";
 
     kdl_str doc = kdl_str_from_cstr(kdl_text);
-    kdl_parser *parser = kdl_create_string_parser(doc, 0);
+    kdl_parser* parser = kdl_create_string_parser(doc, 0);
 
     // test all events
-    kdl_event_data *ev;
+    kdl_event_data* ev;
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
@@ -264,4 +259,3 @@ void TEST_MAIN(void)
     run_test("Parser: arg can't be identifier", &test_identifier_arg);
     run_test("Parser: type can't be number", &test_number_type);
 }
-

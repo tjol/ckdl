@@ -17,25 +17,25 @@ struct _kdl_ubigint {
 typedef struct _kdl_ubigint _kdl_ubigint;
 
 // Create a new big int object
-_kdl_ubigint *_kdl_ubigint_new(uint32_t initial_value);
+_kdl_ubigint* _kdl_ubigint_new(uint32_t initial_value);
 // Copy a big int
-_kdl_ubigint *_kdl_ubigint_dup(_kdl_ubigint const *value);
+_kdl_ubigint* _kdl_ubigint_dup(_kdl_ubigint const* value);
 // Destroy a big int
-void _kdl_ubigint_free(_kdl_ubigint *i);
+void _kdl_ubigint_free(_kdl_ubigint* i);
 
 // a += b
-_kdl_ubigint *_kdl_ubigint_add_inplace(_kdl_ubigint *a, uint32_t b);
+_kdl_ubigint* _kdl_ubigint_add_inplace(_kdl_ubigint* a, uint32_t b);
 // a *= b
-_kdl_ubigint *_kdl_ubigint_multiply_inplace(_kdl_ubigint *a, uint32_t b);
+_kdl_ubigint* _kdl_ubigint_multiply_inplace(_kdl_ubigint* a, uint32_t b);
 // a /= b (returns: remainder)
-uint32_t _kdl_ubigint_divide_inplace(_kdl_ubigint *a, uint32_t b);
+uint32_t _kdl_ubigint_divide_inplace(_kdl_ubigint* a, uint32_t b);
 
 // Convert to long long, if possible (return true on success)
-bool _kdl_ubigint_as_long_long(_kdl_ubigint *i, long long *dest);
+bool _kdl_ubigint_as_long_long(_kdl_ubigint* i, long long* dest);
 // Format decimal representation as string
-kdl_owned_string _kdl_ubigint_as_string(_kdl_ubigint *i);
+kdl_owned_string _kdl_ubigint_as_string(_kdl_ubigint* i);
 // Format decimal representation, starting with a sign
 // sign: -1 or +1
-kdl_owned_string _kdl_ubigint_as_string_sgn(int sign, _kdl_ubigint *i);
+kdl_owned_string _kdl_ubigint_as_string_sgn(int sign, _kdl_ubigint* i);
 
 #endif // KDL_INTERNAL_BIGINT_H_

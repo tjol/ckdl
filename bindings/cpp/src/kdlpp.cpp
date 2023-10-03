@@ -1,5 +1,5 @@
-#include <kdlpp.h>
 #include <kdl/kdl.h>
+#include <kdlpp.h>
 
 namespace kdl {
 
@@ -17,8 +17,7 @@ namespace {
 
     std::variant<long long, double, std::u8string> kdl_number_to_variant(kdl_number const& n)
     {
-        switch (n.type)
-        {
+        switch (n.type) {
         case KDL_NUMBER_TYPE_INTEGER:
             return n.integer;
         case KDL_NUMBER_TYPE_FLOATING_POINT:
@@ -32,8 +31,7 @@ namespace {
 
     std::variant<std::monostate, bool, Number, std::u8string> kdl_value_to_variant(kdl_value const& val)
     {
-        switch (val.type)
-        {
+        switch (val.type) {
         case KDL_TYPE_NULL:
             return std::monostate{};
         case KDL_TYPE_BOOLEAN:
@@ -51,9 +49,9 @@ namespace {
     {
         for (const auto& node : nodes) {
             if (node.type_annotation().has_value()) {
-                if (!kdl_emit_node_with_type(emitter,
-                                             to_kdl_str(*node.type_annotation()),
-                                             to_kdl_str(node.name()))) throw EmitterError{};
+                if (!kdl_emit_node_with_type(
+                        emitter, to_kdl_str(*node.type_annotation()), to_kdl_str(node.name())))
+                    throw EmitterError{};
             } else {
                 if (!kdl_emit_node(emitter, to_kdl_str(node.name()))) throw EmitterError{};
             }
@@ -63,8 +61,7 @@ namespace {
                 if (!kdl_emit_arg(emitter, &v)) throw EmitterError{};
             }
 
-            for (const auto& [key, value] : node.properties())
-            {
+            for (const auto& [key, value] : node.properties()) {
                 auto v = (kdl_value)value;
                 if (!kdl_emit_property(emitter, to_kdl_str(key), &v)) throw EmitterError{};
             }
@@ -79,20 +76,15 @@ namespace {
 
 } // namespace
 
-ParseError::ParseError(kdl_str const& msg)
-    : m_msg{msg.data, msg.len}
-{
-}
+ParseError::ParseError(kdl_str const& msg) : m_msg{msg.data, msg.len} {}
 
-Number::Number(kdl_number const& n)
-    : m_value{kdl_number_to_variant(n)}
-{
-}
+Number::Number(kdl_number const& n) : m_value{kdl_number_to_variant(n)} {}
 
 Number::operator kdl_number() const
 {
     kdl_number result;
-    std::visit([&result](const auto& n) {
+    std::visit(
+        [&result](const auto& n) {
             using T = std::decay_t<decltype(n)>;
             if constexpr (std::is_same_v<T, long long>) {
                 result.type = KDL_NUMBER_TYPE_INTEGER;
@@ -106,12 +98,12 @@ Number::operator kdl_number() const
             } else {
                 throw std::logic_error("incomplete visit");
             }
-        }, m_value);
+        },
+        m_value);
     return result;
 }
 
-Value::Value(kdl_value const& val)
-    : m_value(kdl_value_to_variant(val))
+Value::Value(kdl_value const& val) : m_value(kdl_value_to_variant(val))
 {
     if (val.type_annotation.data != nullptr) {
         set_type_annotation(to_u8string_view(val.type_annotation));
@@ -135,7 +127,8 @@ Value Value::from_string(std::u8string_view s)
 Value::operator kdl_value() const
 {
     kdl_value result;
-    std::visit([&result](const auto& v) {
+    std::visit(
+        [&result](const auto& v) {
             using T = std::decay_t<decltype(v)>;
             if constexpr (std::is_same_v<T, bool>) {
                 result.type = KDL_TYPE_BOOLEAN;
@@ -149,16 +142,17 @@ Value::operator kdl_value() const
             } else {
                 result.type = KDL_TYPE_NULL;
             }
-        }, m_value);
+        },
+        m_value);
     if (type_annotation().has_value()) {
         result.type_annotation = to_kdl_str(*type_annotation());
     } else {
-        result.type_annotation = { nullptr, 0 };
+        result.type_annotation = {nullptr, 0};
     }
     return result;
 }
 
-Document Document::read_from(kdl_parser *parser)
+Document Document::read_from(kdl_parser* parser)
 {
     Document doc;
     auto* node_list = &doc.nodes();
@@ -199,8 +193,7 @@ Document Document::read_from(kdl_parser *parser)
             current_node->args().emplace_back(Value{ev->value});
             break;
         case KDL_EVENT_PROPERTY:
-            current_node->properties()[std::u8string{to_u8string_view(ev->name)}]
-                = Value{ev->value};
+            current_node->properties()[std::u8string{to_u8string_view(ev->name)}] = Value{ev->value};
             break;
         default:
             throw std::logic_error("Invalid event from kdl_parser");
@@ -220,16 +213,12 @@ std::u8string Document::to_string() const
 
 Document parse(std::u8string_view kdl_text)
 {
-    kdl_str text = {
-        reinterpret_cast<char const*>(kdl_text.data()),
-        kdl_text.size()
-    };
-    kdl_parser *parser = kdl_create_string_parser(text, KDL_DEFAULTS);
+    kdl_str text = {reinterpret_cast<char const*>(kdl_text.data()), kdl_text.size()};
+    kdl_parser* parser = kdl_create_string_parser(text, KDL_DEFAULTS);
     if (parser == nullptr) throw std::runtime_error("Error initializing the KDL parser");
     auto doc = Document::read_from(parser);
     kdl_destroy_parser(parser);
     return doc;
 }
-
 
 } // namespace kdl

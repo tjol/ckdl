@@ -1,7 +1,7 @@
-#include "kdl/common.h"
 #include "str.h"
-#include "utf8.h"
 #include "compat.h"
+#include "kdl/common.h"
+#include "utf8.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,20 +9,17 @@
 
 // No buffering in Debug mode to find more bugs
 #ifdef KDL_DEBUG
-#  define MIN_BUFFER_SIZE 1
-#  define BUFFER_SIZE_INCREMENT 1
+#    define MIN_BUFFER_SIZE 1
+#    define BUFFER_SIZE_INCREMENT 1
 #else
-#  define BUFFER_SIZE_INCREMENT 1024
+#    define BUFFER_SIZE_INCREMENT 1024
 #endif
 
-KDL_EXPORT extern inline kdl_str kdl_borrow_str(kdl_owned_string const *str);
+KDL_EXPORT extern inline kdl_str kdl_borrow_str(kdl_owned_string const* str);
 
-kdl_str kdl_str_from_cstr(char const *s)
-{
-    return (kdl_str){ s, strlen(s) };
-}
+kdl_str kdl_str_from_cstr(char const* s) { return (kdl_str){s, strlen(s)}; }
 
-kdl_owned_string kdl_clone_str(kdl_str const *s)
+kdl_owned_string kdl_clone_str(kdl_str const* s)
 {
     kdl_owned_string result;
     result.data = malloc(s->len + 1);
@@ -36,7 +33,7 @@ kdl_owned_string kdl_clone_str(kdl_str const *s)
     return result;
 }
 
-void kdl_free_string(kdl_owned_string *s)
+void kdl_free_string(kdl_owned_string* s)
 {
     if (s->data != NULL) {
         free(s->data);
@@ -47,14 +44,10 @@ void kdl_free_string(kdl_owned_string *s)
 
 _kdl_write_buffer _kdl_new_write_buffer(size_t initial_size)
 {
-    return (_kdl_write_buffer){
-        .buf = malloc(initial_size),
-        .buf_len = initial_size,
-        .str_len = 0
-    };
+    return (_kdl_write_buffer){.buf = malloc(initial_size), .buf_len = initial_size, .str_len = 0};
 }
 
-void _kdl_free_write_buffer(_kdl_write_buffer *buf)
+void _kdl_free_write_buffer(_kdl_write_buffer* buf)
 {
     free(buf->buf);
     buf->buf = NULL;
@@ -62,7 +55,7 @@ void _kdl_free_write_buffer(_kdl_write_buffer *buf)
     buf->str_len = 0;
 }
 
-bool _kdl_buf_push_chars(_kdl_write_buffer *buf, char const *s, size_t count)
+bool _kdl_buf_push_chars(_kdl_write_buffer* buf, char const* s, size_t count)
 {
     if (buf->buf_len - buf->str_len < count) {
         size_t increment = BUFFER_SIZE_INCREMENT >= count ? BUFFER_SIZE_INCREMENT : count;
@@ -77,12 +70,9 @@ bool _kdl_buf_push_chars(_kdl_write_buffer *buf, char const *s, size_t count)
     return true;
 }
 
-bool _kdl_buf_push_char(_kdl_write_buffer *buf, char c)
-{
-    return _kdl_buf_push_chars(buf, &c, 1);
-}
+bool _kdl_buf_push_char(_kdl_write_buffer* buf, char c) { return _kdl_buf_push_chars(buf, &c, 1); }
 
-bool _kdl_buf_push_codepoint(_kdl_write_buffer *buf, uint32_t c)
+bool _kdl_buf_push_codepoint(_kdl_write_buffer* buf, uint32_t c)
 {
     // 4 is the maximum length of a character in UTF-8
     if (buf->buf_len - buf->str_len < 4) {
@@ -102,9 +92,9 @@ bool _kdl_buf_push_codepoint(_kdl_write_buffer *buf, uint32_t c)
     }
 }
 
-kdl_owned_string _kdl_buf_to_string(_kdl_write_buffer *buf)
+kdl_owned_string _kdl_buf_to_string(_kdl_write_buffer* buf)
 {
-    kdl_owned_string s = { reallocf(buf->buf, buf->str_len + 1), buf->str_len };
+    kdl_owned_string s = {reallocf(buf->buf, buf->str_len + 1), buf->str_len};
     if (s.data == NULL) s.len = 0;
     buf->buf = NULL;
     buf->buf_len = 0;
@@ -113,7 +103,7 @@ kdl_owned_string _kdl_buf_to_string(_kdl_write_buffer *buf)
     return s;
 }
 
-kdl_owned_string kdl_escape(kdl_str const *s, kdl_escape_mode mode)
+kdl_owned_string kdl_escape(kdl_str const* s, kdl_escape_mode mode)
 {
     kdl_owned_string result;
     kdl_str unescaped = *s;
@@ -125,7 +115,7 @@ kdl_owned_string kdl_escape(kdl_str const *s, kdl_escape_mode mode)
     uint32_t c;
 
     while (true) {
-        char const *orig_char = unescaped.data;
+        char const* orig_char = unescaped.data;
         switch (_kdl_pop_codepoint(&unescaped, &c)) {
         case KDL_UTF8_EOF:
             goto esc_eof;
@@ -139,7 +129,7 @@ kdl_owned_string kdl_escape(kdl_str const *s, kdl_escape_mode mode)
             if (!_kdl_buf_push_chars(&buf, "\\n", 2)) goto esc_error;
         } else if (c == 0x0D && (mode & KDL_ESCAPE_NEWLINE)) {
             if (!_kdl_buf_push_chars(&buf, "\\r", 2)) goto esc_error;
-        } else if (c == 0x09  && (mode & KDL_ESCAPE_TAB)) {
+        } else if (c == 0x09 && (mode & KDL_ESCAPE_TAB)) {
             if (!_kdl_buf_push_chars(&buf, "\\t", 2)) goto esc_error;
         } else if (c == 0x5C) {
             if (!_kdl_buf_push_chars(&buf, "\\\\", 2)) goto esc_error;
@@ -149,14 +139,11 @@ kdl_owned_string kdl_escape(kdl_str const *s, kdl_escape_mode mode)
             if (!_kdl_buf_push_chars(&buf, "\\b", 2)) goto esc_error;
         } else if (c == 0x0C && (mode & KDL_ESCAPE_NEWLINE)) {
             if (!_kdl_buf_push_chars(&buf, "\\f", 2)) goto esc_error;
-        } else if (
-            ((mode & KDL_ESCAPE_CONTROL)
-                && ((c < 0x20 && c != 0x0A && c != 0x0D && c != 0x09 && c != 0x0C)
-                    || c == 0x7F /* DEL */))
-            || ((mode & KDL_ESCAPE_NEWLINE)
-                && (c == 0x85 || c == 0x2028 || c == 0x2029))
-            || ((mode & KDL_ESCAPE_ASCII_MODE) == KDL_ESCAPE_ASCII_MODE
-                && c >= 0x7f)) {
+        } else if (((mode & KDL_ESCAPE_CONTROL)
+                       && ((c < 0x20 && c != 0x0A && c != 0x0D && c != 0x09 && c != 0x0C)
+                           || c == 0x7F /* DEL */))
+            || ((mode & KDL_ESCAPE_NEWLINE) && (c == 0x85 || c == 0x2028 || c == 0x2029))
+            || ((mode & KDL_ESCAPE_ASCII_MODE) == KDL_ESCAPE_ASCII_MODE && c >= 0x7f)) {
             // \u escape
             char u_esc_buf[11];
             int count = snprintf(u_esc_buf, 11, "\\u{%x}", (unsigned int)c);
@@ -176,11 +163,11 @@ esc_eof:
 
 esc_error:
     _kdl_free_write_buffer(&buf);
-    result = (kdl_owned_string){ NULL, 0 };
+    result = (kdl_owned_string){NULL, 0};
     return result;
 }
 
-kdl_owned_string kdl_unescape(kdl_str const *s)
+kdl_owned_string kdl_unescape(kdl_str const* s)
 {
     kdl_owned_string result;
     kdl_str escaped = *s;
@@ -190,8 +177,8 @@ kdl_owned_string kdl_unescape(kdl_str const *s)
     _kdl_write_buffer buf = _kdl_new_write_buffer(2 * orig_len);
     if (buf.buf == NULL) goto unesc_error;
 
-    char const *p = s->data;
-    char const *end = p + s->len;
+    char const* p = s->data;
+    char const* end = p + s->len;
 
     while (p != end) {
         if (*p == '\\') {
@@ -235,7 +222,7 @@ kdl_owned_string kdl_unescape(kdl_str const *s)
                 if (++p == end || *(p++) != '{') goto unesc_error;
                 // parse hex
                 c = 0;
-                for (;;++p) {
+                for (;; ++p) {
                     if (p == end) goto unesc_error;
                     else if (*p == '}') break;
                     else if (*p >= '0' && *p <= '9') c = (c << 4) + (*p - '0');
@@ -254,7 +241,7 @@ kdl_owned_string kdl_unescape(kdl_str const *s)
             }
         }
 
-        char const *start = p;
+        char const* start = p;
         while (p != end && *p != '\\') ++p;
         // copy everything until the backslash
         if (!_kdl_buf_push_chars(&buf, start, (p - start))) goto unesc_error;
@@ -264,6 +251,6 @@ kdl_owned_string kdl_unescape(kdl_str const *s)
 
 unesc_error:
     _kdl_free_write_buffer(&buf);
-    result = (kdl_owned_string){ NULL, 0 };
+    result = (kdl_owned_string){NULL, 0};
     return result;
 }

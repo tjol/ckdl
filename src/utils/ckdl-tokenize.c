@@ -1,36 +1,35 @@
 #include <kdl/kdl.h>
 
-#include <stdio.h>
-#include <string.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 
-static size_t read_func(void *user_data, char *buf, size_t bufsize)
+static size_t read_func(void* user_data, char* buf, size_t bufsize)
 {
-    FILE *fp = (FILE*) user_data;
+    FILE* fp = (FILE*)user_data;
     return fread(buf, 1, bufsize, fp);
 }
 
-static size_t write_func(void *user_data, char const *data, size_t nbytes)
+static size_t write_func(void* user_data, char const* data, size_t nbytes)
 {
     (void)user_data;
     return fwrite(data, 1, nbytes, stdout);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    FILE *in = NULL;
+    FILE* in = NULL;
     if (argc == 1) {
         in = stdin;
     } else if (argc == 2) {
-        char const *fn = argv[1];
+        char const* fn = argv[1];
         if (strcmp(fn, "-") == 0) {
             in = stdin;
         } else {
             in = fopen(fn, "r");
             if (in == NULL) {
-                fprintf(stderr, "Error opening file \"%s\": %s\n",
-                    fn, strerror(errno));
+                fprintf(stderr, "Error opening file \"%s\": %s\n", fn, strerror(errno));
                 return 1;
             }
         }
@@ -39,8 +38,8 @@ int main(int argc, char **argv)
         return 2;
     }
 
-    kdl_tokenizer *tokenizer = kdl_create_stream_tokenizer(&read_func, (void*)in);
-    kdl_emitter *emitter = kdl_create_stream_emitter(&write_func, NULL, &KDL_DEFAULT_EMITTER_OPTIONS);
+    kdl_tokenizer* tokenizer = kdl_create_stream_tokenizer(&read_func, (void*)in);
+    kdl_emitter* emitter = kdl_create_stream_emitter(&write_func, NULL, &KDL_DEFAULT_EMITTER_OPTIONS);
 
     if (tokenizer == NULL || emitter == NULL) {
         fprintf(stderr, "Initialization error\n");
@@ -60,7 +59,7 @@ int main(int argc, char **argv)
             break;
         }
 
-        char const *token_type_name = NULL;
+        char const* token_type_name = NULL;
         switch (token.type) {
         case KDL_TOKEN_START_TYPE:
             token_type_name = "KDL_TOKEN_START_TYPE";
@@ -118,10 +117,7 @@ int main(int argc, char **argv)
         }
 
         (void)kdl_emit_node(emitter, kdl_str_from_cstr(token_type_name));
-        kdl_value val = (kdl_value){
-            .type = KDL_TYPE_STRING,
-            .string = token.value
-        };
+        kdl_value val = (kdl_value){.type = KDL_TYPE_STRING, .string = token.value};
         (void)kdl_emit_arg(emitter, &val);
     }
 

@@ -1,6 +1,9 @@
 #ifndef KDL_INTERNAL_GRAMMAR_H_
 #define KDL_INTERNAL_GRAMMAR_H_
 
+#include <stdbool.h>
+#include <stdint.h>
+
 bool _kdl_is_whitespace(uint32_t c);
 bool _kdl_is_newline(uint32_t c);
 bool _kdl_is_id(uint32_t c);

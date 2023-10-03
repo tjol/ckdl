@@ -2,15 +2,16 @@
 #include "kdl/common.h"
 #include "kdl/tokenizer.h"
 
-#include "compat.h"
 #include "bigint.h"
+#include "compat.h"
 
+#include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <math.h>
 
-#define _str_equals_literal(k, l) ((k).len == (sizeof(l "") - 1) && 0 == memcmp(("" l), (k).data, (sizeof(l) - 1)))
+#define _str_equals_literal(k, l)                                                                            \
+    ((k).len == (sizeof(l "") - 1) && 0 == memcmp(("" l), (k).data, (sizeof(l) - 1)))
 
 enum _kdl_parser_state {
     // Basic states
@@ -23,14 +24,15 @@ enum _kdl_parser_state {
     PARSER_FLAG_TYPE_ANNOTATION_ENDED = 0x800,
     PARSER_FLAG_IN_PROPERTY = 0x1000,
     // Bitmask for testing the state
-    PARSER_MASK_WHITESPACE_BANNED = PARSER_FLAG_TYPE_ANNOTATION_START
-                                  | PARSER_FLAG_TYPE_ANNOTATION_END
-                                  | PARSER_FLAG_TYPE_ANNOTATION_ENDED
-                                  | PARSER_FLAG_IN_PROPERTY
+    PARSER_MASK_WHITESPACE_BANNED =         //
+        PARSER_FLAG_TYPE_ANNOTATION_START   //
+        | PARSER_FLAG_TYPE_ANNOTATION_END   //
+        | PARSER_FLAG_TYPE_ANNOTATION_ENDED //
+        | PARSER_FLAG_IN_PROPERTY
 };
 
 struct _kdl_parser {
-    kdl_tokenizer *tokenizer;
+    kdl_tokenizer* tokenizer;
     kdl_parse_option opt;
     int depth;
     int slashdash_depth;
@@ -43,22 +45,20 @@ struct _kdl_parser {
     bool have_next_token;
 };
 
-
-static void _init_kdl_parser(kdl_parser *self)
+static void _init_kdl_parser(kdl_parser* self)
 {
     self->depth = 0;
     self->slashdash_depth = -1;
     self->state = PARSER_OUTSIDE_NODE;
-    self->tmp_string_type = (kdl_owned_string){ NULL, 0 };
-    self->tmp_string_key = (kdl_owned_string){ NULL, 0 };
-    self->tmp_string_value = (kdl_owned_string){ NULL, 0 };
+    self->tmp_string_type = (kdl_owned_string){NULL, 0};
+    self->tmp_string_key = (kdl_owned_string){NULL, 0};
+    self->tmp_string_value = (kdl_owned_string){NULL, 0};
     self->have_next_token = false;
 }
 
-
-kdl_parser *kdl_create_string_parser(kdl_str doc, kdl_parse_option opt)
+kdl_parser* kdl_create_string_parser(kdl_str doc, kdl_parse_option opt)
 {
-    kdl_parser *self = malloc(sizeof(kdl_parser));
+    kdl_parser* self = malloc(sizeof(kdl_parser));
     if (self != NULL) {
         _init_kdl_parser(self);
         self->tokenizer = kdl_create_string_tokenizer(doc);
@@ -67,10 +67,9 @@ kdl_parser *kdl_create_string_parser(kdl_str doc, kdl_parse_option opt)
     return self;
 }
 
-
-kdl_parser *kdl_create_stream_parser(kdl_read_func read_func, void *user_data, kdl_parse_option opt)
+kdl_parser* kdl_create_stream_parser(kdl_read_func read_func, void* user_data, kdl_parse_option opt)
 {
-    kdl_parser *self = malloc(sizeof(kdl_parser));
+    kdl_parser* self = malloc(sizeof(kdl_parser));
     if (self != NULL) {
         _init_kdl_parser(self);
         self->tokenizer = kdl_create_stream_tokenizer(read_func, user_data);
@@ -79,8 +78,7 @@ kdl_parser *kdl_create_stream_parser(kdl_read_func read_func, void *user_data, k
     return self;
 }
 
-
-void kdl_destroy_parser(kdl_parser *self)
+void kdl_destroy_parser(kdl_parser* self)
 {
     kdl_destroy_tokenizer(self->tokenizer);
     kdl_free_string(&self->tmp_string_type);
@@ -89,43 +87,43 @@ void kdl_destroy_parser(kdl_parser *self)
     free(self);
 }
 
-static void _reset_event(kdl_parser *self)
+static void _reset_event(kdl_parser* self)
 {
-    self->event.name = (kdl_str){ NULL, 0 };
+    self->event.name = (kdl_str){NULL, 0};
     self->event.value.type = KDL_TYPE_NULL;
-    self->event.value.type_annotation = (kdl_str){ NULL, 0 };
+    self->event.value.type_annotation = (kdl_str){NULL, 0};
 }
 
-static void _set_parse_error(kdl_parser *self, char const *message)
+static void _set_parse_error(kdl_parser* self, char const* message)
 {
     self->event.event = KDL_EVENT_PARSE_ERROR;
     self->event.value.type = KDL_TYPE_STRING;
-    self->event.value.string = (kdl_str){ message, strlen(message) };
+    self->event.value.string = (kdl_str){message, strlen(message)};
 }
 
-static void _set_comment_event(kdl_parser *self, kdl_token const *token)
+static void _set_comment_event(kdl_parser* self, kdl_token const* token)
 {
     self->event.event = KDL_EVENT_COMMENT;
     self->event.value.type = KDL_TYPE_STRING;
     self->event.value.string = token->value;
 }
 
-static kdl_event_data *_next_node(kdl_parser *self, kdl_token *token);
-static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token);
-static kdl_event_data *_apply_slashdash(kdl_parser *self);
-static bool _parse_value(kdl_token const *token, kdl_value *val, kdl_owned_string *s);
-static bool _parse_number(kdl_str number, kdl_value *val, kdl_owned_string *s);
-static bool _parse_decimal_number(kdl_str number, kdl_value *val, kdl_owned_string *s);
-static bool _parse_decimal_integer(kdl_str number, kdl_value *val, kdl_owned_string *s);
-static bool _parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_string *s);
-static bool _parse_hex_number(kdl_str number, kdl_value *val, kdl_owned_string *s);
-static bool _parse_octal_number(kdl_str number, kdl_value *val, kdl_owned_string *s);
-static bool _parse_binary_number(kdl_str number, kdl_value *val, kdl_owned_string *s);
+static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token);
+static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token);
+static kdl_event_data* _apply_slashdash(kdl_parser* self);
+static bool _parse_value(kdl_token const* token, kdl_value* val, kdl_owned_string* s);
+static bool _parse_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
+static bool _parse_decimal_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
+static bool _parse_decimal_integer(kdl_str number, kdl_value* val, kdl_owned_string* s);
+static bool _parse_decimal_float(kdl_str number, kdl_value* val, kdl_owned_string* s);
+static bool _parse_hex_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
+static bool _parse_octal_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
+static bool _parse_binary_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
 
-kdl_event_data *kdl_parser_next_event(kdl_parser *self)
+kdl_event_data* kdl_parser_next_event(kdl_parser* self)
 {
     kdl_token token;
-    kdl_event_data *ev;
+    kdl_event_data* ev;
 
     _reset_event(self);
 
@@ -216,7 +214,7 @@ kdl_event_data *kdl_parser_next_event(kdl_parser *self)
     }
 }
 
-static kdl_event_data *_apply_slashdash(kdl_parser *self)
+static kdl_event_data* _apply_slashdash(kdl_parser* self)
 {
     if (self->slashdash_depth >= 0) {
         // slashdash is active
@@ -237,11 +235,10 @@ static kdl_event_data *_apply_slashdash(kdl_parser *self)
     }
 }
 
-
-static kdl_event_data *_next_node(kdl_parser *self, kdl_token *token)
+static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
 {
     kdl_value tmp_val;
-    kdl_event_data *ev;
+    kdl_event_data* ev;
 
     if (self->state & PARSER_FLAG_TYPE_ANNOTATION_START) {
         switch (token->type) {
@@ -254,8 +251,8 @@ static kdl_event_data *_next_node(kdl_parser *self, kdl_token *token)
             }
             if (tmp_val.type == KDL_TYPE_STRING) {
                 // We're good, this is an identifier
-                self->state = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_START)
-                    | PARSER_FLAG_TYPE_ANNOTATION_END;
+                self->state
+                    = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_START) | PARSER_FLAG_TYPE_ANNOTATION_END;
                 self->event.value.type_annotation = tmp_val.string;
                 return NULL;
             } else {
@@ -269,7 +266,8 @@ static kdl_event_data *_next_node(kdl_parser *self, kdl_token *token)
     } else if (self->state & PARSER_FLAG_TYPE_ANNOTATION_END) {
         switch (token->type) {
         case KDL_TOKEN_END_TYPE:
-            self->state = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_END) | PARSER_FLAG_TYPE_ANNOTATION_ENDED;
+            self->state
+                = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_END) | PARSER_FLAG_TYPE_ANNOTATION_ENDED;
             return NULL;
         default:
             _set_parse_error(self, "Unexpected token, expected ')'");
@@ -335,10 +333,9 @@ static kdl_event_data *_next_node(kdl_parser *self, kdl_token *token)
     }
 }
 
-
-static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
+static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
 {
-    kdl_event_data *ev;
+    kdl_event_data* ev;
     bool is_property = false;
 
     if (self->state & PARSER_FLAG_LINE_CONT) {
@@ -366,8 +363,8 @@ static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
             }
             if (tmp_val.type == KDL_TYPE_STRING) {
                 // We're good, this is an identifier
-                self->state = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_START)
-                    | PARSER_FLAG_TYPE_ANNOTATION_END;
+                self->state
+                    = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_START) | PARSER_FLAG_TYPE_ANNOTATION_END;
                 self->event.value.type_annotation = tmp_val.string;
                 return NULL;
             } else {
@@ -381,7 +378,8 @@ static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
     } else if (self->state & PARSER_FLAG_TYPE_ANNOTATION_END) {
         switch (token->type) {
         case KDL_TOKEN_END_TYPE:
-            self->state = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_END) | PARSER_FLAG_TYPE_ANNOTATION_ENDED;
+            self->state
+                = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_END) | PARSER_FLAG_TYPE_ANNOTATION_ENDED;
             return NULL;
         default:
             _set_parse_error(self, "Unexpected token, expected ')'");
@@ -414,9 +412,8 @@ static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
             }
         case KDL_TOKEN_WORD:
         case KDL_TOKEN_STRING:
-        case KDL_TOKEN_RAW_STRING:
-        {
-            kdl_owned_string tmp_str = { NULL, 0 };
+        case KDL_TOKEN_RAW_STRING: {
+            kdl_owned_string tmp_str = {NULL, 0};
             // either a property key, or a property value, or an argument
             if (self->event.name.data == NULL && self->event.value.type_annotation.data == NULL) {
                 // the call to kdl_pop_token will invalidate the old token's value - clone it
@@ -429,8 +426,7 @@ static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
                 case KDL_TOKENIZER_EOF:
                     break; // all good
                 case KDL_TOKENIZER_OK:
-                    if (self->next_token.type == KDL_TOKEN_EQUALS)
-                        is_property = true;
+                    if (self->next_token.type == KDL_TOKEN_EQUALS) is_property = true;
                     else
                         // process this token next time
                         self->have_next_token = true;
@@ -515,7 +511,7 @@ static kdl_event_data *_next_event_in_node(kdl_parser *self, kdl_token *token)
     }
 }
 
-static bool _parse_value(kdl_token const *token, kdl_value *val, kdl_owned_string *s)
+static bool _parse_value(kdl_token const* token, kdl_value* val, kdl_owned_string* s)
 {
     kdl_free_string(s);
 
@@ -556,8 +552,7 @@ static bool _parse_value(kdl_token const *token, kdl_value *val, kdl_owned_strin
             if ((first_char == '+' || first_char == '-') && token->value.len >= 2)
                 first_char = token->value.data[1];
             if (first_char >= '0' && first_char <= '9') {
-                // first character after sign is a digit, this value should be interpreted
-                // as a number
+                // first character after sign is a digit, this value should be interpreted as a number
                 return _parse_number(token->value, val, s);
             }
         }
@@ -571,7 +566,7 @@ static bool _parse_value(kdl_token const *token, kdl_value *val, kdl_owned_strin
     }
 }
 
-static bool _parse_number(kdl_str number, kdl_value *val, kdl_owned_string *s)
+static bool _parse_number(kdl_str number, kdl_value* val, kdl_owned_string* s)
 {
     kdl_str orig_number = number;
     if (number.len >= 1) {
@@ -600,7 +595,7 @@ static bool _parse_number(kdl_str number, kdl_value *val, kdl_owned_string *s)
     return _parse_decimal_number(orig_number, val, s);
 }
 
-static bool _parse_decimal_number(kdl_str number, kdl_value *val, kdl_owned_string *s)
+static bool _parse_decimal_number(kdl_str number, kdl_value* val, kdl_owned_string* s)
 {
     // Check this is an integer or a decimal
     for (size_t i = 0; i < number.len; ++i) {
@@ -614,10 +609,10 @@ static bool _parse_decimal_number(kdl_str number, kdl_value *val, kdl_owned_stri
     return _parse_decimal_integer(number, val, s);
 }
 
-static bool _parse_decimal_integer(kdl_str number, kdl_value *val, kdl_owned_string *s)
+static bool _parse_decimal_integer(kdl_str number, kdl_value* val, kdl_owned_string* s)
 {
     bool negative = false;
-    _kdl_ubigint *n = _kdl_ubigint_new(0);
+    _kdl_ubigint* n = _kdl_ubigint_new(0);
     if (n == NULL) return false;
 
     size_t i = 0; // index into number-string
@@ -668,7 +663,7 @@ error:
     return false;
 }
 
-static bool _parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_string *s)
+static bool _parse_decimal_float(kdl_str number, kdl_value* val, kdl_owned_string* s)
 {
     bool negative = false;
     int digits_before_decimal = 0;
@@ -704,19 +699,19 @@ static bool _parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_strin
         char c = number.data[i];
         if (c == '.' && state == before_decimal) {
             state = after_decimal_nodigit;
-            if (number.len - i <= 1 || number.data[i+1] == '_') return false;
+            if (number.len - i <= 1 || number.data[i + 1] == '_') return false;
         } else if ((c == 'e' || c == 'E') && state != exponent && state != after_decimal_nodigit) {
             state = exponent_nodigit;
             if (i + 1 < number.len) {
                 // handle exponent sign
-                switch (number.data[i+1]) {
+                switch (number.data[i + 1]) {
                 case '-':
                     exponent_negative = true;
                     _fallthrough_;
                 case '+':
                     ++i;
                 }
-                if (number.len - i <= 1 || number.data[i+1] == '_') return false;
+                if (number.len - i <= 1 || number.data[i + 1] == '_') return false;
             }
         } else if (c >= '0' && c <= '9') {
             // digit!
@@ -747,7 +742,8 @@ static bool _parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_strin
     }
 
     // rough heuristic for numbers that fit into a double exactly
-    if (digits_before_decimal + digits_after_decimal <= 15 && explicit_exponent < 285 && explicit_exponent > -285) {
+    if (digits_before_decimal + digits_after_decimal <= 15 && explicit_exponent < 285
+        && explicit_exponent > -285) {
         // "strip zeros"
         while (decimal_mantissa % 10 == 0 && digits_after_decimal > 0) {
             decimal_mantissa /= 10;
@@ -771,9 +767,9 @@ static bool _parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_strin
     } else {
         // Remove all underscores and the initial plus
         *s = kdl_clone_str(&number);
-        char const *p1 = number.data;
-        char const *end = number.data + number.len;
-        char *p2 = s->data;
+        char const* p1 = number.data;
+        char const* end = number.data + number.len;
+        char* p2 = s->data;
         s->len = 0;
         if (p1 != end && *p1 == '+') ++p1;
         while (p1 != end) {
@@ -793,11 +789,10 @@ static bool _parse_decimal_float(kdl_str number, kdl_value *val, kdl_owned_strin
     }
 }
 
-
-static bool _parse_hex_number(kdl_str number, kdl_value *val, kdl_owned_string *s)
+static bool _parse_hex_number(kdl_str number, kdl_value* val, kdl_owned_string* s)
 {
     bool negative = false;
-    _kdl_ubigint *n = _kdl_ubigint_new(0);
+    _kdl_ubigint* n = _kdl_ubigint_new(0);
     if (n == NULL) return false;
 
     size_t i = 0; // index into number-string
@@ -813,9 +808,7 @@ static bool _parse_hex_number(kdl_str number, kdl_value *val, kdl_owned_string *
         }
     }
 
-    if (number.len - i < 3 || number.data[i] != '0'
-                           || number.data[i+1] != 'x'
-                           || number.data[i+2] == '_')
+    if (number.len - i < 3 || number.data[i] != '0' || number.data[i + 1] != 'x' || number.data[i + 2] == '_')
         goto error;
     i += 2;
 
@@ -856,11 +849,10 @@ error:
     return false;
 }
 
-
-static bool _parse_octal_number(kdl_str number, kdl_value *val, kdl_owned_string *s)
+static bool _parse_octal_number(kdl_str number, kdl_value* val, kdl_owned_string* s)
 {
     bool negative = false;
-    _kdl_ubigint *n = _kdl_ubigint_new(0);
+    _kdl_ubigint* n = _kdl_ubigint_new(0);
     if (n == NULL) return false;
 
     size_t i = 0; // index into number-string
@@ -876,9 +868,7 @@ static bool _parse_octal_number(kdl_str number, kdl_value *val, kdl_owned_string
         }
     }
 
-    if (number.len - i < 3 || number.data[i] != '0'
-                           || number.data[i+1] != 'o'
-                           || number.data[i+2] == '_')
+    if (number.len - i < 3 || number.data[i] != '0' || number.data[i + 1] != 'o' || number.data[i + 2] == '_')
         goto error;
     i += 2;
 
@@ -916,11 +906,10 @@ error:
     return false;
 }
 
-
-static bool _parse_binary_number(kdl_str number, kdl_value *val, kdl_owned_string *s)
+static bool _parse_binary_number(kdl_str number, kdl_value* val, kdl_owned_string* s)
 {
     bool negative = false;
-    _kdl_ubigint *n = _kdl_ubigint_new(0);
+    _kdl_ubigint* n = _kdl_ubigint_new(0);
     if (n == NULL) return false;
 
     size_t i = 0; // index into number-string
@@ -936,9 +925,7 @@ static bool _parse_binary_number(kdl_str number, kdl_value *val, kdl_owned_strin
         }
     }
 
-    if (number.len - i < 3 || number.data[i] != '0'
-                           || number.data[i+1] != 'b'
-                           || number.data[i+2] == '_')
+    if (number.len - i < 3 || number.data[i] != '0' || number.data[i + 1] != 'b' || number.data[i + 2] == '_')
         goto error;
     i += 2;
 
@@ -975,5 +962,3 @@ error:
     _kdl_ubigint_free(n);
     return false;
 }
-
-

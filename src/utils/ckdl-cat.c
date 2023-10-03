@@ -1,12 +1,12 @@
-#include <kdl/kdl.h>
 #include "ckdl-cat.h"
+#include <kdl/kdl.h>
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-static size_t read_func(void *user_data, char *buf, size_t bufsize);
-static size_t write_func(void *user_data, char const *data, size_t nbytes);
+static size_t read_func(void* user_data, char* buf, size_t bufsize);
+static size_t write_func(void* user_data, char const* data, size_t nbytes);
 
 struct proplist {
     struct prop {
@@ -14,28 +14,28 @@ struct proplist {
         kdl_value value;
         kdl_owned_string val_str;
         kdl_owned_string type_str;
-    } *props;
+    }* props;
     size_t count;
     size_t size;
 };
 
-static void proplist_clear(struct proplist *pl);
-static void proplist_append(struct proplist *pl, kdl_str name, kdl_value const* value);
-static KDL_NODISCARD bool proplist_emit(kdl_emitter *emitter, struct proplist *pl);
+static void proplist_clear(struct proplist* pl);
+static void proplist_append(struct proplist* pl, kdl_str name, kdl_value const* value);
+static KDL_NODISCARD bool proplist_emit(kdl_emitter* emitter, struct proplist* pl);
 
-static bool kdl_cat_impl(kdl_parser *parser, kdl_emitter *emitter);
+static bool kdl_cat_impl(kdl_parser* parser, kdl_emitter* emitter);
 
-bool kdl_cat_file_to_file(FILE *in, FILE *out)
+bool kdl_cat_file_to_file(FILE* in, FILE* out)
 {
     return kdl_cat_file_to_file_opt(in, out, &KDL_DEFAULT_EMITTER_OPTIONS);
 }
 
-bool kdl_cat_file_to_file_opt(FILE *in, FILE *out, kdl_emitter_options const *opt)
+bool kdl_cat_file_to_file_opt(FILE* in, FILE* out, kdl_emitter_options const* opt)
 {
     bool ok = true;
 
-    kdl_parser *parser = kdl_create_stream_parser(&read_func, (void*)in, KDL_DEFAULTS);
-    kdl_emitter *emitter = kdl_create_stream_emitter(&write_func, (void*)out, opt);
+    kdl_parser* parser = kdl_create_stream_parser(&read_func, (void*)in, KDL_DEFAULTS);
+    kdl_emitter* emitter = kdl_create_stream_emitter(&write_func, (void*)out, opt);
 
     if (parser == NULL || emitter == NULL) {
         ok = false;
@@ -48,17 +48,17 @@ bool kdl_cat_file_to_file_opt(FILE *in, FILE *out, kdl_emitter_options const *op
     return ok;
 }
 
-kdl_owned_string kdl_cat_file_to_string(FILE *in)
+kdl_owned_string kdl_cat_file_to_string(FILE* in)
 {
     return kdl_cat_file_to_string_opt(in, &KDL_DEFAULT_EMITTER_OPTIONS);
 }
 
-kdl_owned_string kdl_cat_file_to_string_opt(FILE *in, kdl_emitter_options const *opt)
+kdl_owned_string kdl_cat_file_to_string_opt(FILE* in, kdl_emitter_options const* opt)
 {
-    kdl_owned_string result = { NULL, 0 };
+    kdl_owned_string result = {NULL, 0};
 
-    kdl_parser *parser = kdl_create_stream_parser(&read_func, (void*)in, KDL_DEFAULTS);
-    kdl_emitter *emitter = kdl_create_buffering_emitter(opt);
+    kdl_parser* parser = kdl_create_stream_parser(&read_func, (void*)in, KDL_DEFAULTS);
+    kdl_emitter* emitter = kdl_create_buffering_emitter(opt);
 
     bool ok = true;
     if (parser == NULL || emitter == NULL) {
@@ -77,14 +77,14 @@ kdl_owned_string kdl_cat_file_to_string_opt(FILE *in, kdl_emitter_options const 
     return result;
 }
 
-static bool kdl_cat_impl(kdl_parser *parser, kdl_emitter *emitter)
+static bool kdl_cat_impl(kdl_parser* parser, kdl_emitter* emitter)
 {
     // state
     bool in_node_list = true;
-    struct proplist props = { NULL, 0, 0 };
+    struct proplist props = {NULL, 0, 0};
 
     while (true) {
-        kdl_event_data *ev = kdl_parser_next_event(parser);
+        kdl_event_data* ev = kdl_parser_next_event(parser);
         switch (ev->event) {
         case KDL_EVENT_EOF:
             if (!kdl_emit_end(emitter)) return false;
@@ -127,30 +127,30 @@ static bool kdl_cat_impl(kdl_parser *parser, kdl_emitter *emitter)
     }
 }
 
-static size_t read_func(void *user_data, char *buf, size_t bufsize)
+static size_t read_func(void* user_data, char* buf, size_t bufsize)
 {
-    FILE *fp = (FILE *)user_data;
+    FILE* fp = (FILE*)user_data;
     return fread(buf, 1, bufsize, fp);
 }
 
-static size_t write_func(void *user_data, char const *data, size_t nbytes)
+static size_t write_func(void* user_data, char const* data, size_t nbytes)
 {
-    FILE *fp = (FILE *)user_data;
+    FILE* fp = (FILE*)user_data;
     return fwrite(data, 1, nbytes, fp);
 }
 
-static void free_prop(struct prop *p)
+static void free_prop(struct prop* p)
 {
     kdl_free_string(&p->name);
     kdl_free_string(&p->type_str);
     kdl_free_string(&p->val_str);
 }
 
-static void proplist_clear(struct proplist *pl)
+static void proplist_clear(struct proplist* pl)
 {
     if (pl->props != NULL) {
         for (size_t i = 0; i < pl->count; ++i) {
-            struct prop *p = &pl->props[i];
+            struct prop* p = &pl->props[i];
             free_prop(p);
         }
         free(pl->props);
@@ -160,18 +160,18 @@ static void proplist_clear(struct proplist *pl)
     pl->size = 0;
 }
 
-static void proplist_append(struct proplist *pl, kdl_str name, kdl_value const* value)
+static void proplist_append(struct proplist* pl, kdl_str name, kdl_value const* value)
 {
     if (pl->size <= pl->count) {
         pl->size = pl->count + 10;
-        struct prop *props = realloc(pl->props, pl->size * sizeof(struct prop));
+        struct prop* props = realloc(pl->props, pl->size * sizeof(struct prop));
         if (props != NULL) {
             pl->props = props;
         } else {
             return;
         }
     }
-    struct prop *p = &pl->props[pl->count++];
+    struct prop* p = &pl->props[pl->count++];
     p->name = kdl_clone_str(&name);
     p->value = *value;
 
@@ -180,38 +180,37 @@ static void proplist_append(struct proplist *pl, kdl_str name, kdl_value const* 
         p->type_str = kdl_clone_str(&p->value.type_annotation);
         p->value.type_annotation = kdl_borrow_str(&p->type_str);
     } else {
-        p->type_str = (kdl_owned_string){ NULL, 0 };
+        p->type_str = (kdl_owned_string){NULL, 0};
     }
 
     // clone string value (if needed)
     if (p->value.type == KDL_TYPE_STRING) {
         p->val_str = kdl_clone_str(&p->value.string);
         p->value.string = kdl_borrow_str(&p->val_str);
-    } else if (p->value.type == KDL_TYPE_NUMBER
-        && p->value.number.type == KDL_NUMBER_TYPE_STRING_ENCODED) {
+    } else if (p->value.type == KDL_TYPE_NUMBER && p->value.number.type == KDL_NUMBER_TYPE_STRING_ENCODED) {
         p->val_str = kdl_clone_str(&p->value.number.string);
         p->value.number.string = kdl_borrow_str(&p->val_str);
     } else {
-        p->val_str = (kdl_owned_string){ NULL, 0 };
+        p->val_str = (kdl_owned_string){NULL, 0};
     }
 }
 
-static struct prop *overwriting_merge(struct prop *out,
-    struct prop *left, struct prop *right, struct prop *end);
+static struct prop* overwriting_merge(
+    struct prop* out, struct prop* left, struct prop* right, struct prop* end);
 
-static bool proplist_emit(kdl_emitter *emitter, struct proplist *pl)
+static bool proplist_emit(kdl_emitter* emitter, struct proplist* pl)
 {
     // We need to emit the properties without duplicates, in lexical order
     // do a merge sort which overwrites duplicates
-    struct prop *props = pl->props;
-    struct prop *dest = malloc(sizeof(struct prop) * pl->count);
+    struct prop* props = pl->props;
+    struct prop* dest = malloc(sizeof(struct prop) * pl->count);
     if (dest == NULL) {
         return false;
     }
 
     size_t count = pl->count;
     for (size_t wnd = 1; wnd < count; wnd *= 2) {
-        struct prop *out_end = dest;
+        struct prop* out_end = dest;
         for (size_t i = 0; i < count; i += 2 * wnd) {
             size_t r = i + wnd;
             size_t e = r + wnd;
@@ -226,7 +225,7 @@ static bool proplist_emit(kdl_emitter *emitter, struct proplist *pl)
                 ++out_end;
             }
         }
-        struct prop *tmp = dest;
+        struct prop* tmp = dest;
         dest = props;
         props = tmp;
     }
@@ -236,7 +235,7 @@ static bool proplist_emit(kdl_emitter *emitter, struct proplist *pl)
     free(dest);
 
     for (size_t i = 0; i < count; ++i) {
-        struct prop *p = &props[i];
+        struct prop* p = &props[i];
         if (p->name.data != NULL)
             if (!kdl_emit_property(emitter, kdl_borrow_str(&p->name), &p->value)) return false;
     }
@@ -244,7 +243,7 @@ static bool proplist_emit(kdl_emitter *emitter, struct proplist *pl)
     return true;
 }
 
-static int kdl_str_cmp(kdl_owned_string const *s1, kdl_owned_string const *s2)
+static int kdl_str_cmp(kdl_owned_string const* s1, kdl_owned_string const* s2)
 {
     // sort NULL at the end
     if (s1->data == NULL) return 1;
@@ -257,13 +256,13 @@ static int kdl_str_cmp(kdl_owned_string const *s1, kdl_owned_string const *s2)
     return cmp;
 }
 
-static struct prop *overwriting_merge(struct prop *out,
-    struct prop *left, struct prop *right, struct prop *end)
+static struct prop* overwriting_merge(
+    struct prop* out, struct prop* left, struct prop* right, struct prop* end)
 {
-    struct prop *boundary = right;
-    struct prop *prev = NULL;
+    struct prop* boundary = right;
+    struct prop* prev = NULL;
     while (left < boundary || right < end) {
-        struct prop *next_item;
+        struct prop* next_item;
         if (left >= boundary) {
             next_item = right++;
         } else if (right >= end) {

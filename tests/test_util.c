@@ -1,14 +1,14 @@
 #include "test_util.h"
 
-#include <stdio.h>
 #include <setjmp.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 static jmp_buf run_test_env;
 static bool run_test_active = false;
 static int failures = 0;
 
-void assert_true(bool assertion, char const *assertion_s, char const *context)
+void assert_true(bool assertion, char const* assertion_s, char const* context)
 {
     if (assertion) {
         return;
@@ -29,12 +29,9 @@ static void _call_noarg_test(void* func_ptr_ptr)
     func();
 }
 
-void run_test(char const *name, void (*func)(void))
-{
-    run_test_d(name, _call_noarg_test, (void*)(&func));
-}
+void run_test(char const* name, void (*func)(void)) { run_test_d(name, _call_noarg_test, (void*)(&func)); }
 
-void run_test_d(char const *name, void (*func)(void *), void *user_data)
+void run_test_d(char const* name, void (*func)(void*), void* user_data)
 {
     fprintf(stderr, "TEST %s\n", name);
     run_test_active = true;
@@ -54,22 +51,16 @@ void run_test_d(char const *name, void (*func)(void *), void *user_data)
 }
 
 static int ARGC;
-static char const *const *ARGV;
+static char const* const* ARGV;
 
-int test_argc(void)
-{
-    return ARGC;
-}
+int test_argc(void) { return ARGC; }
 
-char const *test_arg(int idx)
-{
-    return ARGV[idx];
-}
+char const* test_arg(int idx) { return ARGV[idx]; }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     ARGC = argc;
-    ARGV = (char const *const *)argv;
+    ARGV = (char const* const*)argv;
     TEST_MAIN();
     if (failures != 0) {
         fprintf(stderr, "\n--- %d tests failed ---\n", failures);

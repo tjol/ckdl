@@ -2,12 +2,9 @@
 
 #include "utf8.h"
 
-inline static bool _is_utf8_continuation(int c)
-{
-    return (c & 0xc0) == 0x80;
-}
+inline static bool _is_utf8_continuation(int c) { return (c & 0xc0) == 0x80; }
 
-kdl_utf8_status _kdl_pop_codepoint(kdl_str *str, uint32_t *codepoint)
+kdl_utf8_status _kdl_pop_codepoint(kdl_str* str, uint32_t* codepoint)
 {
     if (str->len < 1) {
         return KDL_UTF8_EOF;
@@ -52,7 +49,8 @@ kdl_utf8_status _kdl_pop_codepoint(kdl_str *str, uint32_t *codepoint)
         if (str->len < 4) {
             // Incomplete UTF-8 sequence
             return KDL_UTF8_INCOMPLETE;
-        } else if (!_is_utf8_continuation(s[1]) || !_is_utf8_continuation(s[2]) || !_is_utf8_continuation(s[3])) {
+        } else if (!_is_utf8_continuation(s[1]) || !_is_utf8_continuation(s[2])
+            || !_is_utf8_continuation(s[3])) {
             // Invalid UTF-8 sequence
             return KDL_UTF8_DECODE_ERROR;
         }
@@ -65,9 +63,9 @@ kdl_utf8_status _kdl_pop_codepoint(kdl_str *str, uint32_t *codepoint)
     }
 }
 
-int _kdl_push_codepoint(uint32_t codepoint, char *buf)
+int _kdl_push_codepoint(uint32_t codepoint, char* buf)
 {
-    char *p = buf;
+    char* p = buf;
     if (codepoint <= 0x7f) {
         // ASCII
         *(p++) = (char)codepoint;

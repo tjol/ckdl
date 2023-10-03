@@ -1,33 +1,32 @@
 #include <kdl/kdl.h>
 
-#include <stdio.h>
-#include <string.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 
-static size_t read_func(void *user_data, char *buf, size_t bufsize)
+static size_t read_func(void* user_data, char* buf, size_t bufsize)
 {
-    FILE *fp = (FILE*) user_data;
+    FILE* fp = (FILE*)user_data;
     return fread(buf, 1, bufsize, fp);
 }
 
-static size_t write_func(void *user_data, char const *data, size_t nbytes)
+static size_t write_func(void* user_data, char const* data, size_t nbytes)
 {
     (void)user_data;
     return fwrite(data, 1, nbytes, stdout);
 }
 
-void print_usage(char const *argv0, FILE *fp)
+void print_usage(char const* argv0, FILE* fp)
 {
     fprintf(fp, "Usage: %s [-h] [-c]\n\n", argv0);
     fprintf(fp, "    -h    Print usage information\n");
     fprintf(fp, "    -c    Emit comments\n");
 }
 
-
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    FILE *in = stdin;
+    FILE* in = stdin;
     char const* argv0 = argv[0];
     kdl_parse_option parse_opts = KDL_DEFAULTS;
     bool opts_ended = false;
@@ -36,7 +35,7 @@ int main(int argc, char **argv)
         ++argv;
         if (!opts_ended && **argv == '-') {
             // options
-            for (char const *p = *argv+1; *p; ++p) {
+            for (char const* p = *argv + 1; *p; ++p) {
                 if (*p == 'h') {
                     print_usage(argv0, stdout);
                     return 0;
@@ -50,18 +49,17 @@ int main(int argc, char **argv)
                 }
             }
         } else {
-            char const *fn = *argv;
+            char const* fn = *argv;
             in = fopen(fn, "r");
             if (in == NULL) {
-                fprintf(stderr, "Error opening file \"%s\": %s\n",
-                    fn, strerror(errno));
+                fprintf(stderr, "Error opening file \"%s\": %s\n", fn, strerror(errno));
                 return 1;
             }
         }
     }
 
-    kdl_parser *parser = kdl_create_stream_parser(&read_func, (void*)in, parse_opts);
-    kdl_emitter *emitter = kdl_create_stream_emitter(&write_func, NULL, &KDL_DEFAULT_EMITTER_OPTIONS);
+    kdl_parser* parser = kdl_create_stream_parser(&read_func, (void*)in, parse_opts);
+    kdl_emitter* emitter = kdl_create_stream_emitter(&write_func, NULL, &KDL_DEFAULT_EMITTER_OPTIONS);
 
     if (parser == NULL || emitter == NULL) {
         fprintf(stderr, "Initialization error\n");
@@ -69,16 +67,16 @@ int main(int argc, char **argv)
     }
 
     // constants
-    kdl_str const slashdash_type_str = (kdl_str){ "commented-out", 13 };
-    kdl_str const value_str = (kdl_str){ "value", 5 };
-    kdl_str const name_str = (kdl_str){ "name", 4 };
+    kdl_str const slashdash_type_str = (kdl_str){"commented-out", 13};
+    kdl_str const value_str = (kdl_str){"value", 5};
+    kdl_str const name_str = (kdl_str){"name", 4};
 
     bool have_error = false;
     bool eof = false;
     bool slashdash = false;
     while (1) {
-        kdl_event_data *event = kdl_parser_next_event(parser);
-        char const *event_name = NULL;
+        kdl_event_data* event = kdl_parser_next_event(parser);
+        char const* event_name = NULL;
 
         if (event->event == KDL_EVENT_COMMENT) {
             // regular comment
@@ -124,16 +122,14 @@ int main(int argc, char **argv)
             (void)kdl_emit_node(emitter, event_name_str);
         }
         if (event->name.data != NULL) {
-            kdl_value name_val = (kdl_value) {
-                .type = KDL_TYPE_STRING,
-                .type_annotation = { NULL, 0 },
-                .string = event->name
+            kdl_value name_val = (kdl_value){
+                .type = KDL_TYPE_STRING, .type_annotation = {NULL, 0},
+                     .string = event->name
             };
             (void)kdl_emit_property(emitter, name_str, &name_val);
         }
 
         (void)kdl_emit_property(emitter, value_str, &event->value);
-
 
         if (have_error || eof) break;
     }

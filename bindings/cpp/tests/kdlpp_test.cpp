@@ -2,8 +2,8 @@
 
 #include "test_util.h"
 
-#include <string_view>
 #include <string>
+#include <string_view>
 
 static void test_cycle()
 {
@@ -19,12 +19,14 @@ static void test_cycle()
 
 static void test_constructing()
 {
+    // clang-format off
     auto doc = kdl::Document{
         kdl::Node{u8"foo", {u8"bar", 123}, {}, {}},
         kdl::Node{u8"test", u8"baz", {}, {{u8"prop", 1.5}}, {
             kdl::Node{u8"child node"}
         }}
     };
+    // clang-format on
     auto expected = u8"foo \"bar\" 123\n"
                     u8"(test)baz prop=1.5 {\n"
                     u8"    \"child node\"\n"
@@ -71,6 +73,7 @@ static void test_reading_demo()
 
 static void test_writing_demo()
 {
+    // clang-format off
     // begin kdlpp writing demo
     auto doc = kdl::Document{
         kdl::Node{u8"node1", {u8"argument 1", 2, {}},
@@ -97,6 +100,7 @@ static void test_writing_demo()
 
     ASSERT(doc.to_string() == expected);
     // end kdlpp writing demo
+    // clang-format off
 }
 
 void TEST_MAIN()

@@ -9,9 +9,9 @@ extern "C" {
 
 // Return code for the tokenizer
 enum kdl_tokenizer_status {
-    KDL_TOKENIZER_OK,    // ok: token returned
-    KDL_TOKENIZER_EOF,   // regular end of file
-    KDL_TOKENIZER_ERROR  // error
+    KDL_TOKENIZER_OK,   // ok: token returned
+    KDL_TOKENIZER_EOF,  // regular end of file
+    KDL_TOKENIZER_ERROR // error
 };
 
 // Type of token
@@ -45,14 +45,14 @@ struct kdl_token {
 };
 
 // Create a tokenizer that reads from a string
-KDL_NODISCARD KDL_EXPORT kdl_tokenizer *kdl_create_string_tokenizer(kdl_str doc);
+KDL_NODISCARD KDL_EXPORT kdl_tokenizer* kdl_create_string_tokenizer(kdl_str doc);
 // Create a tokenizer that reads data by calling a user-supplied function
-KDL_NODISCARD KDL_EXPORT kdl_tokenizer *kdl_create_stream_tokenizer(kdl_read_func read_func, void *user_data);
+KDL_NODISCARD KDL_EXPORT kdl_tokenizer* kdl_create_stream_tokenizer(kdl_read_func read_func, void* user_data);
 // Destroy a tokenizer
-KDL_EXPORT void kdl_destroy_tokenizer(kdl_tokenizer *tokenizer);
+KDL_EXPORT void kdl_destroy_tokenizer(kdl_tokenizer* tokenizer);
 
 // Get the next token and write it to a user-supplied structure (or return an error)
-KDL_EXPORT kdl_tokenizer_status kdl_pop_token(kdl_tokenizer *tokenizer, kdl_token *dest);
+KDL_EXPORT kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* tokenizer, kdl_token* dest);
 
 #ifdef __cplusplus
 } // extern "C"

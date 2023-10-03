@@ -25,8 +25,8 @@ enum kdl_event {
 
 // Parser configuration
 enum kdl_parse_option {
-    KDL_DEFAULTS = 0,      // Nothing special
-    KDL_EMIT_COMMENTS = 1  // Emit comments (default: don't)
+    KDL_DEFAULTS = 0,     // Nothing special
+    KDL_EMIT_COMMENTS = 1 // Emit comments (default: don't)
 };
 
 typedef enum kdl_event kdl_event;
@@ -42,16 +42,17 @@ struct kdl_event_data {
 };
 
 // Create a parser that reads from a string
-KDL_NODISCARD KDL_EXPORT kdl_parser *kdl_create_string_parser(kdl_str doc, kdl_parse_option opt);
+KDL_NODISCARD KDL_EXPORT kdl_parser* kdl_create_string_parser(kdl_str doc, kdl_parse_option opt);
 // Create a parser that reads data by calling a user-supplied function
-KDL_NODISCARD KDL_EXPORT kdl_parser *kdl_create_stream_parser(kdl_read_func read_func, void *user_data, kdl_parse_option opt);
+KDL_NODISCARD KDL_EXPORT kdl_parser* kdl_create_stream_parser(
+    kdl_read_func read_func, void* user_data, kdl_parse_option opt);
 // Destroy a parser
-KDL_EXPORT void kdl_destroy_parser(kdl_parser *parser);
+KDL_EXPORT void kdl_destroy_parser(kdl_parser* parser);
 
 // Get the next parse event
 // Returns a pointer to an event structure. The structure (including all strings it contains!) is
 // invalidated on the next call.
-KDL_EXPORT kdl_event_data *kdl_parser_next_event(kdl_parser *parser);
+KDL_EXPORT kdl_event_data* kdl_parser_next_event(kdl_parser* parser);
 
 #ifdef __cplusplus
 }

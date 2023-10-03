@@ -1,7 +1,7 @@
 #include "kdl/emitter.h"
 
-#include "str.h"
 #include "grammar.h"
+#include "str.h"
 #include "utf8.h"
 
 #include <math.h>
@@ -13,38 +13,33 @@ const kdl_emitter_options KDL_DEFAULT_EMITTER_OPTIONS = {
     .indent = 4,
     .escape_mode = KDL_ESCAPE_DEFAULT,
     .identifier_mode = KDL_PREFER_BARE_IDENTIFIERS,
-    .float_mode = {
-        .always_write_decimal_point = false,
-        .always_write_decimal_point_or_exponent = true,
-        .capital_e = false,
-        .exponent_plus = false,
-        .plus = false,
-        .min_exponent = 4
-    }
+    .float_mode = {.always_write_decimal_point = false,
+                   .always_write_decimal_point_or_exponent = true,
+                   .capital_e = false,
+                   .exponent_plus = false,
+                   .plus = false,
+                   .min_exponent = 4}
 };
 
-struct _kdl_emitter
-{
+struct _kdl_emitter {
     kdl_emitter_options opt;
     kdl_write_func write_func;
-    void *write_user_data;
+    void* write_user_data;
     int depth;
     bool start_of_line;
     _kdl_write_buffer buf;
 };
 
-static size_t _buffer_write_func(void *user_data, char const *data, size_t nbytes)
+static size_t _buffer_write_func(void* user_data, char const* data, size_t nbytes)
 {
-    _kdl_write_buffer *buf = (_kdl_write_buffer*)user_data;
-    if (_kdl_buf_push_chars(buf, data, nbytes))
-        return nbytes;
-    else
-        return 0;
+    _kdl_write_buffer* buf = (_kdl_write_buffer*)user_data;
+    if (_kdl_buf_push_chars(buf, data, nbytes)) return nbytes;
+    else return 0;
 }
 
-kdl_emitter *kdl_create_buffering_emitter(kdl_emitter_options const *opt)
+kdl_emitter* kdl_create_buffering_emitter(kdl_emitter_options const* opt)
 {
-    kdl_emitter *self = malloc(sizeof(kdl_emitter));
+    kdl_emitter* self = malloc(sizeof(kdl_emitter));
     if (self == NULL) return NULL;
     self->opt = *opt;
     self->write_func = &_buffer_write_func;
@@ -59,20 +54,21 @@ kdl_emitter *kdl_create_buffering_emitter(kdl_emitter_options const *opt)
     return self;
 }
 
-kdl_emitter *kdl_create_stream_emitter(kdl_write_func write_func, void *user_data, kdl_emitter_options const *opt)
+kdl_emitter* kdl_create_stream_emitter(
+    kdl_write_func write_func, void* user_data, kdl_emitter_options const* opt)
 {
-    kdl_emitter *self = malloc(sizeof(kdl_emitter));
+    kdl_emitter* self = malloc(sizeof(kdl_emitter));
     if (self == NULL) return NULL;
     self->opt = *opt;
     self->write_func = write_func;
     self->write_user_data = user_data;
     self->depth = 0;
     self->start_of_line = true;
-    self->buf = (_kdl_write_buffer){ NULL, 0, 0 };
+    self->buf = (_kdl_write_buffer){NULL, 0, 0};
     return self;
 }
 
-void kdl_destroy_emitter(kdl_emitter *self)
+void kdl_destroy_emitter(kdl_emitter* self)
 {
     (void)kdl_emit_end(self);
     if (self->buf.buf != NULL) {
@@ -81,7 +77,7 @@ void kdl_destroy_emitter(kdl_emitter *self)
     free(self);
 }
 
-static bool _emit_str(kdl_emitter *self, kdl_str s)
+static bool _emit_str(kdl_emitter* self, kdl_str s)
 {
     kdl_owned_string escaped = kdl_escape(&s, self->opt.escape_mode);
     bool ok = self->write_func(self->write_user_data, "\"", 1) == 1
@@ -91,7 +87,7 @@ static bool _emit_str(kdl_emitter *self, kdl_str s)
     return ok;
 }
 
-static kdl_owned_string _float_to_string(double f, kdl_float_printing_options const *opts)
+static kdl_owned_string _float_to_string(double f, kdl_float_printing_options const* opts)
 {
     bool negative = f < 0.0;
     f = fabs(f);
@@ -206,7 +202,7 @@ static kdl_owned_string _float_to_string(double f, kdl_float_printing_options co
     return _kdl_buf_to_string(&buf);
 }
 
-static bool _emit_number(kdl_emitter *self, kdl_number const *n)
+static bool _emit_number(kdl_emitter* self, kdl_number const* n)
 {
     char int_buf[32];
     int int_len = 0;
@@ -223,13 +219,12 @@ static bool _emit_number(kdl_emitter *self, kdl_number const *n)
         kdl_free_string(&float_str);
         return ok;
     case KDL_NUMBER_TYPE_STRING_ENCODED:
-        return self->write_func(self->write_user_data, n->string.data, n->string.len)
-            == n->string.len;
+        return self->write_func(self->write_user_data, n->string.data, n->string.len) == n->string.len;
     }
     return false;
 }
 
-static bool _emit_identifier(kdl_emitter *self, kdl_str name)
+static bool _emit_identifier(kdl_emitter* self, kdl_str name)
 {
     bool bare = true;
     if (self->opt.identifier_mode == KDL_QUOTE_ALL_IDENTIFIERS) {
@@ -241,8 +236,7 @@ static bool _emit_identifier(kdl_emitter *self, kdl_str name)
         kdl_str tail = name;
         bool first = true;
         while (KDL_UTF8_OK == _kdl_pop_codepoint(&tail, &c)) {
-            if ((first && !_kdl_is_id_start(c))
-                || !_kdl_is_id(c)
+            if ((first && !_kdl_is_id_start(c)) || !_kdl_is_id(c)
                 || (self->opt.identifier_mode == KDL_ASCII_IDENTIFIERS && c >= 0x7f)) {
                 bare = false;
                 break;
@@ -258,15 +252,15 @@ static bool _emit_identifier(kdl_emitter *self, kdl_str name)
     }
 }
 
-#define _write_string_literal_ok(self, s) (self->write_func(self->write_user_data, ("" s ""), sizeof(s)-1) == sizeof(s)-1)
+#define _write_string_literal_ok(self, s)                                                                    \
+    (self->write_func(self->write_user_data, ("" s ""), sizeof(s) - 1) == sizeof(s) - 1)
 
-static bool _emit_value(kdl_emitter *self, kdl_value const* v)
+static bool _emit_value(kdl_emitter* self, kdl_value const* v)
 {
-    if (v->type_annotation.data != NULL)
-    {
-        if (!(_write_string_literal_ok(self, "(")
-            && _emit_identifier(self, v->type_annotation)
-            && _write_string_literal_ok(self, ")")))
+    if (v->type_annotation.data != NULL) {
+        if (!(_write_string_literal_ok(self, "(")             //
+                && _emit_identifier(self, v->type_annotation) //
+                && _write_string_literal_ok(self, ")")))
             return false;
     }
     switch (v->type) {
@@ -286,7 +280,7 @@ static bool _emit_value(kdl_emitter *self, kdl_value const* v)
     return false;
 }
 
-static bool _emit_node_preamble(kdl_emitter *self)
+static bool _emit_node_preamble(kdl_emitter* self)
 {
     if (!self->start_of_line) {
         if (!_write_string_literal_ok(self, "\n")) return false;
@@ -302,42 +296,41 @@ static bool _emit_node_preamble(kdl_emitter *self)
     return true;
 }
 
-bool kdl_emit_node(kdl_emitter *self, kdl_str name)
+bool kdl_emit_node(kdl_emitter* self, kdl_str name)
 {
     return _emit_node_preamble(self) && _emit_identifier(self, name);
 }
 
-bool kdl_emit_node_with_type(kdl_emitter *self, kdl_str type, kdl_str name)
+bool kdl_emit_node_with_type(kdl_emitter* self, kdl_str type, kdl_str name)
 {
-    return _emit_node_preamble(self)
-        && _write_string_literal_ok(self, "(")
-        && _emit_identifier(self, type)
-        && _write_string_literal_ok(self, ")")
+    return _emit_node_preamble(self)           //
+        && _write_string_literal_ok(self, "(") //
+        && _emit_identifier(self, type)        //
+        && _write_string_literal_ok(self, ")") //
         && _emit_identifier(self, name);
 }
 
-bool kdl_emit_arg(kdl_emitter *self, kdl_value const *value)
+bool kdl_emit_arg(kdl_emitter* self, kdl_value const* value)
 {
-    return _write_string_literal_ok(self, " ")
+    return _write_string_literal_ok(self, " ") && _emit_value(self, value);
+}
+
+bool kdl_emit_property(kdl_emitter* self, kdl_str name, kdl_value const* value)
+{
+    return (_write_string_literal_ok(self, " ")) //
+        && _emit_identifier(self, name)          //
+        && _write_string_literal_ok(self, "=")   //
         && _emit_value(self, value);
 }
 
-bool kdl_emit_property(kdl_emitter *self, kdl_str name, kdl_value const *value)
-{
-    return (_write_string_literal_ok(self, " "))
-        && _emit_identifier(self, name)
-        && _write_string_literal_ok(self, "=")
-        && _emit_value(self, value);
-}
-
-bool kdl_start_emitting_children(kdl_emitter *self)
+bool kdl_start_emitting_children(kdl_emitter* self)
 {
     self->start_of_line = true;
     ++self->depth;
     return (_write_string_literal_ok(self, " {\n"));
 }
 
-bool kdl_finish_emitting_children(kdl_emitter *self)
+bool kdl_finish_emitting_children(kdl_emitter* self)
 {
     if (self->depth == 0) return false;
     --self->depth;
@@ -346,7 +339,7 @@ bool kdl_finish_emitting_children(kdl_emitter *self)
     return (_write_string_literal_ok(self, "}\n"));
 }
 
-bool kdl_emit_end(kdl_emitter *self)
+bool kdl_emit_end(kdl_emitter* self)
 {
     while (self->depth != 0) {
         if (!kdl_finish_emitting_children(self)) return false;
@@ -358,7 +351,4 @@ bool kdl_emit_end(kdl_emitter *self)
     return true;
 }
 
-kdl_str kdl_get_emitter_buffer(kdl_emitter *self)
-{
-    return (kdl_str){ self->buf.buf, self->buf.str_len };
-}
+kdl_str kdl_get_emitter_buffer(kdl_emitter* self) { return (kdl_str){self->buf.buf, self->buf.str_len}; }
