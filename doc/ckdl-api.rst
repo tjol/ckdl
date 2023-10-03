@@ -32,7 +32,7 @@ data in your program or library, you must normally copy the strings into a
 
     A non-owned ("borrowed") string.
 
-    .. c:member:: char const *data
+    .. c:member:: char const* data
 
         A pointer to the actual string data.
 
@@ -53,7 +53,7 @@ data in your program or library, you must normally copy the strings into a
 
     An owned string object.
 
-    .. c:member:: char *data
+    .. c:member:: char* data
 
         The pointer to the string data.
 
@@ -69,28 +69,28 @@ data in your program or library, you must normally copy the strings into a
 String handling functions
 """""""""""""""""""""""""
 
-.. c:function:: kdl_str kdl_borrow_str(kdl_owned_string const *str)
+.. c:function:: kdl_str kdl_borrow_str(kdl_owned_string const* str)
 
     Create a "borrowed" :c:type:`kdl_str` from an owned string.
 
     :param str: The owned string to "borrow"
     :return: The string, borrowed
 
-.. c:function:: kdl_str kdl_str_from_cstr(char const *s)
+.. c:function:: kdl_str kdl_str_from_cstr(char const* s)
 
     Create a :c:type:`kdl_str` from a nul-terminated C string
 
     :param s: The C string to use
     :return: The string, as a :c:type:`kdl_str`
 
-.. c:function:: kdl_owned_string kdl_clone_str(kdl_str const *s)
+.. c:function:: kdl_owned_string kdl_clone_str(kdl_str const* s)
 
     Create an owned string from a borrowed string (think ``strdup()``).
 
     :param s: The string to duplicate
     :return: A string owned by the caller with the same content
 
-.. c:function:: void kdl_free_string(kdl_owned_string *s)
+.. c:function:: void kdl_free_string(kdl_owned_string* s)
 
     Free a string created by :c:func:`kdl_clone_str`. This function also replaces the data pointer
     by ``NULL``.
@@ -131,7 +131,7 @@ by the KDL spec. For generating the escapes, there are a few options:
         "Sensible" default: escape tabs, newlines, and other control characters, but leave most
         non-ASCII Unicode intact.
 
-.. c:function:: kdl_owned_string kdl_escape(kdl_str const *s, kdl_escape_mode mode)
+.. c:function:: kdl_owned_string kdl_escape(kdl_str const* s, kdl_escape_mode mode)
 
     Escape special characters in a string.
 
@@ -139,7 +139,7 @@ by the KDL spec. For generating the escapes, there are a few options:
     :param mode: How to escape
     :return: A string that could be surrounded by ``""`` in a KDL file
 
-.. c:function:: kdl_owned_string kdl_unescape(kdl_str const *s)
+.. c:function:: kdl_owned_string kdl_unescape(kdl_str const* s)
 
     Resolve backslash escape sequences
 
@@ -311,7 +311,7 @@ Parser Objects
 
 You can create a parser either for a document that you have in the form of a UTF-8 string
 
-.. c:function:: kdl_parser *kdl_create_string_parser(kdl_str doc, kdl_parse_option opt)
+.. c:function:: kdl_parser* kdl_create_string_parser(kdl_str doc, kdl_parse_option opt)
 
     :param doc: The KDL document text
     :param opt: Options for the parser
@@ -319,12 +319,12 @@ You can create a parser either for a document that you have in the form of a UTF
 
 or from any other data source by supplying a ``read`` function
 
-.. c:type:: size_t (*kdl_read_func)(void *user_data, char *buf, size_t bufsize)
+.. c:type:: size_t (*kdl_read_func)(void* user_data, char* buf, size_t bufsize)
 
     Pointer to a function that reads from some source, such as a file. Should return the actual number of
     bytes read, or zero on EOF.
 
-.. c:function:: kdl_parser *kdl_create_stream_parser(kdl_read_func read_func, void *user_data, kdl_parse_option opt)
+.. c:function:: kdl_parser* kdl_create_stream_parser(kdl_read_func read_func, void* user_data, kdl_parse_option opt)
 
     :param read_func: Function to use to read the KDL text
     :param user_data: opaque pointer to pass to ``read_func``
@@ -339,7 +339,7 @@ You always interact with the parser through an otherwise opaque pointer
 
 which you must free once you're done with it, using
 
-.. c:function:: void kdl_destroy_parser(kdl_parser *parser)
+.. c:function:: void kdl_destroy_parser(kdl_parser* parser)
 
     :param parser: Parser to destroy
 
@@ -357,7 +357,7 @@ If you wish, you may configure the parser to emit comments in addition to "regul
 
 The parser object provides one method:
 
-.. c:function:: kdl_event_data *kdl_parser_next_event(kdl_parser *parser)
+.. c:function:: kdl_event_data* kdl_parser_next_event(kdl_parser* parser)
 
     Get the next event in the document from a KDL parser
 
@@ -381,19 +381,19 @@ Like the parser, the emitter supports two IO models: it can either write to an i
 give you a string at the end, or it can write its data on the fly by calling a writer function you
 supply.
 
-.. c:function:: kdl_emitter *kdl_create_buffering_emitter(kdl_emitter_options const *opt)
+.. c:function:: kdl_emitter* kdl_create_buffering_emitter(kdl_emitter_options const* opt)
 
     Create an emitter than writes into an internal buffer. Read the buffer using
     :c:func:`kdl_get_emitter_buffer` after calling :c:func:`kdl_emit_end`.
 
     :param opt: Emitter configuration
 
-.. c:type:: size_t (*kdl_write_func)(void *user_data, char const *data, size_t nbytes)
+.. c:type:: size_t (*kdl_write_func)(void* user_data, char const* data, size_t nbytes)
 
     Pointer to a function that writes to some destination, such as a file. It should return exactly
     ``nbytes``, or 0 in case of an error.
 
-.. c:function:: kdl_emitter *kdl_create_stream_emitter(kdl_write_func write_func, void *user_data, kdl_emitter_options const *opt)
+.. c:function:: kdl_emitter* kdl_create_stream_emitter(kdl_write_func write_func, void* user_data, kdl_emitter_options const* opt)
 
     Create an emitter that writes by calling a user-supplied function
 
@@ -410,7 +410,7 @@ You will interact with the emitter through a pointer to an opaque :c:type:`kdl_e
 Once you're finished, you must clean up and free the memory used by the emitter by calling
 :c:func:`kdl_destroy_emitter`.
 
-.. c:function:: void kdl_destroy_emitter(kdl_emitter *emitter)
+.. c:function:: void kdl_destroy_emitter(kdl_emitter* emitter)
 
     :param emitter: Emitter to destroy
 
@@ -484,40 +484,40 @@ text.
 
 The emitter has a number of methods to write KDL nodes, arguments and properties:
 
-.. c:function:: bool kdl_emit_node(kdl_emitter *emitter, kdl_str name)
+.. c:function:: bool kdl_emit_node(kdl_emitter* emitter, kdl_str name)
 
     Write a node tag
 
-.. c:function:: bool kdl_emit_node_with_type(kdl_emitter *emitter, kdl_str type, kdl_str name)
+.. c:function:: bool kdl_emit_node_with_type(kdl_emitter* emitter, kdl_str type, kdl_str name)
 
     Write a node tag including a type annotation
 
-.. c:function:: bool kdl_emit_arg(kdl_emitter *emitter, kdl_value const *value)
+.. c:function:: bool kdl_emit_arg(kdl_emitter* emitter, kdl_value const* value)
 
     Write an argument for a node
 
-.. c:function:: bool kdl_emit_property(kdl_emitter *emitter, kdl_str name, kdl_value const *value)
+.. c:function:: bool kdl_emit_property(kdl_emitter* emitter, kdl_str name, kdl_value const* value)
 
     Write a property for a node
 
-.. c:function:: bool kdl_start_emitting_children(kdl_emitter *emitter)
+.. c:function:: bool kdl_start_emitting_children(kdl_emitter* emitter)
 
     Start a list of children for the previous node (``{``)
 
-.. c:function:: bool kdl_finish_emitting_children(kdl_emitter *emitter)
+.. c:function:: bool kdl_finish_emitting_children(kdl_emitter* emitter)
 
     End the list of children (``}``)
 
 To end the KDL document, you must call one final method
 
-.. c:function:: bool kdl_emit_end(kdl_emitter *emitter)
+.. c:function:: bool kdl_emit_end(kdl_emitter* emitter)
 
     Finish the document: write a final newline if required
 
 To get the actual KDL document text (assuming the emitter was created with
 :c:func:`kdl_create_buffering_emitter`), call:
 
-.. c:function:: kdl_str kdl_get_emitter_buffer(kdl_emitter *emitter)
+.. c:function:: kdl_str kdl_get_emitter_buffer(kdl_emitter* emitter)
 
     Get the internal buffer of the emitter, containing the document generated so far.
 
