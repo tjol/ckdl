@@ -4,6 +4,8 @@
 
 #include "bigint.h"
 #include "compat.h"
+#include "grammar.h"
+#include "utf8.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -119,6 +121,7 @@ static bool _parse_decimal_float(kdl_str number, kdl_value* val, kdl_owned_strin
 static bool _parse_hex_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
 static bool _parse_octal_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
 static bool _parse_binary_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
+static bool _identifier_is_valid(kdl_str value);
 
 kdl_event_data* kdl_parser_next_event(kdl_parser* self)
 {
@@ -557,10 +560,13 @@ static bool _parse_value(kdl_token const* token, kdl_value* val, kdl_owned_strin
             }
         }
         // this is a regular identifier
-        *s = kdl_clone_str(&token->value);
-        val->type = KDL_TYPE_STRING;
-        val->string = kdl_borrow_str(s);
-        return true;
+        if (_identifier_is_valid(token->value)) {
+            *s = kdl_clone_str(&token->value);
+            val->type = KDL_TYPE_STRING;
+            val->string = kdl_borrow_str(s);
+            return true;
+        }
+        _fallthrough_;
     default:
         return false;
     }
@@ -961,4 +967,26 @@ static bool _parse_binary_number(kdl_str number, kdl_value* val, kdl_owned_strin
 error:
     _kdl_ubigint_free(n);
     return false;
+}
+
+static bool _identifier_is_valid(kdl_str value)
+{
+    // Check that this is a valid KDLv1 identifier! The tokenizer accepts KDLv2
+    // identifiers, but the parser doesn't yet
+    uint32_t c = 0;
+    if (_kdl_pop_codepoint(&value, &c) != KDL_UTF8_OK || !_kdl_is_v1_id_start(c)) {
+        return false;
+    }
+
+    while (true) {
+        switch (_kdl_pop_codepoint(&value, &c)) {
+        case KDL_UTF8_OK:
+            if (!_kdl_is_v1_id(c)) return false;
+            break;
+        case KDL_UTF8_EOF:
+            return true;
+        default:
+            return false;
+        }
+    }
 }

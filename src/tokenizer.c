@@ -129,12 +129,14 @@ bool _kdl_is_newline(uint32_t c)
 bool _kdl_is_id(uint32_t c)
 {
     return c > 0x20 && c <= 0x10FFFF //
-        && c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' && c != '}' && c != '<' && c != '>'
-        && c != ';' && c != '[' && c != ']' && c != '=' && c != ',' && c != '"' && !_kdl_is_whitespace(c)
+        && c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' && c != '}'
+        && c != ';' && c != '[' && c != ']' && c != '=' && c != '"' && !_kdl_is_whitespace(c)
         && !_kdl_is_newline(c);
 }
 
+bool _kdl_is_v1_id(uint32_t c) { return _kdl_is_id(c) && c != '<' && c != '>' && c != ','; }
 bool _kdl_is_id_start(uint32_t c) { return _kdl_is_id(c) && (c < '0' || c > '9'); }
+bool _kdl_is_v1_id_start(uint32_t c) { return _kdl_is_v1_id(c) && (c < '0' || c > '9'); }
 
 bool _kdl_is_end_of_word(uint32_t c)
 {
