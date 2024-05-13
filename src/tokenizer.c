@@ -96,7 +96,8 @@ static size_t _refill_tokenizer(kdl_tokenizer* self)
 
 bool _kdl_is_whitespace(uint32_t c)
 {
-    return c == 0x0009 || // Character Tabulation
+    return c == 0x000B || // Vertical Tab
+        c == 0x0009 ||    // Character Tabulation
         c == 0x0020 ||    // Space
         c == 0x00A0 ||    // No-Break Space
         c == 0x1680 ||    // Ogham Space Mark
