@@ -288,7 +288,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             // string
             return _pop_string(self, dest);
         } else if (_kdl_is_id(c)) {
-            if (c == 'r') {
+            if (c == 'r' || c == '#') {
                 // this *could* be a raw string
                 kdl_tokenizer_status rstring_status = _pop_raw_string(self, dest);
                 if (rstring_status == KDL_TOKENIZER_OK) return KDL_TOKENIZER_OK;
@@ -463,8 +463,20 @@ static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer* self, kdl_token* dest
     uint32_t c = 0;
     char const* cur = self->document.data;
     char const* next = NULL;
-    if (_tok_get_char(self, &cur, &next, &c) != KDL_UTF8_OK || c != 'r') return KDL_TOKENIZER_ERROR;
-    cur = next;
+    kdl_token_type type = KDL_TOKEN_RAW_STRING;
+
+    if (_tok_get_char(self, &cur, &next, &c) != KDL_UTF8_OK) return KDL_TOKENIZER_ERROR;
+    switch (c) {
+    case 'r':
+        type = KDL_TOKEN_RAW_STRING;
+        cur = next;
+        break;
+    case '#':
+        type = KDL_TOKEN_RAW_STRING_V2;
+        break;
+    default:
+        return KDL_TOKENIZER_ERROR;
+    }
 
     // Get all hashes, and the initial quote
     int hashes = 0;
@@ -523,6 +535,6 @@ static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer* self, kdl_token* dest
     dest->value.data = self->document.data + string_start_offset;
     dest->value.len = end_quote_offset - string_start_offset;
     _update_doc_ptr(self, next);
-    dest->type = KDL_TOKEN_RAW_STRING;
+    dest->type = type;
     return KDL_TOKENIZER_OK;
 }

@@ -20,7 +20,8 @@ enum kdl_token_type {
     KDL_TOKEN_END_TYPE,            // ')'
     KDL_TOKEN_WORD,                // identifier, number, boolean, or null
     KDL_TOKEN_STRING,              // regular string
-    KDL_TOKEN_RAW_STRING,          // raw string
+    KDL_TOKEN_RAW_STRING,          // KDLV1 raw string
+    KDL_TOKEN_RAW_STRING_V2,       // KDLv2 raw string
     KDL_TOKEN_SINGLE_LINE_COMMENT, // // ...
     KDL_TOKEN_SLASHDASH,           // /-
     KDL_TOKEN_MULTI_LINE_COMMENT,  // /* ... */

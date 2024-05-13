@@ -183,6 +183,10 @@ add_executable(emitter_test emitter_test.c)
 target_link_libraries(emitter_test kdl test_util)
 add_test(emitter_test emitter_test)
 
+add_executable(kdlv2_test kdlv2_test.c)
+target_link_libraries(kdlv2_test kdl test_util)
+add_test(kdlv2_test kdlv2_test)
+
 if(KDL_TEST_CASES_ROOT)
     # Ignore some tests which require unsupported number representations
     set(FUZZY_KDL_TESTS_LIST

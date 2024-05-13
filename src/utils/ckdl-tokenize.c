@@ -76,6 +76,9 @@ int main(int argc, char** argv)
         case KDL_TOKEN_RAW_STRING:
             token_type_name = "KDL_TOKEN_RAW_STRING";
             break;
+        case KDL_TOKEN_RAW_STRING_V2:
+            token_type_name = "KDL_TOKEN_RAW_STRING_V2";
+            break;
         case KDL_TOKEN_SINGLE_LINE_COMMENT:
             token_type_name = "KDL_TOKEN_SINGLE_LINE_COMMENT";
             break;
