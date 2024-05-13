@@ -5,6 +5,11 @@ project(kdlpp CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+	# compiling with GCC or Clang requires us to add the -std=c++20 flag in some scenarios
+    set(CMAKE_REQUIRED_FLAGS "-std=c++20")
+endif()
+
 include(CheckTypeSize)
 set(CMAKE_EXTRA_INCLUDE_FILES "string_view")
 check_type_size(std::u8string_view U8STRING_VIEW LANGUAGE CXX)
