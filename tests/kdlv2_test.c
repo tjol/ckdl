@@ -110,6 +110,35 @@ static void test_tokenizer_bom(void)
     ASSERT(token.type == KDL_TOKEN_WHITESPACE);
 
     ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_ERROR);
+
+    kdl_destroy_tokenizer(tok);
+
+}
+
+static void test_tokenizer_illegal_codepoints(void)
+{
+    kdl_token token;
+
+    kdl_str doc = kdl_str_from_cstr("no\007de"); // BEL is illegal in identifiers
+    kdl_tokenizer* tok = kdl_create_string_tokenizer(doc);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_ERROR);
+
+    kdl_destroy_tokenizer(tok);
+
+    doc = kdl_str_from_cstr("\"this string contains a backspace \x08\"");
+    tok = kdl_create_string_tokenizer(doc);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_ERROR);
+
+    kdl_destroy_tokenizer(tok);
+
+    doc = kdl_str_from_cstr("// Not even comments can contain \x1B");
+    tok = kdl_create_string_tokenizer(doc);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_ERROR);
+
+    kdl_destroy_tokenizer(tok);
 }
 
 void TEST_MAIN(void)
@@ -118,4 +147,5 @@ void TEST_MAIN(void)
     run_test("Tokenizer: KDLv2 identifiers", &test_tokenizer_identifiers);
     run_test("Tokenizer: KDLv2 whitespace", &test_tokenizer_whitespace);
     run_test("Tokenizer: byte-order-mark", &test_tokenizer_bom);
+    run_test("Tokenizer: illegal codepoints", &test_tokenizer_illegal_codepoints);
 }

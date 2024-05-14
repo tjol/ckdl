@@ -417,7 +417,11 @@ static kdl_tokenizer_status _pop_comment(kdl_tokenizer* self, kdl_token* dest)
             default: // error
                 return KDL_TOKENIZER_ERROR;
             }
-            if (_kdl_is_newline(c)) goto end_of_line;
+            if (_kdl_is_illegal_char(self->charset, c)) {
+                return KDL_TOKENIZER_ERROR;
+            } else if (_kdl_is_newline(c)) {
+                goto end_of_line;
+            }
             // Accept this character
             cur = next;
         }
@@ -442,7 +446,9 @@ end_of_line:
                 return KDL_TOKENIZER_ERROR;
             }
 
-            if (c == '*' && prev_char == '/') {
+            if (_kdl_is_illegal_char(self->charset, c)) {
+                return KDL_TOKENIZER_ERROR;
+            } else if (c == '*' && prev_char == '/') {
                 // another level of nesting
                 ++depth;
                 c = 0; // "/*/" doesn't count as self-closing
@@ -488,8 +494,10 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
             return KDL_TOKENIZER_ERROR;
         }
 
-        if (c == '\\' && prev_char == '\\') {
-            c = 0; // double backslash is  no backslash
+        if (_kdl_is_illegal_char(self->charset, c)) {
+            return KDL_TOKENIZER_ERROR;
+        } else if (c == '\\' && prev_char == '\\') {
+            c = 0; // double backslash is no backslash
         } else if (c == '"' && prev_char != '\\') {
             break; // non-escaped end of string
         }
