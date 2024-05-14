@@ -11,5 +11,6 @@ bool _kdl_is_newline(uint32_t c);
 bool _kdl_is_id(kdl_character_set charset, uint32_t c);
 bool _kdl_is_id_start(kdl_character_set charset, uint32_t c);
 bool _kdl_is_end_of_word(kdl_character_set charset, uint32_t c);
+bool _kdl_is_illegal_char(kdl_character_set charset, uint32_t c);
 
 #endif // KDL_INTERNAL_GRAMMAR_H_

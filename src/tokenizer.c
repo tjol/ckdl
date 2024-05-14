@@ -24,6 +24,11 @@ struct _kdl_tokenizer {
     size_t buffer_size;
 };
 
+static inline void _remove_initial_bom(kdl_tokenizer* self);
+static inline void _update_doc_ptr(kdl_tokenizer* self, char const* new_ptr);
+static inline kdl_utf8_status _tok_get_char(
+    kdl_tokenizer* self, char const** cur, char const** next, uint32_t* codepoint);
+
 kdl_tokenizer* kdl_create_string_tokenizer(kdl_str doc)
 {
     kdl_tokenizer* self = malloc(sizeof(kdl_tokenizer));
@@ -35,6 +40,7 @@ kdl_tokenizer* kdl_create_string_tokenizer(kdl_str doc)
         self->buffer = NULL;
         self->buffer_size = 0;
     }
+    _remove_initial_bom(self);
     return self;
 }
 
@@ -49,6 +55,7 @@ kdl_tokenizer* kdl_create_stream_tokenizer(kdl_read_func read_func, void* user_d
         self->buffer = NULL;
         self->buffer_size = 0;
     }
+    _remove_initial_bom(self);
     return self;
 }
 
@@ -60,10 +67,19 @@ void kdl_destroy_tokenizer(kdl_tokenizer* tokenizer)
     free(tokenizer);
 }
 
-void kdl_tokenizer_set_character_set(kdl_tokenizer* self, kdl_character_set cs)
+static inline void _remove_initial_bom(kdl_tokenizer* self)
 {
-    self->charset = cs;
+    uint32_t c = 0;
+    char const* cur = self->document.data;
+    char const* next = NULL;
+
+    if (_tok_get_char(self, &cur, &next, &c) == KDL_UTF8_OK && c == 0xFEFF) {
+        // skip initial BOM
+        _update_doc_ptr(self, next);
+    }
 }
+
+void kdl_tokenizer_set_character_set(kdl_tokenizer* self, kdl_character_set cs) { self->charset = cs; }
 
 static size_t _refill_tokenizer(kdl_tokenizer* self)
 {
@@ -158,6 +174,21 @@ bool _kdl_is_end_of_word(kdl_character_set charset, uint32_t c)
         || c == ';' || c == ')' || c == '}' || c == '/' || c == '\\' || c == '=';
 }
 
+bool _kdl_is_illegal_char(kdl_character_set charset, uint32_t c)
+{
+    return charset == KDL_CHARACTER_SET_V2
+        && (c <= 0x0008 ||                  // control characters
+            (0x000E <= c && c <= 0x001F) || //    ''
+            c == 0x007F ||                  // delete
+            (0xD800 <= c && c <= 0xDFFF) || // UTF-16 surrogates
+            c == 0x200E || c == 0x200F ||   // directional control characters
+            (0x202A <= c && c <= 0x202E) || //    ''
+            (0x2066 <= c && c <= 0x2069) || //    ''
+            c == 0xFEFF ||                  // ZWNBSP = BOM
+            c > 0x10FFFF                    // not a codepoint
+        );
+}
+
 static inline kdl_utf8_status _tok_get_char(
     kdl_tokenizer* self, char const** cur, char const** next, uint32_t* codepoint)
 {
@@ -216,7 +247,9 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
         }
 
         // Could be the start of a new token
-        if (_kdl_is_whitespace(self->charset, c)) {
+        if (_kdl_is_illegal_char(self->charset, c)) {
+            return KDL_TOKENIZER_ERROR;
+        } else if (_kdl_is_whitespace(self->charset, c)) {
             // find whitespace run
             size_t ws_start_offset = cur - self->document.data;
             cur = next;

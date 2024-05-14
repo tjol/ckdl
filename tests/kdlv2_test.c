@@ -89,9 +89,33 @@ static void test_tokenizer_whitespace(void)
     kdl_destroy_tokenizer(tok);
 }
 
+static void test_tokenizer_bom(void)
+{
+    kdl_token token;
+
+    kdl_str doc = kdl_str_from_cstr("\xEF\xBB\xBF ");
+    kdl_tokenizer* tok = kdl_create_string_tokenizer(doc);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_OK);
+    ASSERT(token.type == KDL_TOKEN_WHITESPACE);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_EOF);
+
+    kdl_destroy_tokenizer(tok);
+
+    doc = kdl_str_from_cstr(" \xEF\xBB\xBF");
+    tok = kdl_create_string_tokenizer(doc);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_OK);
+    ASSERT(token.type == KDL_TOKEN_WHITESPACE);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_ERROR);
+}
+
 void TEST_MAIN(void)
 {
     run_test("Tokenizer: KDLv2 strings", &test_tokenizer_strings);
     run_test("Tokenizer: KDLv2 identifiers", &test_tokenizer_identifiers);
-    run_test("Tokenizer: KDLv2 identifiers", &test_tokenizer_whitespace);
+    run_test("Tokenizer: KDLv2 whitespace", &test_tokenizer_whitespace);
+    run_test("Tokenizer: byte-order-mark", &test_tokenizer_bom);
 }
