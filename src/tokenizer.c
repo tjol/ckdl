@@ -570,7 +570,9 @@ static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer* self, kdl_token* dest
             return KDL_TOKENIZER_ERROR;
         }
 
-        if (end_quote_offset != 0 && c == '#') {
+        if (_kdl_is_illegal_char(self->charset, c)) {
+            return KDL_TOKENIZER_ERROR;
+        } else if (end_quote_offset != 0 && c == '#') {
             ++hashes_found;
         } else if (c == '"') {
             end_quote_offset = cur - self->document.data;

@@ -139,6 +139,20 @@ static void test_tokenizer_illegal_codepoints(void)
     ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_ERROR);
 
     kdl_destroy_tokenizer(tok);
+
+    doc = kdl_str_from_cstr("/* multi-line comments also can't have \x15 */");
+    tok = kdl_create_string_tokenizer(doc);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_ERROR);
+
+    kdl_destroy_tokenizer(tok);
+
+    doc = kdl_str_from_cstr("###\" multi-line strings must't \x10 \"###");
+    tok = kdl_create_string_tokenizer(doc);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_ERROR);
+
+    kdl_destroy_tokenizer(tok);
 }
 
 void TEST_MAIN(void)
