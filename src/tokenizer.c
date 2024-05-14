@@ -189,6 +189,18 @@ bool _kdl_is_illegal_char(kdl_character_set charset, uint32_t c)
         );
 }
 
+bool _kdl_is_equals_sign(kdl_character_set charset, uint32_t c)
+{
+    if (charset == KDL_CHARACTER_SET_V1) {
+        return c == '=';
+    } else {
+        return c == '=' || // EQUALS SIGN =
+            c == 0xFE66 || // SMALL EQUALS SIGN ﹦
+            c == 0xFF1D || // FULLWIDTH EQUALS SIGN ＝
+            c == 0x1F7F0;  // HEAVY EQUALS SIGN 🟰
+    }
+}
+
 static inline kdl_utf8_status _tok_get_char(
     kdl_tokenizer* self, char const** cur, char const** next, uint32_t* codepoint)
 {
@@ -323,7 +335,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             dest->value.len = (size_t)(next - cur);
             _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
-        } else if (c == '=') {
+        } else if (_kdl_is_equals_sign(self->charset, c)) {
             // attribute assignment
             dest->type = KDL_TOKEN_EQUALS;
             dest->value.data = cur;

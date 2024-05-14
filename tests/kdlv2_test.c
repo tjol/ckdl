@@ -155,6 +155,19 @@ static void test_tokenizer_illegal_codepoints(void)
     kdl_destroy_tokenizer(tok);
 }
 
+static void test_tokenizer_equals(void)
+{
+    kdl_token token;
+
+    kdl_str doc = kdl_str_from_cstr("\xef\xbc\x9d"); // Fullwidth equals U+FF1D
+    kdl_tokenizer* tok = kdl_create_string_tokenizer(doc);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_OK);
+    ASSERT(token.type == KDL_TOKEN_EQUALS);
+
+    kdl_destroy_tokenizer(tok);
+}
+
 void TEST_MAIN(void)
 {
     run_test("Tokenizer: KDLv2 strings", &test_tokenizer_strings);
@@ -162,4 +175,5 @@ void TEST_MAIN(void)
     run_test("Tokenizer: KDLv2 whitespace", &test_tokenizer_whitespace);
     run_test("Tokenizer: byte-order-mark", &test_tokenizer_bom);
     run_test("Tokenizer: illegal codepoints", &test_tokenizer_illegal_codepoints);
+    run_test("Tokenizer: KDLv2 equals sign", &test_tokenizer_equals);
 }
