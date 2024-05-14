@@ -251,6 +251,29 @@ static void test_number_type(void)
     kdl_destroy_parser(parser);
 }
 
+static void test_bom(void)
+{
+    char const* const kdl_text = "\xEF\xBB\xBFnode";
+
+    kdl_str doc = kdl_str_from_cstr(kdl_text);
+    kdl_parser* parser = kdl_create_string_parser(doc, 0);
+
+    // test all events
+    kdl_event_data* ev;
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+    ASSERT(memcmp(ev->name.data, "node", 4) == 0);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_END_NODE);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_EOF);
+
+    kdl_destroy_parser(parser);
+}
+
 void TEST_MAIN(void)
 {
     run_test("Parser: basics", &test_basics);
@@ -258,4 +281,5 @@ void TEST_MAIN(void)
     run_test("Parser: unbalanced {", &test_unbalanced_brace);
     run_test("Parser: arg can't be identifier", &test_identifier_arg);
     run_test("Parser: type can't be number", &test_number_type);
+    run_test("Parser: BOM treated as whitespace", &test_bom);
 }

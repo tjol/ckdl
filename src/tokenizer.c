@@ -114,7 +114,8 @@ bool _kdl_is_whitespace(uint32_t c)
         c == 0x200A ||    // Hair Space
         c == 0x202F ||    // Narrow No-Break Space
         c == 0x205F ||    // Medium Mathematical Space
-        c == 0x3000;      // Ideographic Space
+        c == 0x3000 ||    // Ideographic Space
+        c == 0xFEFF;      // Byte-order mark
 }
 
 bool _kdl_is_newline(uint32_t c)
