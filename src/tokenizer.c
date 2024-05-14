@@ -17,6 +17,7 @@
 
 struct _kdl_tokenizer {
     kdl_str document;
+    kdl_character_set charset;
     kdl_read_func read_func;
     void* read_user_data;
     char* buffer;
@@ -28,6 +29,7 @@ kdl_tokenizer* kdl_create_string_tokenizer(kdl_str doc)
     kdl_tokenizer* self = malloc(sizeof(kdl_tokenizer));
     if (self != NULL) {
         self->document = doc;
+        self->charset = KDL_CHARACTER_SET_DEFAULT;
         self->read_func = NULL;
         self->read_user_data = NULL;
         self->buffer = NULL;
@@ -41,6 +43,7 @@ kdl_tokenizer* kdl_create_stream_tokenizer(kdl_read_func read_func, void* user_d
     kdl_tokenizer* self = malloc(sizeof(kdl_tokenizer));
     if (self != NULL) {
         self->document = (kdl_str){.data = NULL, .len = 0};
+        self->charset = KDL_CHARACTER_SET_DEFAULT;
         self->read_func = read_func;
         self->read_user_data = user_data;
         self->buffer = NULL;
@@ -55,6 +58,11 @@ void kdl_destroy_tokenizer(kdl_tokenizer* tokenizer)
         free(tokenizer->buffer);
     }
     free(tokenizer);
+}
+
+void kdl_tokenizer_set_character_set(kdl_tokenizer* self, kdl_character_set cs)
+{
+    self->charset = cs;
 }
 
 static size_t _refill_tokenizer(kdl_tokenizer* self)
@@ -94,10 +102,9 @@ static size_t _refill_tokenizer(kdl_tokenizer* self)
     return read_count;
 }
 
-bool _kdl_is_whitespace(uint32_t c)
+bool _kdl_is_whitespace(kdl_character_set charset, uint32_t c)
 {
-    return c == 0x000B || // Vertical Tab
-        c == 0x0009 ||    // Character Tabulation
+    return c == 0x0009 || // Character Tabulation
         c == 0x0020 ||    // Space
         c == 0x00A0 ||    // No-Break Space
         c == 0x1680 ||    // Ogham Space Mark
@@ -115,7 +122,10 @@ bool _kdl_is_whitespace(uint32_t c)
         c == 0x202F ||    // Narrow No-Break Space
         c == 0x205F ||    // Medium Mathematical Space
         c == 0x3000 ||    // Ideographic Space
-        c == 0xFEFF;      // Byte-order mark
+
+        (charset == KDL_CHARACTER_SET_V1 && c == 0xFEFF) || // Byte-order mark
+        (charset == KDL_CHARACTER_SET_V2 && c == 0x000B)    // Vertical Tab
+        ;
 }
 
 bool _kdl_is_newline(uint32_t c)
@@ -128,22 +138,23 @@ bool _kdl_is_newline(uint32_t c)
         c == 0x2029;      // PS  Paragraph Separator
 }
 
-bool _kdl_is_id(uint32_t c)
+bool _kdl_is_id(kdl_character_set charset, uint32_t c)
 {
-    return c > 0x20 && c <= 0x10FFFF //
-        && c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' && c != '}'
-        && c != ';' && c != '[' && c != ']' && c != '=' && c != '"' && !_kdl_is_whitespace(c)
-        && !_kdl_is_newline(c);
+    return c > 0x20 && c <= 0x10FFFF && c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' && c != '}'
+        && c != ';' && c != '[' && c != ']' && c != '=' && c != '"'
+        && !(charset == KDL_CHARACTER_SET_V1 && (c == '<' || c == '>' || c == ','))
+        && !_kdl_is_whitespace(charset, c) && !_kdl_is_newline(c);
 }
 
-bool _kdl_is_v1_id(uint32_t c) { return _kdl_is_id(c) && c != '<' && c != '>' && c != ','; }
-bool _kdl_is_id_start(uint32_t c) { return _kdl_is_id(c) && (c < '0' || c > '9'); }
-bool _kdl_is_v1_id_start(uint32_t c) { return _kdl_is_v1_id(c) && (c < '0' || c > '9'); }
+bool _kdl_is_id_start(kdl_character_set charset, uint32_t c)
+{
+    return _kdl_is_id(charset, c) && (c < '0' || c > '9');
+}
 
-bool _kdl_is_end_of_word(uint32_t c)
+bool _kdl_is_end_of_word(kdl_character_set charset, uint32_t c)
 {
     // is this character something that could terminate an identifier (or number) in some situation?
-    return _kdl_is_whitespace(c) || _kdl_is_newline(c) //
+    return _kdl_is_whitespace(charset, c) || _kdl_is_newline(c) //
         || c == ';' || c == ')' || c == '}' || c == '/' || c == '\\' || c == '=';
 }
 
@@ -205,11 +216,12 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
         }
 
         // Could be the start of a new token
-        if (_kdl_is_whitespace(c)) {
+        if (_kdl_is_whitespace(self->charset, c)) {
             // find whitespace run
             size_t ws_start_offset = cur - self->document.data;
             cur = next;
-            while (_tok_get_char(self, &cur, &next, &c) == KDL_UTF8_OK && _kdl_is_whitespace(c)) {
+            while (
+                _tok_get_char(self, &cur, &next, &c) == KDL_UTF8_OK && _kdl_is_whitespace(self->charset, c)) {
                 // accept whitespace character
                 cur = next;
             }
@@ -291,7 +303,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
         } else if (c == '"') {
             // string
             return _pop_string(self, dest);
-        } else if (_kdl_is_id(c)) {
+        } else if (_kdl_is_id(self->charset, c)) {
             if (c == 'r' || c == '#') {
                 // this *could* be a raw string
                 kdl_tokenizer_status rstring_status = _pop_raw_string(self, dest);
@@ -322,10 +334,10 @@ static kdl_tokenizer_status _pop_word(kdl_tokenizer* self, kdl_token* dest)
             return KDL_TOKENIZER_ERROR;
         }
 
-        if (_kdl_is_end_of_word(c)) {
+        if (_kdl_is_end_of_word(self->charset, c)) {
             // end the word
             goto end_of_word;
-        } else if (!_kdl_is_id(c)) {
+        } else if (!_kdl_is_id(self->charset, c)) {
             // invalid character
             return KDL_TOKENIZER_ERROR;
         }

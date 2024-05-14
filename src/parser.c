@@ -65,6 +65,7 @@ kdl_parser* kdl_create_string_parser(kdl_str doc, kdl_parse_option opt)
         _init_kdl_parser(self);
         self->tokenizer = kdl_create_string_tokenizer(doc);
         self->opt = opt;
+        kdl_tokenizer_set_character_set(self->tokenizer, KDL_CHARACTER_SET_V1);
     }
     return self;
 }
@@ -76,6 +77,7 @@ kdl_parser* kdl_create_stream_parser(kdl_read_func read_func, void* user_data, k
         _init_kdl_parser(self);
         self->tokenizer = kdl_create_stream_tokenizer(read_func, user_data);
         self->opt = opt;
+        kdl_tokenizer_set_character_set(self->tokenizer, KDL_CHARACTER_SET_V1);
     }
     return self;
 }
@@ -974,14 +976,14 @@ static bool _identifier_is_valid(kdl_str value)
     // Check that this is a valid KDLv1 identifier! The tokenizer accepts KDLv2
     // identifiers, but the parser doesn't yet
     uint32_t c = 0;
-    if (_kdl_pop_codepoint(&value, &c) != KDL_UTF8_OK || !_kdl_is_v1_id_start(c)) {
+    if (_kdl_pop_codepoint(&value, &c) != KDL_UTF8_OK || !_kdl_is_id_start(KDL_CHARACTER_SET_V1, c)) {
         return false;
     }
 
     while (true) {
         switch (_kdl_pop_codepoint(&value, &c)) {
         case KDL_UTF8_OK:
-            if (!_kdl_is_v1_id(c)) return false;
+            if (!_kdl_is_id(KDL_CHARACTER_SET_V1, c)) return false;
             break;
         case KDL_UTF8_EOF:
             return true;

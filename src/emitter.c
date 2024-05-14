@@ -236,7 +236,7 @@ static bool _emit_identifier(kdl_emitter* self, kdl_str name)
         kdl_str tail = name;
         bool first = true;
         while (KDL_UTF8_OK == _kdl_pop_codepoint(&tail, &c)) {
-            if ((first && !_kdl_is_id_start(c)) || !_kdl_is_id(c)
+            if ((first && !_kdl_is_id_start(KDL_CHARACTER_SET_V1, c)) || !_kdl_is_id(KDL_CHARACTER_SET_V1, c)
                 || (self->opt.identifier_mode == KDL_ASCII_IDENTIFIERS && c >= 0x7f)) {
                 bare = false;
                 break;
