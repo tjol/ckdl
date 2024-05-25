@@ -293,6 +293,85 @@ static void test_parser_v2_raw_string(void)
     kdl_destroy_parser(parser);
 }
 
+static void test_parser_hashtag_null(void)
+{
+    kdl_str doc = kdl_str_from_cstr("a #null #true #false");
+    kdl_event_data* ev;
+
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_VERSION_2);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_ARGUMENT);
+    ASSERT(ev->value.type == KDL_TYPE_NULL);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_ARGUMENT);
+    ASSERT(ev->value.type == KDL_TYPE_BOOLEAN);
+    ASSERT(ev->value.boolean == true);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_ARGUMENT);
+    ASSERT(ev->value.type == KDL_TYPE_BOOLEAN);
+    ASSERT(ev->value.boolean == false);
+
+    kdl_destroy_parser(parser);
+}
+
+static void test_parser_hashless_syntax_error(void)
+{
+    kdl_str doc = kdl_str_from_cstr("a null");
+    kdl_event_data* ev;
+
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_VERSION_2);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_PARSE_ERROR);
+
+    kdl_destroy_parser(parser);
+}
+
+static void test_parser_hashtag_null_is_v2(void)
+{
+    kdl_event_data* ev;
+    kdl_str doc = kdl_str_from_cstr("a #null true");
+
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_DETECT_VERSION);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_ARGUMENT);
+    ASSERT(ev->value.type == KDL_TYPE_NULL);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_PARSE_ERROR);
+
+    kdl_destroy_parser(parser);
+
+    doc = kdl_str_from_cstr("a null #true");
+
+    parser = kdl_create_string_parser(doc, KDL_DETECT_VERSION);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_ARGUMENT);
+    ASSERT(ev->value.type == KDL_TYPE_NULL);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_PARSE_ERROR);
+
+    kdl_destroy_parser(parser);
+}
+
 void TEST_MAIN(void)
 {
     run_test("Tokenizer: KDLv2 strings", &test_tokenizer_strings);
@@ -305,4 +384,7 @@ void TEST_MAIN(void)
     run_test("Strings: KDLv2 multi-line strings", &test_multiline_strings);
     run_test("Parser: KDLv1 raw string", &test_parser_v1_raw_string);
     run_test("Parser: KDLv2 raw string", &test_parser_v2_raw_string);
+    run_test("Parser: KDLv2 #null", &test_parser_hashtag_null);
+    run_test("Parser: null is a syntax error in KDLv2", &test_parser_hashless_syntax_error);
+    run_test("Parser: #null means we're in v2, etc.", &test_parser_hashtag_null_is_v2);
 }
