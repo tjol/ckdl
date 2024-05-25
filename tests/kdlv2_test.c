@@ -112,7 +112,6 @@ static void test_tokenizer_bom(void)
     ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_ERROR);
 
     kdl_destroy_tokenizer(tok);
-
 }
 
 static void test_tokenizer_illegal_codepoints(void)
@@ -166,6 +165,24 @@ static void test_tokenizer_equals(void)
     ASSERT(token.type == KDL_TOKEN_EQUALS);
 
     kdl_destroy_tokenizer(tok);
+}
+
+static void test_string_escapes(void)
+{
+    kdl_str s = kdl_str_from_cstr("\\s\\  \n\n\t  \\u{1b}");
+    kdl_owned_string unesc = kdl_unescape_v2(&s);
+
+    ASSERT(unesc.len == 2);
+    ASSERT(memcmp(unesc.data, " \x1b", 2) == 0);
+
+    kdl_str unesc_ = kdl_borrow_str(&unesc);
+    kdl_owned_string reesc = kdl_escape_v2(&unesc_, KDL_ESCAPE_DEFAULT);
+
+    ASSERT(reesc.len == 7);
+    ASSERT(memcmp(reesc.data, " \\u{1b}", 7) == 0);
+
+    kdl_free_string(&unesc);
+    kdl_free_string(&reesc);
 }
 
 static void test_parser_v1_raw_string(void)
@@ -236,6 +253,7 @@ void TEST_MAIN(void)
     run_test("Tokenizer: byte-order-mark", &test_tokenizer_bom);
     run_test("Tokenizer: illegal codepoints", &test_tokenizer_illegal_codepoints);
     run_test("Tokenizer: KDLv2 equals sign", &test_tokenizer_equals);
+    run_test("Strings: KDLv2 escapes", &test_string_escapes);
     run_test("Parser: KDLv1 raw string", &test_parser_v1_raw_string);
     run_test("Parser: KDLv2 raw string", &test_parser_v2_raw_string);
 }

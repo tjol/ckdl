@@ -56,9 +56,19 @@ KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_clone_str(kdl_str const* s);
 // Free the memory associated with an owned string, and set the pointer to NULL
 KDL_EXPORT void kdl_free_string(kdl_owned_string* s);
 
-// Escape special characters in a string according to KDL string rules
+// Escape special characters in a string according to KDLv1 string rules
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape_v1(kdl_str const* s, kdl_escape_mode mode);
+// Resolve backslash escape sequences according to KDLv1 rules
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape_v1(kdl_str const* s);
+
+// Escape special characters in a string according to KDLv2 string rules
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape_v2(kdl_str const* s, kdl_escape_mode mode);
+// Resolve backslash escape sequences according to KDLv2 rules
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape_v2(kdl_str const* s);
+
+// Escape special characters in a string according to KDLv1 string rules (subject to change)
 KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape(kdl_str const* s, kdl_escape_mode mode);
-// Resolve backslash escape sequences
+// Resolve backslash escape sequences according to KDLv1 rules (subject to change)
 KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape(kdl_str const* s);
 
 #ifdef __cplusplus

@@ -1,5 +1,6 @@
 #include "str.h"
 #include "compat.h"
+#include "grammar.h"
 #include "kdl/common.h"
 #include "utf8.h"
 
@@ -103,7 +104,11 @@ kdl_owned_string _kdl_buf_to_string(_kdl_write_buffer* buf)
     return s;
 }
 
-kdl_owned_string kdl_escape(kdl_str const* s, kdl_escape_mode mode)
+kdl_owned_string kdl_escape(kdl_str const* s, kdl_escape_mode mode) { return kdl_escape_v1(s, mode); }
+
+kdl_owned_string kdl_unescape(kdl_str const* s) { return kdl_unescape_v1(s); }
+
+kdl_owned_string kdl_escape_v1(kdl_str const* s, kdl_escape_mode mode)
 {
     kdl_owned_string result;
     kdl_str unescaped = *s;
@@ -167,7 +172,7 @@ esc_error:
     return result;
 }
 
-kdl_owned_string kdl_unescape(kdl_str const* s)
+kdl_owned_string kdl_unescape_v1(kdl_str const* s)
 {
     kdl_owned_string result;
     kdl_str escaped = *s;
@@ -234,10 +239,170 @@ kdl_owned_string kdl_unescape(kdl_str const* s)
                 ++p;
                 break;
             default:
-                // emit backslash instead
-                _kdl_buf_push_char(&buf, '\\');
-                // don't eat the character after the backslash
+                // stray backslashes are not allowed
+                goto unesc_error;
+            }
+        }
+
+        char const* start = p;
+        while (p != end && *p != '\\') ++p;
+        // copy everything until the backslash
+        if (!_kdl_buf_push_chars(&buf, start, (p - start))) goto unesc_error;
+    }
+
+    return _kdl_buf_to_string(&buf);
+
+unesc_error:
+    _kdl_free_write_buffer(&buf);
+    result = (kdl_owned_string){NULL, 0};
+    return result;
+}
+
+kdl_owned_string kdl_escape_v2(kdl_str const* s, kdl_escape_mode mode)
+{
+    kdl_owned_string result;
+    kdl_str unescaped = *s;
+
+    size_t orig_len = unescaped.len;
+    _kdl_write_buffer buf = _kdl_new_write_buffer(2 * orig_len);
+    if (buf.buf == NULL) goto esc_error;
+
+    uint32_t c;
+
+    while (true) {
+        char const* orig_char = unescaped.data;
+        switch (_kdl_pop_codepoint(&unescaped, &c)) {
+        case KDL_UTF8_EOF:
+            goto esc_eof;
+        case KDL_UTF8_OK:
+            break;
+        default: // error
+            goto esc_error;
+        }
+
+        if (c > 0x10ffff) {
+            // Not a valid character
+            goto esc_error;
+        } else if (c == 0x0A && (mode & KDL_ESCAPE_NEWLINE)) {
+            if (!_kdl_buf_push_chars(&buf, "\\n", 2)) goto esc_error;
+        } else if (c == 0x0D && (mode & KDL_ESCAPE_NEWLINE)) {
+            if (!_kdl_buf_push_chars(&buf, "\\r", 2)) goto esc_error;
+        } else if (c == 0x09 && (mode & KDL_ESCAPE_TAB)) {
+            if (!_kdl_buf_push_chars(&buf, "\\t", 2)) goto esc_error;
+        } else if (c == 0x5C) {
+            if (!_kdl_buf_push_chars(&buf, "\\\\", 2)) goto esc_error;
+        } else if (c == 0x22) {
+            if (!_kdl_buf_push_chars(&buf, "\\\"", 2)) goto esc_error;
+        } else if (c == 0x08 && (mode & KDL_ESCAPE_CONTROL)) {
+            if (!_kdl_buf_push_chars(&buf, "\\b", 2)) goto esc_error;
+        } else if (c == 0x0C && (mode & KDL_ESCAPE_NEWLINE)) {
+            if (!_kdl_buf_push_chars(&buf, "\\f", 2)) goto esc_error;
+        } else if (_kdl_is_illegal_char(KDL_CHARACTER_SET_V2, c)
+            || ((mode & KDL_ESCAPE_CONTROL) && c == 0x0B /* vertical tab */)
+            || ((mode & KDL_ESCAPE_NEWLINE) && (c == 0x85 || c == 0x2028 || c == 0x2029))
+            || ((mode & KDL_ESCAPE_ASCII_MODE) == KDL_ESCAPE_ASCII_MODE && c >= 0x7f)) {
+            // \u escape
+            char u_esc_buf[11];
+            int count = snprintf(u_esc_buf, 11, "\\u{%x}", (unsigned int)c);
+            if (count < 0 || !_kdl_buf_push_chars(&buf, u_esc_buf, count)) {
+                goto esc_error;
+            }
+        } else {
+            // keep the rest
+            _kdl_buf_push_chars(&buf, orig_char, unescaped.data - orig_char);
+        }
+    }
+esc_eof:
+    return _kdl_buf_to_string(&buf);
+
+esc_error:
+    _kdl_free_write_buffer(&buf);
+    result = (kdl_owned_string){NULL, 0};
+    return result;
+}
+
+kdl_owned_string kdl_unescape_v2(kdl_str const* s)
+{
+    kdl_owned_string result;
+    kdl_str escaped = *s;
+
+    size_t orig_len = escaped.len;
+    _kdl_write_buffer buf = _kdl_new_write_buffer(2 * orig_len);
+    if (buf.buf == NULL) goto unesc_error;
+
+    char const* p = s->data;
+    char const* end = p + s->len;
+
+    while (p != end) {
+        if (*p == '\\') {
+            // deal with the escape
+            if (++p == end) goto unesc_error;
+            switch (*p) {
+            case 'n':
+                _kdl_buf_push_char(&buf, '\n');
+                ++p;
                 break;
+            case 'r':
+                _kdl_buf_push_char(&buf, '\r');
+                ++p;
+                break;
+            case 't':
+                _kdl_buf_push_char(&buf, '\t');
+                ++p;
+                break;
+            case 's':
+                _kdl_buf_push_char(&buf, ' ');
+                ++p;
+                break;
+            case '\\':
+                _kdl_buf_push_char(&buf, '\\');
+                ++p;
+                break;
+            case '"':
+                _kdl_buf_push_char(&buf, '\"');
+                ++p;
+                break;
+            case 'b':
+                _kdl_buf_push_char(&buf, '\b');
+                ++p;
+                break;
+            case 'f':
+                _kdl_buf_push_char(&buf, '\f');
+                ++p;
+                break;
+            case 'u': {
+                // u should be followed by {
+                if (++p == end || *(p++) != '{') goto unesc_error;
+                // parse hex
+                uint32_t c = 0;
+                for (;; ++p) {
+                    if (p == end) goto unesc_error;
+                    else if (*p == '}') break;
+                    else if (*p >= '0' && *p <= '9') c = (c << 4) + (*p - '0');
+                    else if (*p >= 'a' && *p <= 'f') c = (c << 4) + (*p - 'a' + 0xa);
+                    else if (*p >= 'A' && *p <= 'F') c = (c << 4) + (*p - 'A' + 0xa);
+                    else goto unesc_error;
+                }
+                if (!_kdl_buf_push_codepoint(&buf, c)) goto unesc_error;
+                ++p;
+                break;
+            }
+            default: {
+                // See if this is a whitespace escape
+                kdl_str tail = (kdl_str){.data = p, .len = end - p};
+                uint32_t c = 0;
+                bool skipped_whitespace = false;
+                while (_kdl_pop_codepoint(&tail, &c) == KDL_UTF8_OK
+                    && (_kdl_is_whitespace(KDL_CHARACTER_SET_V2, c) || _kdl_is_newline(c))) {
+                    skipped_whitespace = true;
+                    // update pointer
+                    p = tail.data;
+                }
+                if (!skipped_whitespace) {
+                    // stray backslashes are not allowed
+                    goto unesc_error;
+                }
+            }
             }
         }
 
