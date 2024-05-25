@@ -22,13 +22,15 @@ void print_usage(char const* argv0, FILE* fp)
     fprintf(fp, "Usage: %s [-h] [-c]\n\n", argv0);
     fprintf(fp, "    -h    Print usage information\n");
     fprintf(fp, "    -c    Emit comments\n");
+    fprintf(fp, "    -1    KDLv1 only\n");
+    fprintf(fp, "    -2    KDLv2 only\n");
 }
 
 int main(int argc, char** argv)
 {
     FILE* in = stdin;
     char const* argv0 = argv[0];
-    kdl_parse_option parse_opts = KDL_DEFAULTS;
+    kdl_parse_option parse_opts = KDL_DETECT_VERSION;
     bool opts_ended = false;
 
     while (--argc) {
@@ -41,6 +43,12 @@ int main(int argc, char** argv)
                     return 0;
                 } else if (*p == 'c') {
                     parse_opts |= KDL_EMIT_COMMENTS;
+                } else if (*p == '1') {
+                    parse_opts &= ~KDL_DETECT_VERSION;
+                    parse_opts |= KDL_VERSION_1;
+                } else if (*p == '2') {
+                    parse_opts &= ~KDL_DETECT_VERSION;
+                    parse_opts |= KDL_VERSION_2;
                 } else if (*p == '-') {
                     opts_ended = true;
                 } else {

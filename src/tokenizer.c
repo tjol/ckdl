@@ -532,12 +532,12 @@ static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer* self, kdl_token* dest
     uint32_t c = 0;
     char const* cur = self->document.data;
     char const* next = NULL;
-    kdl_token_type type = KDL_TOKEN_RAW_STRING;
+    kdl_token_type type = KDL_TOKEN_RAW_STRING_V1;
 
     if (_tok_get_char(self, &cur, &next, &c) != KDL_UTF8_OK) return KDL_TOKENIZER_ERROR;
     switch (c) {
     case 'r':
-        type = KDL_TOKEN_RAW_STRING;
+        type = KDL_TOKEN_RAW_STRING_V1;
         cur = next;
         break;
     case '#':

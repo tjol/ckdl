@@ -17,7 +17,7 @@ static void test_tokenizer_strings(void)
     kdl_tokenizer* tok = kdl_create_string_tokenizer(k_doc_v1);
 
     ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_OK);
-    ASSERT(token.type == KDL_TOKEN_RAW_STRING);
+    ASSERT(token.type == KDL_TOKEN_RAW_STRING_V1);
     ASSERT(token.value.len == 7);
     ASSERT(memcmp(token.value.data, "abc\"def", 7) == 0);
 
@@ -168,6 +168,66 @@ static void test_tokenizer_equals(void)
     kdl_destroy_tokenizer(tok);
 }
 
+static void test_parser_v1_raw_string(void)
+{
+    kdl_str doc = kdl_str_from_cstr("r#\"a\"# ");
+    kdl_event_data* ev;
+
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_VERSION_1);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+    ASSERT(memcmp(ev->name.data, "a", 1) == 0);
+
+    kdl_destroy_parser(parser);
+
+    parser = kdl_create_string_parser(doc, KDL_DETECT_VERSION);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+    ASSERT(memcmp(ev->name.data, "a", 1) == 0);
+
+    kdl_destroy_parser(parser);
+
+    parser = kdl_create_string_parser(doc, KDL_DEFAULTS);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+    ASSERT(memcmp(ev->name.data, "a", 1) == 0);
+
+    kdl_destroy_parser(parser);
+
+    // Test that V1 raw strings are illegal in V2
+    parser = kdl_create_string_parser(doc, KDL_VERSION_2);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_PARSE_ERROR);
+
+    kdl_destroy_parser(parser);
+}
+
+static void test_parser_v2_raw_string(void)
+{
+    kdl_str doc = kdl_str_from_cstr("#\"a\"#");
+    kdl_event_data* ev;
+
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_VERSION_2);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+    ASSERT(memcmp(ev->name.data, "a", 1) == 0);
+
+    kdl_destroy_parser(parser);
+
+    parser = kdl_create_string_parser(doc, KDL_DETECT_VERSION);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+    ASSERT(memcmp(ev->name.data, "a", 1) == 0);
+
+    kdl_destroy_parser(parser);
+}
+
 void TEST_MAIN(void)
 {
     run_test("Tokenizer: KDLv2 strings", &test_tokenizer_strings);
@@ -176,4 +236,6 @@ void TEST_MAIN(void)
     run_test("Tokenizer: byte-order-mark", &test_tokenizer_bom);
     run_test("Tokenizer: illegal codepoints", &test_tokenizer_illegal_codepoints);
     run_test("Tokenizer: KDLv2 equals sign", &test_tokenizer_equals);
+    run_test("Parser: KDLv1 raw string", &test_parser_v1_raw_string);
+    run_test("Parser: KDLv2 raw string", &test_parser_v2_raw_string);
 }
