@@ -372,6 +372,29 @@ static void test_parser_hashtag_null_is_v2(void)
     kdl_destroy_parser(parser);
 }
 
+static void test_parser_kdlv2_whitespace(void)
+{
+    kdl_event_data* ev;
+    kdl_str doc = kdl_str_from_cstr("( a ) n p=1");
+
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_DETECT_VERSION);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+    ASSERT(ev->name.len == 1);
+    ASSERT(ev->name.data[0] == 'n');
+    ASSERT(ev->value.type_annotation.len == 1);
+    ASSERT(ev->value.type_annotation.data[0] == 'a');
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_PROPERTY);
+    ASSERT(ev->name.len == 1);
+    ASSERT(ev->name.data[0] == 'p');
+    ASSERT(ev->value.type == KDL_TYPE_NUMBER);
+
+    kdl_destroy_parser(parser);
+}
+
 void TEST_MAIN(void)
 {
     run_test("Tokenizer: KDLv2 strings", &test_tokenizer_strings);
@@ -387,4 +410,5 @@ void TEST_MAIN(void)
     run_test("Parser: KDLv2 #null", &test_parser_hashtag_null);
     run_test("Parser: null is a syntax error in KDLv2", &test_parser_hashless_syntax_error);
     run_test("Parser: #null means we're in v2, etc.", &test_parser_hashtag_null_is_v2);
+    run_test("Parser: whitespace in new place", &test_parser_kdlv2_whitespace);
 }

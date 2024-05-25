@@ -35,11 +35,12 @@ enum _kdl_parser_state {
     PARSER_FLAG_TYPE_ANNOTATION_ENDED = 0x800,
     PARSER_FLAG_IN_PROPERTY = 0x1000,
     // Bitmask for testing the state
-    PARSER_MASK_WHITESPACE_BANNED =         //
+    PARSER_MASK_NODE_CANNOT_END_HERE =      //
         PARSER_FLAG_TYPE_ANNOTATION_START   //
         | PARSER_FLAG_TYPE_ANNOTATION_END   //
         | PARSER_FLAG_TYPE_ANNOTATION_ENDED //
-        | PARSER_FLAG_IN_PROPERTY
+        | PARSER_FLAG_IN_PROPERTY,
+    PARSER_MASK_WHITESPACE_BANNED_V1 = PARSER_MASK_NODE_CANNOT_END_HERE,
 };
 
 struct _kdl_parser {
@@ -207,17 +208,26 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
 
         switch (token.type) {
         case KDL_TOKEN_WHITESPACE:
-            if (self->state & PARSER_MASK_WHITESPACE_BANNED) {
-                _set_parse_error(self, "Whitespace not allowed here");
-                return &self->event;
-            } else {
-                break; // ignore whitespace
+            if (self->state & PARSER_MASK_WHITESPACE_BANNED_V1) {
+                if (_v1_only(self)) {
+                    _set_parse_error(self, "Whitespace not allowed here");
+                    return &self->event;
+                } else {
+                    _set_version(self, KDL_VERSION_2);
+                }
             }
+            break; // ignore whitespace
+
         case KDL_TOKEN_MULTI_LINE_COMMENT:
         case KDL_TOKEN_SINGLE_LINE_COMMENT:
-            if (self->state & PARSER_MASK_WHITESPACE_BANNED) {
-                _set_parse_error(self, "Comment not allowed here");
-                return &self->event;
+            if (self->state & PARSER_MASK_WHITESPACE_BANNED_V1) {
+                if (_v1_only(self)) {
+
+                    _set_parse_error(self, "Comment not allowed here");
+                    return &self->event;
+                } else {
+                    _set_version(self, KDL_VERSION_2);
+                }
             }
             // Comments may or may not be emitted
             if (self->opt & KDL_EMIT_COMMENTS) {
@@ -313,7 +323,7 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
         switch (token->type) {
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
-            if (self->state & PARSER_MASK_WHITESPACE_BANNED) {
+            if (self->state & PARSER_MASK_NODE_CANNOT_END_HERE) {
                 _set_parse_error(self, "Unexpected end of node (incomplete node name?)");
                 return &self->event;
             } else {
@@ -435,7 +445,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
             _fallthrough_;
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
-            if (self->state & PARSER_MASK_WHITESPACE_BANNED) {
+            if (self->state & PARSER_MASK_NODE_CANNOT_END_HERE) {
                 _set_parse_error(self, "Unexpected end of node (incomplete argument or property?)");
                 return &self->event;
             } else {
