@@ -5,6 +5,7 @@
 #include "bigint.h"
 #include "compat.h"
 #include "grammar.h"
+#include "str.h"
 #include "utf8.h"
 
 #include <math.h>
@@ -113,7 +114,8 @@ void kdl_destroy_parser(kdl_parser* self)
     free(self);
 }
 
-static void _set_version(kdl_parser *self, kdl_parse_option version) {
+static void _set_version(kdl_parser* self, kdl_parse_option version)
+{
     self->opt = (self->opt & ~KDL_PARSE_OPT_VERSION_BITS) | version;
     kdl_tokenizer_set_character_set(self->tokenizer, _default_character_set(self->opt));
 }
@@ -142,7 +144,7 @@ static void _set_comment_event(kdl_parser* self, kdl_token const* token)
 static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token);
 static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token);
 static kdl_event_data* _apply_slashdash(kdl_parser* self);
-static bool _parse_value(kdl_parser * self, kdl_token const* token, kdl_value* val, kdl_owned_string* s);
+static bool _parse_value(kdl_parser* self, kdl_token const* token, kdl_value* val, kdl_owned_string* s);
 static bool _parse_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
 static bool _parse_decimal_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
 static bool _parse_decimal_integer(kdl_str number, kdl_value* val, kdl_owned_string* s);
@@ -547,7 +549,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
     }
 }
 
-static bool _parse_value(kdl_parser * self, kdl_token const* token, kdl_value* val, kdl_owned_string* s)
+static bool _parse_value(kdl_parser* self, kdl_token const* token, kdl_value* val, kdl_owned_string* s)
 {
     kdl_free_string(s);
 
@@ -566,8 +568,11 @@ static bool _parse_value(kdl_parser * self, kdl_token const* token, kdl_value* v
     case KDL_TOKEN_RAW_STRING_V2:
         if (_v2_allowed(self)) {
             _set_version(self, KDL_VERSION_2);
-            // no parsing necessary
-            *s = kdl_clone_str(&token->value);
+            // dedent multi-line string
+            *s = _kdl_dedent_multiline_string(&token->value);
+            if (s->data == NULL) {
+                return false;
+            }
             val->type = KDL_TYPE_STRING;
             val->string = kdl_borrow_str(s);
             return true;
@@ -576,7 +581,11 @@ static bool _parse_value(kdl_parser * self, kdl_token const* token, kdl_value* v
         }
     case KDL_TOKEN_STRING:
         // parse escapes
-        *s = kdl_unescape(&token->value);
+        if (_v2_allowed(self)) {
+            *s = kdl_unescape_v2(&token->value);
+        } else {
+            *s = kdl_unescape_v1(&token->value);
+        }
         if (s->data == NULL) {
             return false;
         } else {
