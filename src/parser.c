@@ -152,7 +152,8 @@ static bool _parse_decimal_float(kdl_str number, kdl_value* val, kdl_owned_strin
 static bool _parse_hex_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
 static bool _parse_octal_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
 static bool _parse_binary_number(kdl_str number, kdl_value* val, kdl_owned_string* s);
-static bool _identifier_is_valid(kdl_str value);
+static bool _identifier_is_valid_v1(kdl_str value);
+static bool _identifier_is_valid_v2(kdl_str value);
 
 kdl_event_data* kdl_parser_next_event(kdl_parser* self)
 {
@@ -593,38 +594,103 @@ static bool _parse_value(kdl_parser* self, kdl_token const* token, kdl_value* va
             val->string = kdl_borrow_str(s);
             return true;
         }
-    case KDL_TOKEN_WORD:
+    case KDL_TOKEN_WORD: {
         if (_str_equals_literal(token->value, "null")) {
+            if (_v1_allowed(self)) {
+                _set_version(self, KDL_VERSION_1);
+                val->type = KDL_TYPE_NULL;
+                return true;
+            } else {
+                return false;
+            }
+        } else if (_str_equals_literal(token->value, "true")) {
+            if (_v1_allowed(self)) {
+                _set_version(self, KDL_VERSION_1);
+                val->type = KDL_TYPE_BOOLEAN;
+                val->boolean = true;
+                return true;
+            } else {
+                return false;
+            }
+        } else if (_str_equals_literal(token->value, "false")) {
+            if (_v1_allowed(self)) {
+                _set_version(self, KDL_VERSION_1);
+                val->type = KDL_TYPE_BOOLEAN;
+                val->boolean = false;
+                return true;
+            } else {
+                return false;
+            }
+        } else if (_v2_allowed(self) && _str_equals_literal(token->value, "#null")) {
+            _set_version(self, KDL_VERSION_2);
             val->type = KDL_TYPE_NULL;
             return true;
-        } else if (_str_equals_literal(token->value, "true")) {
+        } else if (_v2_allowed(self) && _str_equals_literal(token->value, "#true")) {
+            _set_version(self, KDL_VERSION_2);
             val->type = KDL_TYPE_BOOLEAN;
             val->boolean = true;
             return true;
-        } else if (_str_equals_literal(token->value, "false")) {
+        } else if (_v2_allowed(self) && _str_equals_literal(token->value, "#false")) {
+            _set_version(self, KDL_VERSION_2);
             val->type = KDL_TYPE_BOOLEAN;
             val->boolean = false;
+            return true;
+        } else if (_v2_allowed(self) && _str_equals_literal(token->value, "#inf")) {
+            _set_version(self, KDL_VERSION_2);
+            val->type = KDL_TYPE_NUMBER;
+            val->number.type = KDL_NUMBER_TYPE_FLOATING_POINT;
+            val->number.floating_point = INFINITY;
+            return true;
+        } else if (_v2_allowed(self) && _str_equals_literal(token->value, "#-inf")) {
+            _set_version(self, KDL_VERSION_2);
+            val->type = KDL_TYPE_NUMBER;
+            val->number.type = KDL_NUMBER_TYPE_FLOATING_POINT;
+            val->number.floating_point = -INFINITY;
+            return true;
+        } else if (_v2_allowed(self) && _str_equals_literal(token->value, "#nan")) {
+            _set_version(self, KDL_VERSION_2);
+            val->type = KDL_TYPE_NUMBER;
+            val->number.type = KDL_NUMBER_TYPE_FLOATING_POINT;
+            val->number.floating_point = NAN;
             return true;
         }
         // either a number or an identifier
         if (token->value.len >= 1) {
             char first_char = token->value.data[0];
+            int offset = 0;
             // skip sign if present
-            if ((first_char == '+' || first_char == '-') && token->value.len >= 2)
+            if ((first_char == '+' || first_char == '-') && token->value.len >= 2) {
                 first_char = token->value.data[1];
+                offset = 1;
+            }
             if (first_char >= '0' && first_char <= '9') {
                 // first character after sign is a digit, this value should be interpreted as a number
                 return _parse_number(token->value, val, s);
+            } else if (_v2_only(self) && first_char == '.' && token->value.len - offset >= 2) {
+                // check for v2 rule of banned "almost numbers"
+                char second_char = token->value.data[offset + 1];
+                if (second_char >= '0' && second_char <= '9') {
+                    return false;
+                }
             }
         }
-        // this is a regular identifier
-        if (_identifier_is_valid(token->value)) {
+        // this is a regular identifier (or a syntax error)
+        bool is_v1_identifier = _v1_allowed(self) && _identifier_is_valid_v1(token->value);
+        bool is_v2_identifier = _v2_allowed(self) && _identifier_is_valid_v2(token->value);
+        bool is_identifier = is_v1_identifier || is_v2_identifier;
+        if (is_v1_identifier && !is_v2_identifier) {
+            _set_version(self, KDL_VERSION_1);
+        } else if (is_v2_identifier && !is_v1_identifier) {
+            _set_version(self, KDL_VERSION_2);
+        }
+        if (is_identifier) {
             *s = kdl_clone_str(&token->value);
             val->type = KDL_TYPE_STRING;
             val->string = kdl_borrow_str(s);
             return true;
         }
         _fallthrough_;
+    }
     default:
         return false;
     }
@@ -1027,10 +1093,8 @@ error:
     return false;
 }
 
-static bool _identifier_is_valid(kdl_str value)
+static bool _identifier_is_valid_v1(kdl_str value)
 {
-    // Check that this is a valid KDLv1 identifier! The tokenizer accepts KDLv2
-    // identifiers, but the parser doesn't yet
     uint32_t c = 0;
     if (_kdl_pop_codepoint(&value, &c) != KDL_UTF8_OK || !_kdl_is_id_start(KDL_CHARACTER_SET_V1, c)) {
         return false;
@@ -1040,6 +1104,33 @@ static bool _identifier_is_valid(kdl_str value)
         switch (_kdl_pop_codepoint(&value, &c)) {
         case KDL_UTF8_OK:
             if (!_kdl_is_id(KDL_CHARACTER_SET_V1, c)) return false;
+            break;
+        case KDL_UTF8_EOF:
+            return true;
+        default:
+            return false;
+        }
+    }
+}
+
+static bool _identifier_is_valid_v2(kdl_str value)
+{
+    if (_str_equals_literal(value, "inf") || _str_equals_literal(value, "-inf")
+        || _str_equals_literal(value, "nan") || _str_equals_literal(value, "null")
+        || _str_equals_literal(value, "true") || _str_equals_literal(value, "false")) {
+        return false;
+    }
+
+    uint32_t c = 0;
+    if (_kdl_pop_codepoint(&value, &c) != KDL_UTF8_OK || !_kdl_is_id_start(KDL_CHARACTER_SET_V2, c)
+        || c == '#') {
+        return false;
+    }
+
+    while (true) {
+        switch (_kdl_pop_codepoint(&value, &c)) {
+        case KDL_UTF8_OK:
+            if (!_kdl_is_id(KDL_CHARACTER_SET_V2, c) || c == '#') return false;
             break;
         case KDL_UTF8_EOF:
             return true;
