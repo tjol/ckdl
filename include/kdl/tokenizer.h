@@ -21,7 +21,6 @@ enum kdl_token_type {
     KDL_TOKEN_WORD,                // identifier, number, boolean, or null
     KDL_TOKEN_STRING,              // regular string
     KDL_TOKEN_RAW_STRING,          // KDLV1 raw string
-    KDL_TOKEN_RAW_STRING_V2,       // KDLv2 raw string
     KDL_TOKEN_SINGLE_LINE_COMMENT, // // ...
     KDL_TOKEN_SLASHDASH,           // /-
     KDL_TOKEN_MULTI_LINE_COMMENT,  // /* ... */
@@ -31,13 +30,14 @@ enum kdl_token_type {
     KDL_TOKEN_NEWLINE,             // LF, CR, or CRLF
     KDL_TOKEN_SEMICOLON,           // ';'
     KDL_TOKEN_LINE_CONTINUATION,   // '\\'
-    KDL_TOKEN_WHITESPACE           // any regular whitespace
+    KDL_TOKEN_WHITESPACE,          // any regular whitespace
+    KDL_TOKEN_RAW_STRING_V2,       // KDLv2 raw string
 };
 
 // Character set configuration
 enum kdl_character_set {
-    KDL_CHARACTER_SET_V1 = 1,   // V1 character set: BOM is whitespace, vertical tab is not, etc.
-    KDL_CHARACTER_SET_V2 = 2,   // V2 character set: control characters restricted, etc.
+    KDL_CHARACTER_SET_V1 = 1, // V1 character set: BOM is whitespace, vertical tab is not, etc.
+    KDL_CHARACTER_SET_V2 = 2, // V2 character set: control characters restricted, etc.
     KDL_CHARACTER_SET_DEFAULT = KDL_CHARACTER_SET_V2
 };
 

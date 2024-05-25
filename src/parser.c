@@ -15,6 +15,9 @@
 #define _str_equals_literal(k, l)                                                                            \
     ((k).len == (sizeof(l "") - 1) && 0 == memcmp(("" l), (k).data, (sizeof(l) - 1)))
 
+#define KDL_DETECT_VERSION_BIT (kdl_parse_option)0x10000
+#define KDL_PARSE_OPT_VERSION_BITS KDL_DETECT_VERSION
+
 enum _kdl_parser_state {
     // Basic states
     PARSER_OUTSIDE_NODE,
@@ -47,7 +50,7 @@ struct _kdl_parser {
     bool have_next_token;
 };
 
-static void _init_kdl_parser(kdl_parser* self)
+static void _init_kdl_parser(kdl_parser* self, kdl_parse_option opt)
 {
     self->depth = 0;
     self->slashdash_depth = -1;
@@ -56,16 +59,31 @@ static void _init_kdl_parser(kdl_parser* self)
     self->tmp_string_key = (kdl_owned_string){NULL, 0};
     self->tmp_string_value = (kdl_owned_string){NULL, 0};
     self->have_next_token = false;
+
+    // Fallback: use KDLv1 only
+    if (opt & KDL_PARSE_OPT_VERSION_BITS) {
+        opt |= KDL_VERSION_1;
+    }
+
+    self->opt = opt;
+}
+
+inline static kdl_character_set _default_character_set(kdl_parse_option opt)
+{
+    if (opt & KDL_VERSION_2) {
+        return KDL_CHARACTER_SET_V2;
+    } else {
+        return KDL_CHARACTER_SET_V1;
+    }
 }
 
 kdl_parser* kdl_create_string_parser(kdl_str doc, kdl_parse_option opt)
 {
     kdl_parser* self = malloc(sizeof(kdl_parser));
     if (self != NULL) {
-        _init_kdl_parser(self);
+        _init_kdl_parser(self, opt);
         self->tokenizer = kdl_create_string_tokenizer(doc);
-        self->opt = opt;
-        kdl_tokenizer_set_character_set(self->tokenizer, KDL_CHARACTER_SET_V1);
+        kdl_tokenizer_set_character_set(self->tokenizer, _default_character_set(self->opt));
     }
     return self;
 }
@@ -74,10 +92,9 @@ kdl_parser* kdl_create_stream_parser(kdl_read_func read_func, void* user_data, k
 {
     kdl_parser* self = malloc(sizeof(kdl_parser));
     if (self != NULL) {
-        _init_kdl_parser(self);
+        _init_kdl_parser(self, opt);
         self->tokenizer = kdl_create_stream_tokenizer(read_func, user_data);
-        self->opt = opt;
-        kdl_tokenizer_set_character_set(self->tokenizer, KDL_CHARACTER_SET_V1);
+        kdl_tokenizer_set_character_set(self->tokenizer, _default_character_set(self->opt));
     }
     return self;
 }
