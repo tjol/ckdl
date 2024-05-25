@@ -324,98 +324,208 @@ esc_error:
 kdl_owned_string kdl_unescape_v2(kdl_str const* s)
 {
     kdl_owned_string result;
-    kdl_str escaped = *s;
+    kdl_owned_string dedented = _kdl_dedent_multiline_string(s);
+    kdl_str escaped = kdl_borrow_str(&dedented);
 
     size_t orig_len = escaped.len;
-    _kdl_write_buffer buf = _kdl_new_write_buffer(2 * orig_len);
+    _kdl_write_buffer buf = _kdl_new_write_buffer(orig_len);
     if (buf.buf == NULL) goto unesc_error;
+    if (dedented.data == NULL) goto unesc_error;
 
-    char const* p = s->data;
-    char const* end = p + s->len;
+    uint32_t c = 0;
+    kdl_utf8_status status;
 
-    while (p != end) {
-        if (*p == '\\') {
-            // deal with the escape
-            if (++p == end) goto unesc_error;
-            switch (*p) {
+    while ((status = _kdl_pop_codepoint(&escaped, &c)) == KDL_UTF8_OK) {
+        if (_kdl_is_illegal_char(KDL_CHARACTER_SET_V2, c)) {
+            goto unesc_error;
+        } else if (c == '\\') {
+            if (_kdl_pop_codepoint(&escaped, &c) != KDL_UTF8_OK) goto unesc_error;
+
+            switch (c) {
             case 'n':
                 _kdl_buf_push_char(&buf, '\n');
-                ++p;
                 break;
             case 'r':
                 _kdl_buf_push_char(&buf, '\r');
-                ++p;
                 break;
             case 't':
                 _kdl_buf_push_char(&buf, '\t');
-                ++p;
                 break;
             case 's':
                 _kdl_buf_push_char(&buf, ' ');
-                ++p;
                 break;
             case '\\':
                 _kdl_buf_push_char(&buf, '\\');
-                ++p;
                 break;
             case '"':
                 _kdl_buf_push_char(&buf, '\"');
-                ++p;
                 break;
             case 'b':
                 _kdl_buf_push_char(&buf, '\b');
-                ++p;
                 break;
             case 'f':
                 _kdl_buf_push_char(&buf, '\f');
-                ++p;
                 break;
             case 'u': {
                 // u should be followed by {
-                if (++p == end || *(p++) != '{') goto unesc_error;
-                // parse hex
-                uint32_t c = 0;
-                for (;; ++p) {
-                    if (p == end) goto unesc_error;
-                    else if (*p == '}') break;
-                    else if (*p >= '0' && *p <= '9') c = (c << 4) + (*p - '0');
-                    else if (*p >= 'a' && *p <= 'f') c = (c << 4) + (*p - 'a' + 0xa);
-                    else if (*p >= 'A' && *p <= 'F') c = (c << 4) + (*p - 'A' + 0xa);
+                if (_kdl_pop_codepoint(&escaped, &c) != KDL_UTF8_OK || c != '{') goto unesc_error;
+
+                uint32_t r = 0;
+                while ((status = _kdl_pop_codepoint(&escaped, &c)) == KDL_UTF8_OK) {
+                    // parse hex
+                    if (c == '}') break;
+                    else if (c >= '0' && c <= '9') r = (r << 4) + (c - '0');
+                    else if (c >= 'a' && c <= 'f') r = (r << 4) + (c - 'a' + 0xa);
+                    else if (c >= 'A' && c <= 'F') r = (r << 4) + (c - 'A' + 0xa);
                     else goto unesc_error;
                 }
-                if (!_kdl_buf_push_codepoint(&buf, c)) goto unesc_error;
-                ++p;
+                if (status != KDL_UTF8_OK) goto unesc_error;
+                if (!_kdl_buf_push_codepoint(&buf, r)) goto unesc_error;
                 break;
             }
-            default: {
+            default:
                 // See if this is a whitespace escape
-                kdl_str tail = (kdl_str){.data = p, .len = end - p};
-                uint32_t c = 0;
-                bool skipped_whitespace = false;
-                while (_kdl_pop_codepoint(&tail, &c) == KDL_UTF8_OK
-                    && (_kdl_is_whitespace(KDL_CHARACTER_SET_V2, c) || _kdl_is_newline(c))) {
-                    skipped_whitespace = true;
-                    // update pointer
-                    p = tail.data;
-                }
-                if (!skipped_whitespace) {
-                    // stray backslashes are not allowed
+                if (_kdl_is_whitespace(KDL_CHARACTER_SET_V2, c) || _kdl_is_newline(c)) {
+                    kdl_str tail = escaped; // make a copy - we will advance too far
+                    while ((status = _kdl_pop_codepoint(&tail, &c)) == KDL_UTF8_OK
+                        && (_kdl_is_whitespace(KDL_CHARACTER_SET_V2, c) || _kdl_is_newline(c))) {
+                        // skip this char
+                        escaped = tail;
+                    }
+                    // if there is a UTF-8 error, this will be discovered on the
+                    // next iteration of the outer loop
+                    break;
+                } else {
+                    // Not whitespace - backslash is illegal here
                     goto unesc_error;
                 }
             }
-            }
+        } else {
+            // Nothing special, copy the character
+            _kdl_buf_push_codepoint(&buf, c);
         }
-
-        char const* start = p;
-        while (p != end && *p != '\\') ++p;
-        // copy everything until the backslash
-        if (!_kdl_buf_push_chars(&buf, start, (p - start))) goto unesc_error;
     }
 
-    return _kdl_buf_to_string(&buf);
+    if (status == KDL_UTF8_EOF) {
+        // ok
+        kdl_free_string(&dedented);
+        result = _kdl_buf_to_string(&buf);
+        return result;
+    } else {
+        goto unesc_error;
+    }
 
 unesc_error:
+    kdl_free_string(&dedented);
     _kdl_free_write_buffer(&buf);
+    result = (kdl_owned_string){NULL, 0};
+    return result;
+}
+
+kdl_owned_string _kdl_dedent_multiline_string(kdl_str const* s)
+{
+    kdl_owned_string result;
+
+    uint32_t c;
+    kdl_str orig = *s;
+    kdl_utf8_status status;
+
+    char* buf_dedented = NULL;
+
+    // Normalize newlines first
+    _kdl_write_buffer buf_norm_lf = _kdl_new_write_buffer(s->len);
+
+    while ((status = _kdl_pop_codepoint(&orig, &c)) == KDL_UTF8_OK) {
+        if (_kdl_is_newline(c)) {
+            // Normalize CRLF
+            if (c == '\r' && orig.len >= 1 && orig.data[0] == '\n') {
+                ++orig.data;
+                --orig.len;
+            }
+            // every newline becomes a line feed
+            _kdl_buf_push_char(&buf_norm_lf, '\n');
+        } else {
+            _kdl_buf_push_codepoint(&buf_norm_lf, c);
+        }
+    }
+
+    if (status != KDL_UTF8_EOF) {
+        goto dedent_err;
+    }
+
+    kdl_str norm_lf = (kdl_str){.data = buf_norm_lf.buf, .len = buf_norm_lf.str_len};
+
+    // What's after the final newline?
+    char const* final_newline = NULL;
+    for (char const* p = norm_lf.data + norm_lf.len - 1; p >= norm_lf.data; --p) {
+        if (*p == '\n') {
+            final_newline = p;
+            break;
+        }
+    }
+
+    if (final_newline == NULL) {
+        // no newlines = no change
+        return _kdl_buf_to_string(&buf_norm_lf);
+    }
+
+    kdl_str indent
+        = (kdl_str){.data = final_newline + 1, .len = (norm_lf.data + norm_lf.len) - (final_newline + 1)};
+
+    // Check that the indentation is all whitespace
+    kdl_str indent_ = indent;
+    while (_kdl_pop_codepoint(&indent_, &c) == KDL_UTF8_OK) {
+        if (!_kdl_is_whitespace(KDL_CHARACTER_SET_V2, c)) {
+            goto dedent_err;
+        }
+    }
+
+    // The first character of the string MUST be a newline if there are any
+    // newlines.
+    if (norm_lf.data[0] != '\n') {
+        goto dedent_err;
+    }
+
+    // Remove the whitespace from the beginning of all lines
+    buf_dedented = malloc(norm_lf.len - 1);
+    char* out = buf_dedented;
+    char const* in = norm_lf.data; // skip initial LF
+    char const* end = norm_lf.data + norm_lf.len;
+    bool at_start = true;
+    // copy the rest of the string
+    while (in < end) {
+        *out = *in;
+        if (*in == '\n') {
+            if (in + 1 < end && *(in + 1) == '\n') {
+                // double newline - ok
+            } else {
+                // check indent
+                if (memcmp(in + 1, indent.data, indent.len) == 0) {
+                    // skip indent
+                    in += indent.len;
+                } else {
+                    goto dedent_err;
+                }
+            }
+        }
+        if (!at_start) {
+            // Skip the initial newline => only advance the output pointer
+            // if we're somewhere other than the initial newline
+            ++out;
+        }
+        ++in;
+        at_start = false;
+    }
+
+    size_t len = out - buf_dedented;
+    // Strip the final line feed
+    if (len > 0 && buf_dedented[len - 1] == '\n') --len;
+    buf_dedented = realloc(buf_dedented, len);
+    return (kdl_owned_string){.data = buf_dedented, .len = len};
+
+dedent_err:
+    _kdl_free_write_buffer(&buf_norm_lf);
+    if (buf_dedented != NULL) free(buf_dedented);
     result = (kdl_owned_string){NULL, 0};
     return result;
 }

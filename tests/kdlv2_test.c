@@ -169,7 +169,7 @@ static void test_tokenizer_equals(void)
 
 static void test_string_escapes(void)
 {
-    kdl_str s = kdl_str_from_cstr("\\s\\  \n\n\t  \\u{1b}");
+    kdl_str s = kdl_str_from_cstr("\\s\\  \t  \\u{1b}\\\x0b    ");
     kdl_owned_string unesc = kdl_unescape_v2(&s);
 
     ASSERT(unesc.len == 2);
@@ -183,6 +183,54 @@ static void test_string_escapes(void)
 
     kdl_free_string(&unesc);
     kdl_free_string(&reesc);
+}
+
+static void test_multiline_strings(void)
+{
+    kdl_str expected = kdl_str_from_cstr("test\n\nstring");
+    kdl_str escaped_variants[] = {
+        kdl_str_from_cstr("test\\n\\nstring"),
+        kdl_str_from_cstr("\ntest\\n\\nstring\n"),
+        kdl_str_from_cstr("\r\ntest\r\rstring\n"),
+        kdl_str_from_cstr("\n \t test\f \t \f \t string\n \t "),
+        kdl_str_from_cstr("\n  te\\\n\n  st\n\n  string\n  "),
+    };
+    int n_escaped_variants = sizeof(escaped_variants) / sizeof(escaped_variants[0]);
+
+    for (int i = 0; i < n_escaped_variants; ++i) {
+        kdl_owned_string result = kdl_unescape_v2(&escaped_variants[i]);
+        ASSERT(result.len == expected.len);
+        ASSERT(memcmp(result.data, expected.data, expected.len) == 0);
+        kdl_free_string(&result);
+    }
+
+    kdl_str invalid_strings[] = {
+        kdl_str_from_cstr("\na\n  "),         // indent missing at start
+        kdl_str_from_cstr("\n  \r\t\ta\n  "), // indent wrong in middle
+    };
+    int n_invalid_strings = sizeof(invalid_strings) / sizeof(invalid_strings[0]);
+
+    for (int i = 0; i < n_invalid_strings; ++i) {
+        kdl_owned_string result = kdl_unescape_v2(&invalid_strings[i]);
+        ASSERT(result.data == NULL);
+    }
+
+    kdl_str edge_cases[][2] = {
+        {kdl_str_from_cstr("\n\t"),              kdl_str_from_cstr("")       }, // empty
+        {kdl_str_from_cstr("\n\n  hello\n  "),   kdl_str_from_cstr("\nhello")}, // double newline at start
+        {kdl_str_from_cstr("\n  \\\n     \n  "), kdl_str_from_cstr("")       }, // escaped newline within
+        {kdl_str_from_cstr("\n  \n     \n  "),   kdl_str_from_cstr("\n   ")  }, // whitespace only
+    };
+    int n_edge_cases = sizeof(edge_cases) / sizeof(edge_cases[0]);
+
+    for (int i = 0; i < n_edge_cases; ++i) {
+        kdl_str const* input = &edge_cases[i][0];
+        kdl_str const* output = &edge_cases[i][1];
+        kdl_owned_string result = kdl_unescape_v2(input);
+        ASSERT(result.len == output->len);
+        ASSERT(memcmp(result.data, output->data, output->len) == 0);
+        kdl_free_string(&result);
+    }
 }
 
 static void test_parser_v1_raw_string(void)
@@ -254,6 +302,7 @@ void TEST_MAIN(void)
     run_test("Tokenizer: illegal codepoints", &test_tokenizer_illegal_codepoints);
     run_test("Tokenizer: KDLv2 equals sign", &test_tokenizer_equals);
     run_test("Strings: KDLv2 escapes", &test_string_escapes);
+    run_test("Strings: KDLv2 multi-line strings", &test_multiline_strings);
     run_test("Parser: KDLv1 raw string", &test_parser_v1_raw_string);
     run_test("Parser: KDLv2 raw string", &test_parser_v2_raw_string);
 }

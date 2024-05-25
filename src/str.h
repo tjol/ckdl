@@ -22,4 +22,6 @@ bool _kdl_buf_push_codepoint(_kdl_write_buffer* buf, uint32_t c);
 kdl_owned_string _kdl_buf_to_string(_kdl_write_buffer* buf);
 void _kdl_free_write_buffer(_kdl_write_buffer* buf);
 
+kdl_owned_string _kdl_dedent_multiline_string(kdl_str const* s);
+
 #endif // KDL_INTERNAL_STR_H_
