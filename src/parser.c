@@ -410,7 +410,20 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         }
     }
 
-    if (self->state & PARSER_FLAG_MAYBE_IN_PROPERTY) {
+    if (token->type == KDL_TOKEN_LINE_CONTINUATION) {
+        if (self->state & PARSER_MASK_WHITESPACE_BANNED_V1) {
+            if (_v1_only(self)) {
+                _set_parse_error(self, "Line continuation not allowed here");
+                return &self->event;
+            } else {
+                _set_version(self, KDL_VERSION_2);
+            }
+        } else if (self->state & PARSER_MASK_WHITESPACE_CONTEXTUALLY_BANNED) {
+            self->state |= PARSER_FLAG_CONTEXTUALLY_ILLEGAL_WHITESPACE;
+        }
+        self->state |= PARSER_FLAG_LINE_CONT;
+        return NULL;
+    } else if (self->state & PARSER_FLAG_MAYBE_IN_PROPERTY) {
         if (token->type == KDL_TOKEN_EQUALS) {
             // Property value comes next
             self->state = (self->state & ~PARSER_FLAG_MAYBE_IN_PROPERTY) | PARSER_FLAG_IN_PROPERTY;
@@ -487,9 +500,6 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         }
     } else {
         switch (token->type) {
-        case KDL_TOKEN_LINE_CONTINUATION:
-            self->state |= PARSER_FLAG_LINE_CONT;
-            return NULL;
         case KDL_TOKEN_END_CHILDREN:
             // end this node, and process the token again
             self->next_token = *token;
