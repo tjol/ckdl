@@ -380,7 +380,9 @@ kdl_owned_string kdl_unescape_v2(kdl_str const* s)
                     else goto unesc_error;
                 }
                 if (status != KDL_UTF8_OK) goto unesc_error;
-                if (!_kdl_buf_push_codepoint(&buf, r)) goto unesc_error;
+                if ((0xD800 <= r && r <= 0xDFFF) // only Unicode Scalar values are allowed in strings
+                    || !_kdl_buf_push_codepoint(&buf, r))
+                    goto unesc_error;
                 break;
             }
             default:
