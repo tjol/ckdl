@@ -32,10 +32,17 @@ bool kdl_cat_file_to_file(FILE* in, FILE* out)
 
 bool kdl_cat_file_to_file_opt(FILE* in, FILE* out, kdl_emitter_options const* opt)
 {
+    kdl_cat_file_to_file_ex(in, out, KDL_DEFAULTS, opt);
+}
+
+bool kdl_cat_file_to_file_ex(FILE* in, FILE* out, kdl_parse_option parse_opt, kdl_emitter_options const* emit_opt)
+{
     bool ok = true;
 
-    kdl_parser* parser = kdl_create_stream_parser(&read_func, (void*)in, KDL_DEFAULTS);
-    kdl_emitter* emitter = kdl_create_stream_emitter(&write_func, (void*)out, opt);
+    parse_opt &= ~KDL_EMIT_COMMENTS;
+
+    kdl_parser* parser = kdl_create_stream_parser(&read_func, (void*)in, parse_opt);
+    kdl_emitter* emitter = kdl_create_stream_emitter(&write_func, (void*)out, emit_opt);
 
     if (parser == NULL || emitter == NULL) {
         ok = false;
@@ -55,10 +62,17 @@ kdl_owned_string kdl_cat_file_to_string(FILE* in)
 
 kdl_owned_string kdl_cat_file_to_string_opt(FILE* in, kdl_emitter_options const* opt)
 {
+    return kdl_cat_file_to_string_ex(in, KDL_DEFAULTS, opt);
+}
+
+kdl_owned_string kdl_cat_file_to_string_ex(FILE* in, kdl_parse_option parse_opt, kdl_emitter_options const* emit_opt)
+{
     kdl_owned_string result = {NULL, 0};
 
-    kdl_parser* parser = kdl_create_stream_parser(&read_func, (void*)in, KDL_DEFAULTS);
-    kdl_emitter* emitter = kdl_create_buffering_emitter(opt);
+    parse_opt &= ~KDL_EMIT_COMMENTS;
+
+    kdl_parser* parser = kdl_create_stream_parser(&read_func, (void*)in, parse_opt);
+    kdl_emitter* emitter = kdl_create_buffering_emitter(emit_opt);
 
     bool ok = true;
     if (parser == NULL || emitter == NULL) {
