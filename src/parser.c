@@ -644,13 +644,26 @@ static bool _parse_value(kdl_parser* self, kdl_token const* token, kdl_value* va
         } else {
             return false;
         }
-    case KDL_TOKEN_STRING:
+    case KDL_TOKEN_STRING: {
         // parse escapes
-        if (_v2_allowed(self)) {
-            *s = kdl_unescape_v2(&token->value);
-        } else {
-            *s = kdl_unescape_v1(&token->value);
+        kdl_owned_string v1_str = (kdl_owned_string){NULL, 0};
+        kdl_owned_string v2_str = (kdl_owned_string){NULL, 0};
+
+        if (_v1_allowed(self)) v1_str = kdl_unescape_v1(&token->value);
+        if (_v2_allowed(self)) v2_str = kdl_unescape_v2(&token->value);
+
+        if (v1_str.data == NULL && v2_str.data != NULL) {
+            _set_version(self, KDL_VERSION_2);
+            *s = v2_str;
+        } else if (v1_str.data != NULL && v2_str.data == NULL) {
+            _set_version(self, KDL_VERSION_1);
+            *s = v1_str;
+        } else if (v1_str.data != NULL && v2_str.data != NULL) {
+            // Could be either version, used KDLv2 value
+            *s = v2_str;
+            kdl_free_string(&v1_str);
         }
+
         if (s->data == NULL) {
             return false;
         } else {
@@ -658,6 +671,7 @@ static bool _parse_value(kdl_parser* self, kdl_token const* token, kdl_value* va
             val->string = kdl_borrow_str(s);
             return true;
         }
+    }
     case KDL_TOKEN_WORD: {
         if (_str_equals_literal(token->value, "null")) {
             if (_v1_allowed(self)) {
