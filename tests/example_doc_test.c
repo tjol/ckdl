@@ -1,3 +1,7 @@
+#ifndef KDL_VERSION
+#    define KDL_VERSION KDL_VERSION_1
+#endif
+
 #include "fs_util.h"
 #include "test_util.h"
 
@@ -39,11 +43,14 @@ static void do_test_case(void* user_data)
     test_opts.float_mode.capital_e = true;
     test_opts.float_mode.always_write_decimal_point = true;
     test_opts.float_mode.exponent_plus = true;
+    test_opts.version = KDL_VERSION;
+
+    kdl_parse_option parse_opts = KDL_VERSION == KDL_VERSION_1 ? KDL_READ_VERSION_1 : KDL_READ_VERSION_2;
 
     struct test_case* tc = (struct test_case*)user_data;
     FILE* in = fopen(tc->input_path, "r");
     ASSERT(in != NULL);
-    kdl_owned_string s = kdl_cat_file_to_string_opt(in, &test_opts);
+    kdl_owned_string s = kdl_cat_file_to_string_ex(in, parse_opts, &test_opts);
     if (tc->ground_truth_path == NULL) {
         // parse error expected
         ASSERT2(s.data == NULL, "Parsing should fail");

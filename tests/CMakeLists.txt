@@ -115,17 +115,34 @@ add_test(kdlv2_test kdlv2_test)
 ####
 set(KDL_TEST_CASES_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/test_documents/upstream/1.0.0)
 # Ignore some tests which require unsupported number representations
-set(FUZZY_KDL_TESTS_LIST
+set(FUZZY_KDL_TESTS_LIST_V1
     no_decimal_exponent.kdl # float representation not consistent with other test cases
 )
-string(REPLACE ";" ":" FUZZY_KDL_TESTS "${FUZZY_KDL_TESTS_LIST}")
+string(REPLACE ";" ":" FUZZY_KDL_TESTS_V1 "${FUZZY_KDL_TESTS_LIST_V1}")
 
-add_executable(example_doc_test example_doc_test.c)
-target_link_libraries(example_doc_test kdl test_util ckdl-cat)
-target_compile_definitions(example_doc_test PRIVATE
+add_executable(example_doc_test_v1 example_doc_test.c)
+target_link_libraries(example_doc_test_v1 kdl test_util ckdl-cat)
+target_compile_definitions(example_doc_test_v1 PRIVATE
     "KDL_TEST_CASES_ROOT=\"${KDL_TEST_CASES_ROOT}\""
-    "FUZZY_KDL_TESTS=\"${FUZZY_KDL_TESTS}\"")
-add_test(NAME example_doc_test COMMAND "$<TARGET_FILE:example_doc_test>" "${KDL_TEST_CASES_ROOT}")
+    "FUZZY_KDL_TESTS=\"${FUZZY_KDL_TESTS_V1}\""
+    "KDL_VERSION=KDL_VERSION_1")
+add_test(NAME example_doc_test_v1 COMMAND "$<TARGET_FILE:example_doc_test_v1>" "${KDL_TEST_CASES_ROOT}")
+#################################################
+# Upstream test suite for KDL version 2.0.0
+####
+set(KDL_TEST_CASES_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/test_documents/upstream/2.0.0.draft)
+# Ignore some tests which require unsupported number representations
+set(FUZZY_KDL_TESTS_LIST_V2
+)
+string(REPLACE ";" ":" FUZZY_KDL_TESTS_V2 "${FUZZY_KDL_TESTS_LIST_V2}")
+
+add_executable(example_doc_test_v2 example_doc_test.c)
+target_link_libraries(example_doc_test_v2 kdl test_util ckdl-cat)
+target_compile_definitions(example_doc_test_v2 PRIVATE
+    "KDL_TEST_CASES_ROOT=\"${KDL_TEST_CASES_ROOT}\""
+    "FUZZY_KDL_TESTS=\"${FUZZY_KDL_TESTS_V2}\""
+    "KDL_VERSION=KDL_VERSION_2")
+# add_test(NAME example_doc_test_v2 COMMAND "$<TARGET_FILE:example_doc_test_v2>" "${KDL_TEST_CASES_ROOT}")
 #################################################
 
 if (WIN32 AND BUILD_SHARED_LIBS)
