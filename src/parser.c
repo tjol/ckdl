@@ -1174,14 +1174,14 @@ error:
 static bool _identifier_is_valid_v1(kdl_str value)
 {
     uint32_t c = 0;
-    if (_kdl_pop_codepoint(&value, &c) != KDL_UTF8_OK || !_kdl_is_word_start(KDL_CHARACTER_SET_V1, c)) {
+    if (_kdl_pop_codepoint(&value, &c) != KDL_UTF8_OK || !_kdl_is_id_start(KDL_CHARACTER_SET_V1, c)) {
         return false;
     }
 
     while (true) {
         switch (_kdl_pop_codepoint(&value, &c)) {
         case KDL_UTF8_OK:
-            if (!_kdl_is_word_char(KDL_CHARACTER_SET_V1, c)) return false;
+            if (!_kdl_is_id(KDL_CHARACTER_SET_V1, c)) return false;
             break;
         case KDL_UTF8_EOF:
             return true;
@@ -1200,14 +1200,14 @@ static bool _identifier_is_valid_v2(kdl_str value)
     }
 
     uint32_t c = 0;
-    if (_kdl_pop_codepoint(&value, &c) != KDL_UTF8_OK || !_kdl_is_word_start(KDL_CHARACTER_SET_V2, c)) {
+    if (_kdl_pop_codepoint(&value, &c) != KDL_UTF8_OK || !_kdl_is_id_start(KDL_CHARACTER_SET_V2, c)) {
         return false;
     }
 
     while (true) {
         switch (_kdl_pop_codepoint(&value, &c)) {
         case KDL_UTF8_OK:
-            if (!_kdl_is_word_char(KDL_CHARACTER_SET_V2, c)) return false;
+            if (!_kdl_is_id(KDL_CHARACTER_SET_V2, c)) return false;
             break;
         case KDL_UTF8_EOF:
             return true;
