@@ -106,11 +106,13 @@ void TEST_MAIN(void)
     for (char* p = fuzzy_buf; *p; ++p)
         if (*p == ':') ++n_fuzzy;
     char** fuzzy_test_cases = malloc(n_fuzzy * sizeof(char*));
-    fuzzy_test_cases[0] = fuzzy_buf;
-    for (char *p = fuzzy_buf, **e = &fuzzy_test_cases[1]; *p; ++p) {
-        if (*p == ':') {
-            *p = '\0';
-            *(e++) = p + 1;
+    if (n_fuzzy > 0) {
+        fuzzy_test_cases[0] = fuzzy_buf;
+        for (char *p = fuzzy_buf, **e = &fuzzy_test_cases[1]; *p; ++p) {
+            if (*p == ':') {
+                *p = '\0';
+                *(e++) = p + 1;
+            }
         }
     }
 
@@ -121,11 +123,13 @@ void TEST_MAIN(void)
     for (char* p = skip_buf; *p; ++p)
         if (*p == ':') ++n_skip;
     char** skipped_test_cases = malloc(n_skip * sizeof(char*));
-    skipped_test_cases[0] = skip_buf;
-    for (char *p = skip_buf, **e = &skipped_test_cases[1]; *p; ++p) {
-        if (*p == ':') {
-            *p = '\0';
-            *(e++) = p + 1;
+    if (n_skip > 0) {
+        skipped_test_cases[0] = skip_buf;
+        for (char *p = skip_buf, **e = &skipped_test_cases[1]; *p; ++p) {
+            if (*p == ':') {
+                *p = '\0';
+                *(e++) = p + 1;
+            }
         }
     }
 
