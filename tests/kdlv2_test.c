@@ -170,13 +170,13 @@ static void test_tokenizer_equals(void)
 static void test_string_escapes(void)
 {
     kdl_str s = kdl_str_from_cstr("\\s\\  \t  \\u{1b}\\\x0b    ");
-    kdl_owned_string unesc = kdl_unescape_v2(&s);
+    kdl_owned_string unesc = kdl_unescape_v(KDL_VERSION_2, &s);
 
     ASSERT(unesc.len == 2);
     ASSERT(memcmp(unesc.data, " \x1b", 2) == 0);
 
     kdl_str unesc_ = kdl_borrow_str(&unesc);
-    kdl_owned_string reesc = kdl_escape_v2(&unesc_, KDL_ESCAPE_DEFAULT);
+    kdl_owned_string reesc = kdl_escape_v(KDL_VERSION_2, &unesc_, KDL_ESCAPE_DEFAULT);
 
     ASSERT(reesc.len == 7);
     ASSERT(memcmp(reesc.data, " \\u{1b}", 7) == 0);
@@ -198,7 +198,7 @@ static void test_multiline_strings(void)
     int n_escaped_variants = sizeof(escaped_variants) / sizeof(escaped_variants[0]);
 
     for (int i = 0; i < n_escaped_variants; ++i) {
-        kdl_owned_string result = kdl_unescape_v2(&escaped_variants[i]);
+        kdl_owned_string result = kdl_unescape_v(KDL_VERSION_2, &escaped_variants[i]);
         ASSERT(result.len == expected.len);
         ASSERT(memcmp(result.data, expected.data, expected.len) == 0);
         kdl_free_string(&result);
@@ -211,7 +211,7 @@ static void test_multiline_strings(void)
     int n_invalid_strings = sizeof(invalid_strings) / sizeof(invalid_strings[0]);
 
     for (int i = 0; i < n_invalid_strings; ++i) {
-        kdl_owned_string result = kdl_unescape_v2(&invalid_strings[i]);
+        kdl_owned_string result = kdl_unescape_v(KDL_VERSION_2, &invalid_strings[i]);
         ASSERT(result.data == NULL);
     }
 
@@ -226,7 +226,7 @@ static void test_multiline_strings(void)
     for (int i = 0; i < n_edge_cases; ++i) {
         kdl_str const* input = &edge_cases[i][0];
         kdl_str const* output = &edge_cases[i][1];
-        kdl_owned_string result = kdl_unescape_v2(input);
+        kdl_owned_string result = kdl_unescape_v(KDL_VERSION_2, input);
         ASSERT(result.len == output->len);
         ASSERT(memcmp(result.data, output->data, output->len) == 0);
         kdl_free_string(&result);
