@@ -520,28 +520,30 @@ kdl_owned_string _kdl_dedent_multiline_string(kdl_str const* s)
     char const* end = norm_lf.data + norm_lf.len;
     bool at_start = true;
     // copy the rest of the string
-    while (in < end) {
-        *out = *in;
-        if (*in == '\n') {
-            if (in + 1 < end && *(in + 1) == '\n') {
-                // double newline - ok
-            } else {
-                // check indent
-                if (memcmp(in + 1, indent.data, indent.len) == 0) {
-                    // skip indent
-                    in += indent.len;
+    if (norm_lf.len > 1) {
+        while (in < end) {
+            *out = *in;
+            if (*in == '\n') {
+                if (in + 1 < end && *(in + 1) == '\n') {
+                    // double newline - ok
                 } else {
-                    goto dedent_err;
+                    // check indent
+                    if (memcmp(in + 1, indent.data, indent.len) == 0) {
+                        // skip indent
+                        in += indent.len;
+                    } else {
+                        goto dedent_err;
+                    }
                 }
             }
+            if (!at_start) {
+                // Skip the initial newline => only advance the output pointer
+                // if we're somewhere other than the initial newline
+                ++out;
+            }
+            ++in;
+            at_start = false;
         }
-        if (!at_start) {
-            // Skip the initial newline => only advance the output pointer
-            // if we're somewhere other than the initial newline
-            ++out;
-        }
-        ++in;
-        at_start = false;
     }
 
     size_t len = out - buf_dedented;

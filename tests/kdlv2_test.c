@@ -217,6 +217,7 @@ static void test_multiline_strings(void)
 
     kdl_str edge_cases[][2] = {
         {kdl_str_from_cstr("\n\t"),              kdl_str_from_cstr("")       }, // empty
+        {kdl_str_from_cstr("\n"),                kdl_str_from_cstr("")       }, // empty
         {kdl_str_from_cstr("\n\n  hello\n  "),   kdl_str_from_cstr("\nhello")}, // double newline at start
         {kdl_str_from_cstr("\n  \\\n     \n  "), kdl_str_from_cstr("")       }, // escaped newline within
         {kdl_str_from_cstr("\n  \n     \n  "),   kdl_str_from_cstr("\n   ")  }, // whitespace only
