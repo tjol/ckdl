@@ -182,8 +182,7 @@ bool _kdl_is_end_of_word(kdl_character_set charset, uint32_t c)
 {
     // is this character something that could terminate an identifier (or number) in some situation?
     return _kdl_is_whitespace(charset, c) || _kdl_is_newline(c) //
-        || c == ';' || c == ')' || c == '}' || c == '/' || c == '\\' || _kdl_is_equals_sign(charset, c)
-        || _kdl_is_illegal_char(charset, c);
+        || c == ';' || c == ')' || c == '}' || c == '/' || c == '\\' || _kdl_is_equals_sign(charset, c);
 }
 
 bool _kdl_is_illegal_char(kdl_character_set charset, uint32_t c)
