@@ -375,7 +375,7 @@ static void test_parser_hashtag_null_is_v2(void)
 static void test_parser_kdlv2_whitespace(void)
 {
     kdl_event_data* ev;
-    kdl_str doc = kdl_str_from_cstr("( a ) n p=1");
+    kdl_str doc = kdl_str_from_cstr("( a ) n p = 1");
 
     kdl_parser* parser = kdl_create_string_parser(doc, KDL_DETECT_VERSION);
 
