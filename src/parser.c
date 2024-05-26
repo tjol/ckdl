@@ -60,7 +60,8 @@ struct _kdl_parser {
     kdl_owned_string tmp_string_type;
     kdl_owned_string tmp_string_key;
     kdl_owned_string tmp_string_value;
-    kdl_owned_string waiting_string;
+    kdl_str waiting_type_annotation;
+    kdl_owned_string waiting_prop_name;
     kdl_token next_token;
     bool have_next_token;
 };
@@ -73,7 +74,8 @@ static void _init_kdl_parser(kdl_parser* self, kdl_parse_option opt)
     self->tmp_string_type = (kdl_owned_string){NULL, 0};
     self->tmp_string_key = (kdl_owned_string){NULL, 0};
     self->tmp_string_value = (kdl_owned_string){NULL, 0};
-    self->waiting_string = (kdl_owned_string){NULL, 0};
+    self->waiting_type_annotation = (kdl_str){NULL, 0};
+    self->waiting_prop_name = (kdl_owned_string){NULL, 0};
     self->have_next_token = false;
 
     // Fallback: use KDLv1 only
@@ -121,6 +123,7 @@ void kdl_destroy_parser(kdl_parser* self)
     kdl_free_string(&self->tmp_string_type);
     kdl_free_string(&self->tmp_string_key);
     kdl_free_string(&self->tmp_string_value);
+    kdl_free_string(&self->waiting_prop_name);
     free(self);
 }
 
@@ -318,7 +321,7 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
                 // We're good, this is an identifier
                 self->state
                     = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_START) | PARSER_FLAG_TYPE_ANNOTATION_END;
-                self->event.value.type_annotation = tmp_val.string;
+                self->waiting_type_annotation = tmp_val.string;
                 return NULL;
             } else {
                 _set_parse_error(self, "Expected identifier or string");
@@ -371,6 +374,10 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
                 self->state = PARSER_IN_NODE;
                 self->event.event = KDL_EVENT_START_NODE;
                 self->event.name = tmp_val.string;
+                if (self->waiting_type_annotation.data != NULL) {
+                    self->event.value.type_annotation = self->waiting_type_annotation;
+                    self->waiting_type_annotation = (kdl_str){NULL, 0};
+                }
                 ++self->depth;
                 ev = _apply_slashdash(self);
                 return ev;
@@ -461,8 +468,8 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
 
             self->event.event = KDL_EVENT_ARGUMENT;
             self->event.value.type = KDL_TYPE_STRING;
-            self->tmp_string_value = self->waiting_string;
-            self->waiting_string = (kdl_owned_string){NULL, 0};
+            self->tmp_string_value = self->waiting_prop_name;
+            self->waiting_prop_name = (kdl_owned_string){NULL, 0};
             self->event.value.string = kdl_borrow_str(&self->tmp_string_value);
             ev = _apply_slashdash(self);
             self->state = PARSER_IN_NODE;
@@ -483,7 +490,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
                 // We're good, this is an identifier
                 self->state
                     = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_START) | PARSER_FLAG_TYPE_ANNOTATION_END;
-                self->event.value.type_annotation = tmp_val.string;
+                self->waiting_type_annotation = tmp_val.string;
                 return NULL;
             } else {
                 _set_parse_error(self, "Expected identifier or string");
@@ -535,10 +542,10 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
             }
 
             // Can this be a property key?
-            if (self->event.value.type_annotation.data == NULL && (self->state & PARSER_FLAG_IN_PROPERTY) == 0
+            if (self->waiting_type_annotation.data == NULL && (self->state & PARSER_FLAG_IN_PROPERTY) == 0
                 && self->event.value.type == KDL_TYPE_STRING) {
-                // carry over the potential name in waiting_string
-                self->waiting_string = self->tmp_string_value;
+                // carry over the potential name in waiting_prop_name
+                self->waiting_prop_name = self->tmp_string_value;
                 self->tmp_string_value = (kdl_owned_string){NULL, 0};
                 self->event.value.type = KDL_TYPE_NULL;
                 self->state |= PARSER_FLAG_MAYBE_IN_PROPERTY;
@@ -563,9 +570,13 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
             }
 
             // We can return the event
+            if (self->waiting_type_annotation.data != NULL) {
+                self->event.value.type_annotation = self->waiting_type_annotation;
+                self->waiting_type_annotation = (kdl_str){NULL, 0};
+            }
             if (self->state & PARSER_FLAG_IN_PROPERTY) {
-                self->tmp_string_key = self->waiting_string;
-                self->waiting_string = (kdl_owned_string){NULL, 0};
+                self->tmp_string_key = self->waiting_prop_name;
+                self->waiting_prop_name = (kdl_owned_string){NULL, 0};
                 self->event.name = kdl_borrow_str(&self->tmp_string_key);
                 self->event.event = KDL_EVENT_PROPERTY;
             } else {

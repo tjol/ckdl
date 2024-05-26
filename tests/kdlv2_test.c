@@ -419,6 +419,38 @@ static void test_parser_comment_in_property(void)
     kdl_destroy_parser(parser);
 }
 
+
+static void test_parser_comment_in_type(void)
+{
+    kdl_event_data* ev;
+    kdl_str doc = kdl_str_from_cstr("(/* */ t1) node (t2 /* */)arg");
+
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_EMIT_COMMENTS | KDL_READ_VERSION_2);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_COMMENT);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+    ASSERT(ev->value.type_annotation.len == 2);
+    ASSERT(memcmp(ev->value.type_annotation.data, "t1", 2) == 0);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_COMMENT);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_ARGUMENT);
+    ASSERT(ev->name.data == NULL);
+    ASSERT(ev->value.type == KDL_TYPE_STRING);
+    ASSERT(ev->value.string.len == 3);
+    ASSERT(memcmp(ev->value.string.data, "arg", 3) == 0);
+    ASSERT(ev->value.type_annotation.len == 2);
+    ASSERT(memcmp(ev->value.type_annotation.data, "t2", 2) == 0);
+
+    kdl_destroy_parser(parser);
+}
+
+
 void TEST_MAIN(void)
 {
     run_test("Tokenizer: KDLv2 strings", &test_tokenizer_strings);
@@ -436,4 +468,5 @@ void TEST_MAIN(void)
     run_test("Parser: #null means we're in v2, etc.", &test_parser_hashtag_null_is_v2);
     run_test("Parser: whitespace in new place", &test_parser_kdlv2_whitespace);
     run_test("Parser: comment in property definition", &test_parser_comment_in_property);
+    run_test("Parser: comment in type annotation", &test_parser_comment_in_type);
 }
