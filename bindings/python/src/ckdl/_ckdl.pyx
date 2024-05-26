@@ -499,7 +499,12 @@ def parse(str kdl_text, *, version=1):
     elif version in (2, '2', '2.0.0'):
         parse_opt = KDL_READ_VERSION_2
     elif version in (None, 'either', 'any', 'detect'):
-        parse_opt = KDL_DETECT_VERSION
+        try:
+            return parse(kdl_text, version=2)
+        except ParseError:
+            return parse(kdl_text, version=1)
+    else:
+        raise ValueError(f"Unexpected value for version: {version}")
 
     byte_str = kdl_text.encode("utf-8")
     kdl_doc.data = byte_str
