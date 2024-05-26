@@ -154,6 +154,6 @@ add_test(NAME example_doc_test_v2 COMMAND "$<TARGET_FILE:example_doc_test_v2>" "
 
 if (WIN32 AND BUILD_SHARED_LIBS)
     # Copy kdl.dll to the test folder so that the tests work
-    add_custom_command(TARGET example_doc_test POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:kdl> $<TARGET_FILE_DIR:example_doc_test>)
+    add_custom_command(TARGET parser_test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:kdl> $<TARGET_FILE_DIR:parser_test>)
 endif()
