@@ -60,6 +60,7 @@ struct _kdl_parser {
     kdl_owned_string tmp_string_type;
     kdl_owned_string tmp_string_key;
     kdl_owned_string tmp_string_value;
+    kdl_owned_string waiting_string;
     kdl_token next_token;
     bool have_next_token;
 };
@@ -72,6 +73,7 @@ static void _init_kdl_parser(kdl_parser* self, kdl_parse_option opt)
     self->tmp_string_type = (kdl_owned_string){NULL, 0};
     self->tmp_string_key = (kdl_owned_string){NULL, 0};
     self->tmp_string_value = (kdl_owned_string){NULL, 0};
+    self->waiting_string = (kdl_owned_string){NULL, 0};
     self->have_next_token = false;
 
     // Fallback: use KDLv1 only
@@ -457,8 +459,9 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
 
             self->event.event = KDL_EVENT_ARGUMENT;
             self->event.value.type = KDL_TYPE_STRING;
-            self->event.value.string = self->event.name;
-            self->event.name = (kdl_str){.data = NULL, .len = 0};
+            self->tmp_string_value = self->waiting_string;
+            self->waiting_string = (kdl_owned_string){NULL, 0};
+            self->event.value.string = kdl_borrow_str(&self->tmp_string_value);
             ev = _apply_slashdash(self);
             self->state = PARSER_IN_NODE;
             return ev;
@@ -523,11 +526,8 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         case KDL_TOKEN_STRING:
         case KDL_TOKEN_RAW_STRING_V1:
         case KDL_TOKEN_RAW_STRING_V2: {
-            kdl_owned_string* tmp_str = &self->tmp_string_key;
-            if (self->state & PARSER_FLAG_IN_PROPERTY) tmp_str = &self->tmp_string_value;
-
             // Either a property key, or a property value, or an argument.
-            if (!_parse_value(self, token, &self->event.value, tmp_str)) {
+            if (!_parse_value(self, token, &self->event.value, &self->tmp_string_value)) {
                 _set_parse_error(self, "Error parsing property or argument");
                 return &self->event;
             }
@@ -535,7 +535,9 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
             // Can this be a property key?
             if (self->event.value.type_annotation.data == NULL && (self->state & PARSER_FLAG_IN_PROPERTY) == 0
                 && self->event.value.type == KDL_TYPE_STRING) {
-                self->event.name = self->event.value.string;
+                // carry over the potential name in waiting_string
+                self->waiting_string = self->tmp_string_value;
+                self->tmp_string_value = (kdl_owned_string){NULL, 0};
                 self->event.value.type = KDL_TYPE_NULL;
                 self->state |= PARSER_FLAG_MAYBE_IN_PROPERTY;
 
@@ -560,6 +562,9 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
 
             // We can return the event
             if (self->state & PARSER_FLAG_IN_PROPERTY) {
+                self->tmp_string_key = self->waiting_string;
+                self->waiting_string = (kdl_owned_string){NULL, 0};
+                self->event.name = kdl_borrow_str(&self->tmp_string_key);
                 self->event.event = KDL_EVENT_PROPERTY;
             } else {
                 self->event.event = KDL_EVENT_ARGUMENT;

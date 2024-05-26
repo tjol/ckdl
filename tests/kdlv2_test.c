@@ -395,6 +395,30 @@ static void test_parser_kdlv2_whitespace(void)
     kdl_destroy_parser(parser);
 }
 
+static void test_parser_comment_in_property(void)
+{
+    kdl_event_data* ev;
+    kdl_str doc = kdl_str_from_cstr("node key /* equals sign coming up */ = \\ \n value");
+
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_EMIT_COMMENTS | KDL_VERSION_2);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_COMMENT);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_PROPERTY);
+    ASSERT(ev->name.len == 3);
+    ASSERT(memcmp(ev->name.data, "key", 3) == 0);
+    ASSERT(ev->value.type == KDL_TYPE_STRING);
+    ASSERT(ev->value.string.len == 5);
+    ASSERT(memcmp(ev->value.string.data, "value", 5) == 0);
+
+    kdl_destroy_parser(parser);
+}
+
 void TEST_MAIN(void)
 {
     run_test("Tokenizer: KDLv2 strings", &test_tokenizer_strings);
@@ -411,4 +435,5 @@ void TEST_MAIN(void)
     run_test("Parser: null is a syntax error in KDLv2", &test_parser_hashless_syntax_error);
     run_test("Parser: #null means we're in v2, etc.", &test_parser_hashtag_null_is_v2);
     run_test("Parser: whitespace in new place", &test_parser_kdlv2_whitespace);
+    run_test("Parser: comment in property definition", &test_parser_comment_in_property);
 }
