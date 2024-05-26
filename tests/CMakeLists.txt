@@ -149,7 +149,7 @@ target_compile_definitions(example_doc_test_v2 PRIVATE
     "FUZZY_KDL_TESTS=\"${FUZZY_KDL_TESTS_V2}\""
     "SKIP_KDL_TESTS=\"${SKIP_KDL_TESTS_V2}\""
     "KDL_VERSION=KDL_VERSION_2")
-# add_test(NAME example_doc_test_v2 COMMAND "$<TARGET_FILE:example_doc_test_v2>" "${KDL_TEST_CASES_ROOT}")
+add_test(NAME example_doc_test_v2 COMMAND "$<TARGET_FILE:example_doc_test_v2>" "${KDL_TEST_CASES_ROOT}")
 #################################################
 
 if (WIN32 AND BUILD_SHARED_LIBS)
