@@ -18,7 +18,8 @@ const kdl_emitter_options KDL_DEFAULT_EMITTER_OPTIONS = {
                    .capital_e = false,
                    .exponent_plus = false,
                    .plus = false,
-                   .min_exponent = 4}
+                   .min_exponent = 4},
+    .version = KDL_VERSION_1
 };
 
 struct _kdl_emitter {
@@ -77,9 +78,9 @@ void kdl_destroy_emitter(kdl_emitter* self)
     free(self);
 }
 
-static bool _emit_str(kdl_emitter* self, kdl_str s)
+static bool _emit_quoted_str(kdl_emitter* self, kdl_str s)
 {
-    kdl_owned_string escaped = kdl_escape(&s, self->opt.escape_mode);
+    kdl_owned_string escaped = kdl_escape_v(self->opt.version, &s, self->opt.escape_mode);
     bool ok = self->write_func(self->write_user_data, "\"", 1) == 1
         && self->write_func(self->write_user_data, escaped.data, escaped.len) == escaped.len
         && self->write_func(self->write_user_data, "\"", 1) == 1;
@@ -89,6 +90,15 @@ static bool _emit_str(kdl_emitter* self, kdl_str s)
 
 static kdl_owned_string _float_to_string(double f, kdl_float_printing_options const* opts)
 {
+    // emit #nan, #inf, #-inf even in KDLv1 because there is no alternative
+    if (isnan(f)) {
+        kdl_str result = kdl_str_from_cstr("#nan");
+        return kdl_clone_str(&result);
+    } else if (isinf(f)) {
+        kdl_str result = f < 0.0 ? kdl_str_from_cstr("#-inf") : kdl_str_from_cstr("#inf");
+        return kdl_clone_str(&result);
+    }
+
     bool negative = f < 0.0;
     f = fabs(f);
     int exponent = (int)floor(log10(f));
@@ -224,19 +234,21 @@ static bool _emit_number(kdl_emitter* self, kdl_number const* n)
     return false;
 }
 
-static bool _emit_identifier(kdl_emitter* self, kdl_str name)
+static bool _emit_bare_string(kdl_emitter* self, kdl_str s)
 {
     bool bare = true;
     if (self->opt.identifier_mode == KDL_QUOTE_ALL_IDENTIFIERS) {
         bare = false;
-    } else if (name.len == 0) {
+    } else if (s.len == 0) {
         bare = false;
     } else {
         uint32_t c;
-        kdl_str tail = name;
+        kdl_str tail = s;
         bool first = true;
+        kdl_character_set charset
+            = self->opt.version == KDL_VERSION_1 ? KDL_CHARACTER_SET_V1 : KDL_CHARACTER_SET_V2;
         while (KDL_UTF8_OK == _kdl_pop_codepoint(&tail, &c)) {
-            if ((first && !_kdl_is_id_start(KDL_CHARACTER_SET_V1, c)) || !_kdl_is_id(KDL_CHARACTER_SET_V1, c)
+            if ((first && !_kdl_is_id_start(charset, c)) || !_kdl_is_id(charset, c)
                 || (self->opt.identifier_mode == KDL_ASCII_IDENTIFIERS && c >= 0x7f)) {
                 bare = false;
                 break;
@@ -246,9 +258,17 @@ static bool _emit_identifier(kdl_emitter* self, kdl_str name)
     }
 
     if (bare) {
-        return self->write_func(self->write_user_data, name.data, name.len) == name.len;
+        return self->write_func(self->write_user_data, s.data, s.len) == s.len;
     } else {
-        return _emit_str(self, name);
+        return _emit_quoted_str(self, s);
+    }
+}
+
+static bool _emit_string(kdl_emitter* self, kdl_str s) {
+    if (self->opt.version == KDL_VERSION_1) {
+        return _emit_quoted_str(self, s);
+    } else {
+        return _emit_bare_string(self, s);
     }
 }
 
@@ -258,23 +278,35 @@ static bool _emit_identifier(kdl_emitter* self, kdl_str name)
 static bool _emit_value(kdl_emitter* self, kdl_value const* v)
 {
     if (v->type_annotation.data != NULL) {
-        if (!(_write_string_literal_ok(self, "(")             //
-                && _emit_identifier(self, v->type_annotation) //
+        if (!(_write_string_literal_ok(self, "(")              //
+                && _emit_bare_string(self, v->type_annotation) //
                 && _write_string_literal_ok(self, ")")))
             return false;
     }
     switch (v->type) {
     case KDL_TYPE_NULL:
-        return _write_string_literal_ok(self, "null");
+        if (self->opt.version == KDL_VERSION_1) {
+            return _write_string_literal_ok(self, "null");
+        } else {
+            return _write_string_literal_ok(self, "#null");
+        }
     case KDL_TYPE_STRING:
-        return _emit_str(self, v->string);
+        return _emit_string(self, v->string);
     case KDL_TYPE_NUMBER:
         return _emit_number(self, &v->number);
     case KDL_TYPE_BOOLEAN:
-        if (v->boolean) {
-            return _write_string_literal_ok(self, "true");
+        if (self->opt.version == KDL_VERSION_1) {
+            if (v->boolean) {
+                return _write_string_literal_ok(self, "true");
+            } else {
+                return _write_string_literal_ok(self, "false");
+            }
         } else {
-            return _write_string_literal_ok(self, "false");
+            if (v->boolean) {
+                return _write_string_literal_ok(self, "#true");
+            } else {
+                return _write_string_literal_ok(self, "#false");
+            }
         }
     }
     return false;
@@ -298,16 +330,16 @@ static bool _emit_node_preamble(kdl_emitter* self)
 
 bool kdl_emit_node(kdl_emitter* self, kdl_str name)
 {
-    return _emit_node_preamble(self) && _emit_identifier(self, name);
+    return _emit_node_preamble(self) && _emit_bare_string(self, name);
 }
 
 bool kdl_emit_node_with_type(kdl_emitter* self, kdl_str type, kdl_str name)
 {
     return _emit_node_preamble(self)           //
         && _write_string_literal_ok(self, "(") //
-        && _emit_identifier(self, type)        //
+        && _emit_bare_string(self, type)       //
         && _write_string_literal_ok(self, ")") //
-        && _emit_identifier(self, name);
+        && _emit_bare_string(self, name);
 }
 
 bool kdl_emit_arg(kdl_emitter* self, kdl_value const* value)
@@ -318,7 +350,7 @@ bool kdl_emit_arg(kdl_emitter* self, kdl_value const* value)
 bool kdl_emit_property(kdl_emitter* self, kdl_str name, kdl_value const* value)
 {
     return (_write_string_literal_ok(self, " ")) //
-        && _emit_identifier(self, name)          //
+        && _emit_bare_string(self, name)         //
         && _write_string_literal_ok(self, "=")   //
         && _emit_value(self, value);
 }

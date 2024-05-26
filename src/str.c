@@ -108,6 +108,31 @@ kdl_owned_string kdl_escape(kdl_str const* s, kdl_escape_mode mode) { return kdl
 
 kdl_owned_string kdl_unescape(kdl_str const* s) { return kdl_unescape_v1(s); }
 
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape_v(
+    kdl_version version, kdl_str const* s, kdl_escape_mode mode)
+{
+    switch (version) {
+    case KDL_VERSION_1:
+        return kdl_escape_v1(s, mode);
+    case KDL_VERSION_2:
+        return kdl_escape_v2(s, mode);
+    default:
+        return (kdl_owned_string){NULL, 0};
+    }
+}
+
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape_v(kdl_version version, kdl_str const* s)
+{
+    switch (version) {
+    case KDL_VERSION_1:
+        return kdl_unescape_v1(s);
+    case KDL_VERSION_2:
+        return kdl_unescape_v2(s);
+    default:
+        return (kdl_owned_string){NULL, 0};
+    }
+}
+
 kdl_owned_string kdl_escape_v1(kdl_str const* s, kdl_escape_mode mode)
 {
     kdl_owned_string result;

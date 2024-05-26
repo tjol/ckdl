@@ -156,13 +156,23 @@ bool _kdl_is_newline(uint32_t c)
 
 bool _kdl_is_id(kdl_character_set charset, uint32_t c)
 {
+    return _kdl_is_word_char(charset, c) && !(charset == KDL_CHARACTER_SET_V2 && c == '#');
+}
+
+bool _kdl_is_id_start(kdl_character_set charset, uint32_t c)
+{
+    return _kdl_is_word_start(charset, c) && !(charset == KDL_CHARACTER_SET_V2 && c == '#');
+}
+
+bool _kdl_is_word_char(kdl_character_set charset, uint32_t c)
+{
     return c > 0x20 && c <= 0x10FFFF && c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' && c != '}'
         && c != ';' && c != '[' && c != ']' && c != '=' && c != '"'
         && !(charset == KDL_CHARACTER_SET_V1 && (c == '<' || c == '>' || c == ','))
         && !_kdl_is_whitespace(charset, c) && !_kdl_is_newline(c);
 }
 
-bool _kdl_is_id_start(kdl_character_set charset, uint32_t c)
+bool _kdl_is_word_start(kdl_character_set charset, uint32_t c)
 {
     return _kdl_is_id(charset, c) && (c < '0' || c > '9');
 }
@@ -348,7 +358,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
         } else if (c == '"') {
             // string
             return _pop_string(self, dest);
-        } else if (_kdl_is_id(self->charset, c)) {
+        } else if (_kdl_is_word_char(self->charset, c)) {
             if (c == 'r' || c == '#') {
                 // this *could* be a raw string
                 kdl_tokenizer_status rstring_status = _pop_raw_string(self, dest);
@@ -382,7 +392,7 @@ static kdl_tokenizer_status _pop_word(kdl_tokenizer* self, kdl_token* dest)
         if (_kdl_is_end_of_word(self->charset, c)) {
             // end the word
             goto end_of_word;
-        } else if (!_kdl_is_id(self->charset, c)) {
+        } else if (!_kdl_is_word_char(self->charset, c)) {
             // invalid character
             return KDL_TOKENIZER_ERROR;
         }

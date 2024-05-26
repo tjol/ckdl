@@ -45,10 +45,10 @@ int main(int argc, char** argv)
                     parse_opts |= KDL_EMIT_COMMENTS;
                 } else if (*p == '1') {
                     parse_opts &= ~KDL_DETECT_VERSION;
-                    parse_opts |= KDL_VERSION_1;
+                    parse_opts |= KDL_READ_VERSION_1;
                 } else if (*p == '2') {
                     parse_opts &= ~KDL_DETECT_VERSION;
-                    parse_opts |= KDL_VERSION_2;
+                    parse_opts |= KDL_READ_VERSION_2;
                 } else if (*p == '-') {
                     opts_ended = true;
                 } else {
@@ -67,7 +67,9 @@ int main(int argc, char** argv)
     }
 
     kdl_parser* parser = kdl_create_stream_parser(&read_func, (void*)in, parse_opts);
-    kdl_emitter* emitter = kdl_create_stream_emitter(&write_func, NULL, &KDL_DEFAULT_EMITTER_OPTIONS);
+    kdl_emitter_options emitter_opts = KDL_DEFAULT_EMITTER_OPTIONS;
+    emitter_opts.version = KDL_VERSION_2;
+    kdl_emitter* emitter = kdl_create_stream_emitter(&write_func, NULL, &emitter_opts);
 
     if (parser == NULL || emitter == NULL) {
         fprintf(stderr, "Initialization error\n");

@@ -238,7 +238,7 @@ static void test_parser_v1_raw_string(void)
     kdl_str doc = kdl_str_from_cstr("r#\"a\"# ");
     kdl_event_data* ev;
 
-    kdl_parser* parser = kdl_create_string_parser(doc, KDL_VERSION_1);
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_READ_VERSION_1);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
@@ -263,7 +263,7 @@ static void test_parser_v1_raw_string(void)
     kdl_destroy_parser(parser);
 
     // Test that V1 raw strings are illegal in V2
-    parser = kdl_create_string_parser(doc, KDL_VERSION_2);
+    parser = kdl_create_string_parser(doc, KDL_READ_VERSION_2);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_PARSE_ERROR);
@@ -276,7 +276,7 @@ static void test_parser_v2_raw_string(void)
     kdl_str doc = kdl_str_from_cstr("#\"a\"#");
     kdl_event_data* ev;
 
-    kdl_parser* parser = kdl_create_string_parser(doc, KDL_VERSION_2);
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_READ_VERSION_2);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
@@ -298,7 +298,7 @@ static void test_parser_hashtag_null(void)
     kdl_str doc = kdl_str_from_cstr("a #null #true #false");
     kdl_event_data* ev;
 
-    kdl_parser* parser = kdl_create_string_parser(doc, KDL_VERSION_2);
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_READ_VERSION_2);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
@@ -325,7 +325,7 @@ static void test_parser_hashless_syntax_error(void)
     kdl_str doc = kdl_str_from_cstr("a null");
     kdl_event_data* ev;
 
-    kdl_parser* parser = kdl_create_string_parser(doc, KDL_VERSION_2);
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_READ_VERSION_2);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
@@ -400,7 +400,7 @@ static void test_parser_comment_in_property(void)
     kdl_event_data* ev;
     kdl_str doc = kdl_str_from_cstr("node key /* equals sign coming up */ = \\ \n value");
 
-    kdl_parser* parser = kdl_create_string_parser(doc, KDL_EMIT_COMMENTS | KDL_VERSION_2);
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_EMIT_COMMENTS | KDL_READ_VERSION_2);
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_START_NODE);
