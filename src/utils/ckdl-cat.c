@@ -32,7 +32,7 @@ bool kdl_cat_file_to_file(FILE* in, FILE* out)
 
 bool kdl_cat_file_to_file_opt(FILE* in, FILE* out, kdl_emitter_options const* opt)
 {
-    kdl_cat_file_to_file_ex(in, out, KDL_DEFAULTS, opt);
+    return kdl_cat_file_to_file_ex(in, out, KDL_DEFAULTS, opt);
 }
 
 bool kdl_cat_file_to_file_ex(FILE* in, FILE* out, kdl_parse_option parse_opt, kdl_emitter_options const* emit_opt)

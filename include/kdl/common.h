@@ -68,8 +68,10 @@ KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape_v(kdl_version version, kdl_
 KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape_v(kdl_version version, kdl_str const* s);
 
 // Escape special characters in a string according to KDLv1 string rules (subject to change)
+KDL_DEPRECATED("Use kdl_escape_v instead")
 KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape(kdl_str const* s, kdl_escape_mode mode);
 // Resolve backslash escape sequences according to KDLv1 rules (subject to change)
+KDL_DEPRECATED("Use kdl_unescape_v instead")
 KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape(kdl_str const* s);
 
 #ifdef __cplusplus
