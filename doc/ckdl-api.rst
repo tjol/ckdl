@@ -108,7 +108,8 @@ by the KDL spec. For generating the escapes, there are a few options:
 
     .. c:enumerator:: KDL_ESCAPE_MINIMAL = 0
 
-        Only escape what *must* be escaped: ``"`` and ``\``
+        Only escape what *must* be escaped: ``"``, ``\``, and (in KDLv2) any characters which aren't
+        allowed to appear in KDL files.
 
     .. c:enumerator:: KDL_ESCAPE_CONTROL = 0x10
 
