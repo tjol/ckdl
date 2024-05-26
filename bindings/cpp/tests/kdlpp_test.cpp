@@ -103,6 +103,19 @@ static void test_writing_demo()
     // clang-format off
 }
 
+static void test_cycle_kdl2()
+{
+    auto txt1 = u8"node1 #true";
+    
+    auto doc1 = kdl::parse(txt1, kdl::KdlVersion::Kdl_2);
+    auto txt2 = doc1.to_string(kdl::KdlVersion::Kdl_2);
+    ASSERT(txt2 == txt1);
+
+    auto doc2 = kdl::parse(txt1, kdl::KdlVersion::Any);
+    auto txt3 = doc2.to_string(kdl::KdlVersion::Kdl_2);
+    ASSERT(txt3 == txt1);
+}
+
 void TEST_MAIN()
 {
     run_test("kdlpp: cycle", &test_cycle);
@@ -110,5 +123,6 @@ void TEST_MAIN()
     run_test("kdlpp: Value::from_string", &test_value_from_string);
     run_test("kdlpp: reading demo code", &test_reading_demo);
     run_test("kdlpp: writing demo code", &test_writing_demo);
+    run_test("kdlpp: KDLv2 support", &test_cycle_kdl2);
 }
 
