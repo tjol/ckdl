@@ -126,12 +126,14 @@ emitter.
 Parsing
 """""""
 
-.. py:function:: parse(kdl_doc)
+.. py:function:: parse(kdl_doc, *, version=1)
 
     Parse a KDL document
 
     :param kdl_doc: The KDL document to parse
     :type kdl_doc: str
+    :param version: Which version(s) to accept: ``1`` for KDLv1 only, ``2`` for KDLv2 only,
+                    or either ``None`` or ``"detect"`` to support both.
     :rtype: Document
     :raises: :py:exc:`ParseError`
 
@@ -226,7 +228,7 @@ Data types
 Emitter configuration
 """""""""""""""""""""
 
-.. py:class:: EmitterOptions(*, indent=None, escape_mode=None, identifier_mode=None, float_mode=None)
+.. py:class:: EmitterOptions(*, indent=None, escape_mode=None, identifier_mode=None, float_mode=None, version=None)
 
     .. py:attribute:: indent
 
@@ -251,6 +253,12 @@ Emitter configuration
         How exactly should doubles be formatted?
 
         :type: FloatMode
+
+    .. py:attribute:: version
+
+        Which KDL version to emit? The constructor accepts :py:class:`KdlVersion` and :py:class:`int`.
+
+        :type: KdlVersion
 
 .. py:class:: EscapeMode
 
@@ -298,3 +306,9 @@ Emitter configuration
 
         :type: int
 
+.. py:class:: KdlVersion
+
+    Enum
+
+    .. py:attribute:: kdl_1
+    .. py:attribute:: kdl_2

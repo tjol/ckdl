@@ -498,7 +498,7 @@ def parse(str kdl_text, *, version=1):
         parse_opt = KDL_READ_VERSION_1
     elif version in (2, '2', '2.0.0'):
         parse_opt = KDL_READ_VERSION_2
-    elif version in (None, 'either', 'any', 'detect'):
+    elif version in (None, 'detect'):
         try:
             return parse(kdl_text, version=2)
         except ParseError:
