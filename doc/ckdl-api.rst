@@ -108,7 +108,8 @@ by the KDL spec. For generating the escapes, there are a few options:
 
     .. c:enumerator:: KDL_ESCAPE_MINIMAL = 0
 
-        Only escape what *must* be escaped: ``"`` and ``\``
+        Only escape what *must* be escaped: ``"``, ``\``, and (in KDLv2) any characters which aren't
+        allowed to appear in KDL files.
 
     .. c:enumerator:: KDL_ESCAPE_CONTROL = 0x10
 
@@ -131,18 +132,32 @@ by the KDL spec. For generating the escapes, there are a few options:
         "Sensible" default: escape tabs, newlines, and other control characters, but leave most
         non-ASCII Unicode intact.
 
-.. c:function:: kdl_owned_string kdl_escape(kdl_str const* s, kdl_escape_mode mode)
+String behaviour varies by KDL version:
+
+.. c:type:: enum kdl_version kdl_version
+
+    .. c:enumerator:: KDL_VERSION_1
+
+        KDL 1.0.0 rules (e.g. ``\/`` is a valid escape sequence)
+
+    .. c:enumerator:: KDL_VERSION_2
+
+        KDL 2.0.0 rules (e.g. ``\s`` escapes the space character)
+
+.. c:function:: kdl_owned_string kdl_escape_v(kdl_version version, kdl_str const* s, kdl_escape_mode mode)
 
     Escape special characters in a string.
 
+    :param version: The KDL version to use
     :param s: The original string
     :param mode: How to escape
     :return: A string that could be surrounded by ``""`` in a KDL file
 
-.. c:function:: kdl_owned_string kdl_unescape(kdl_str const* s)
+.. c:function:: kdl_owned_string kdl_unescape_v(kdl_version version, kdl_str const* s)
 
     Resolve backslash escape sequences
 
+    :param version: The KDL version to use
     :param s: A string that might have been surrounded by ``""`` in a KDL file
     :return: The string with all backslash escapes replaced
 
@@ -280,7 +295,6 @@ The events produced by the ckdl parser are:
         been commented out using a slashdash (``/-``) are rendered as their original type ORed with
         :c:enumerator:`KDL_EVENT_COMMENT` (e.g., ``KDL_EVENT_COMMENT | KDL_EVENT_START_NODE``)
 
-
 Each event is associated with certain event data:
 
 .. c:type:: struct kdl_event_data kdl_event_data
@@ -349,11 +363,32 @@ If you wish, you may configure the parser to emit comments in addition to "regul
 
     .. c:enumerator:: KDL_DEFAULTS
 
-        By default, ignore all comments
+        By default, support KDL 1.0.0 only and ignore all comments
 
     .. c:enumerator:: KDL_EMIT_COMMENTS
 
         Produce events for comments and events deleted using ``/-``
+
+
+    .. c:enumerator:: KDL_READ_VERSION_1
+
+        Use KDL version 1.0.0 (this is the default)
+
+    .. c:enumerator:: KDL_READ_VERSION_2
+
+        Use KDL version 2.0.0 (draft)
+
+    .. c:enumerator:: KDL_DETECT_VERSION
+
+        Allow both KDL v2 and KDL v1. This will be the default in future.
+
+        This mode aims to produce entirely correct output for all KDLv2 documents as well as
+        for *almost* all KDLv1 documents. If you need complete KDLv1 compliance, use
+        ``KDL_READ_VERSION_1`` instead.
+
+        If you're not reading from a stream (and can afford to parse the document twice),
+        consider running the parser in both ``KDL_READ_VERSION_2`` mode and ``KDL_READ_VERSION_1``
+        mode for maximum standard compliance.
 
 The parser object provides one method:
 
@@ -362,7 +397,7 @@ The parser object provides one method:
     Get the next event in the document from a KDL parser
 
     :param parser: The parser
-    :return: A pointer to a parse event structure. This pointer is valid until the next call to 
+    :return: A pointer to a parse event structure. This pointer is valid until the next call to
              :c:func:`kdl_parser_next_event` for this parser. The next call also invalidates all
              :c:type:`kdl_str` pointers which may be contained in the event data.
 
@@ -433,9 +468,13 @@ text.
         How should identifiers (i.e., node names, type annotations and property keys) be rendered?
         (default: :c:enumerator:`KDL_PREFER_BARE_IDENTIFIERS`)
 
-    .. c:member::kdl_float_printing_options float_mode
+    .. c:member:: kdl_float_printing_options float_mode
 
         How exactly should doubles be formatted?
+
+    .. c:member:: kdl_version version
+
+        KDL version to use.
 
 .. c:type:: enum kdl_identifier_emission_mode kdl_identifier_emission_mode
 

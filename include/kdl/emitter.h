@@ -36,6 +36,7 @@ struct kdl_emitter_options {
     kdl_escape_mode escape_mode;                  // How to escape strings
     kdl_identifier_emission_mode identifier_mode; // How to quote identifiers
     kdl_float_printing_options float_mode;        // How to print floating point numbers
+    kdl_version version;                          // KDL version to use
 };
 
 KDL_EXPORT extern const kdl_emitter_options KDL_DEFAULT_EMITTER_OPTIONS;

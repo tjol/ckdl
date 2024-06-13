@@ -4,8 +4,13 @@
 // define attributes for functions
 #if defined(__cplusplus)
 #    define KDL_NODISCARD [[nodiscard]]
+#    define KDL_DEPRECATED(reason) [[deprecated(reason)]]
 #elif defined(__GNUC__)
 #    define KDL_NODISCARD __attribute__((warn_unused_result))
+#    define KDL_DEPRECATED(reason) __attribute__((deprecated))
+#elif defined(_MSC_VER)
+#    define KDL_NODISCARD
+#    define KDL_DEPRECATED(reason) __declspec(deprecated(reason))
 #else
 #    define KDL_NODISCARD
 #endif

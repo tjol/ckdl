@@ -201,9 +201,16 @@ Document Document::read_from(kdl_parser* parser)
     }
 }
 
-std::u8string Document::to_string() const
+std::u8string Document::to_string() const { return to_string(KdlVersion::Kdl_1); }
+
+std::u8string Document::to_string(KdlVersion version) const
 {
-    kdl_emitter* emitter = kdl_create_buffering_emitter(&KDL_DEFAULT_EMITTER_OPTIONS);
+    kdl_emitter_options opts = KDL_DEFAULT_EMITTER_OPTIONS;
+
+    if (version == KdlVersion::Kdl_1) opts.version = KDL_VERSION_1;
+    if (version == KdlVersion::Kdl_2) opts.version = KDL_VERSION_2;
+
+    kdl_emitter* emitter = kdl_create_buffering_emitter(&opts);
     if (emitter == nullptr) throw EmitterError{"Error initializing the KDL emitter"};
     emit_nodes(emitter, m_nodes);
     auto result = std::u8string{to_u8string_view(kdl_get_emitter_buffer(emitter))};
@@ -211,10 +218,23 @@ std::u8string Document::to_string() const
     return result;
 }
 
-Document parse(std::u8string_view kdl_text)
+Document parse(std::u8string_view kdl_text) { return parse(kdl_text, KdlVersion::Kdl_1); }
+
+Document parse(std::u8string_view kdl_text, KdlVersion version)
 {
+    kdl_parse_option opts = KDL_DEFAULTS;
+    if (version == KdlVersion::Kdl_1) opts = KDL_READ_VERSION_1;
+    else if (version == KdlVersion::Kdl_2) opts = KDL_READ_VERSION_2;
+    else if (version == KdlVersion::Any) {
+        try {
+            return parse(kdl_text, KdlVersion::Kdl_2);
+        } catch (ParseError const&) {
+            return parse(kdl_text, KdlVersion::Kdl_1);
+        }
+    }
+
     kdl_str text = {reinterpret_cast<char const*>(kdl_text.data()), kdl_text.size()};
-    kdl_parser* parser = kdl_create_string_parser(text, KDL_DEFAULTS);
+    kdl_parser* parser = kdl_create_string_parser(text, opts);
     if (parser == nullptr) throw std::runtime_error("Error initializing the KDL parser");
     auto doc = Document::read_from(parser);
     kdl_destroy_parser(parser);

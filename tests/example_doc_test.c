@@ -1,3 +1,15 @@
+#ifndef KDL_VERSION
+#    define KDL_VERSION KDL_VERSION_1
+#endif
+
+#ifndef FUZZY_KDL_TESTS
+#    define FUZZY_KDL_TESTS ""
+#endif
+
+#ifndef SKIP_KDL_TESTS
+#    define SKIP_KDL_TESTS ""
+#endif
+
 #include "fs_util.h"
 #include "test_util.h"
 
@@ -39,11 +51,14 @@ static void do_test_case(void* user_data)
     test_opts.float_mode.capital_e = true;
     test_opts.float_mode.always_write_decimal_point = true;
     test_opts.float_mode.exponent_plus = true;
+    test_opts.version = KDL_VERSION;
+
+    kdl_parse_option parse_opts = KDL_VERSION == KDL_VERSION_1 ? KDL_READ_VERSION_1 : KDL_READ_VERSION_2;
 
     struct test_case* tc = (struct test_case*)user_data;
     FILE* in = fopen(tc->input_path, "r");
     ASSERT(in != NULL);
-    kdl_owned_string s = kdl_cat_file_to_string_opt(in, &test_opts);
+    kdl_owned_string s = kdl_cat_file_to_string_ex(in, parse_opts, &test_opts);
     if (tc->ground_truth_path == NULL) {
         // parse error expected
         ASSERT2(s.data == NULL, "Parsing should fail");
@@ -85,17 +100,36 @@ void TEST_MAIN(void)
     }
 
     // prepare the list of fuzzy test cases (don't compare output)
-    char* excl_buf = strdup(FUZZY_KDL_TESTS);
+    char* fuzzy_buf = strdup(FUZZY_KDL_TESTS);
     size_t n_fuzzy = 0;
-    if (*excl_buf) ++n_fuzzy;
-    for (char* p = excl_buf; *p; ++p)
+    if (*fuzzy_buf) ++n_fuzzy;
+    for (char* p = fuzzy_buf; *p; ++p)
         if (*p == ':') ++n_fuzzy;
     char** fuzzy_test_cases = malloc(n_fuzzy * sizeof(char*));
-    fuzzy_test_cases[0] = excl_buf;
-    for (char *p = excl_buf, **e = &fuzzy_test_cases[1]; *p; ++p) {
-        if (*p == ':') {
-            *p = '\0';
-            *(e++) = p + 1;
+    if (n_fuzzy > 0) {
+        fuzzy_test_cases[0] = fuzzy_buf;
+        for (char *p = fuzzy_buf, **e = &fuzzy_test_cases[1]; *p; ++p) {
+            if (*p == ':') {
+                *p = '\0';
+                *(e++) = p + 1;
+            }
+        }
+    }
+
+    // prepare the list of test cases to skip
+    char* skip_buf = strdup(SKIP_KDL_TESTS);
+    size_t n_skip = 0;
+    if (*skip_buf) ++n_skip;
+    for (char* p = skip_buf; *p; ++p)
+        if (*p == ':') ++n_skip;
+    char** skipped_test_cases = malloc(n_skip * sizeof(char*));
+    if (n_skip > 0) {
+        skipped_test_cases[0] = skip_buf;
+        for (char *p = skip_buf, **e = &skipped_test_cases[1]; *p; ++p) {
+            if (*p == ':') {
+                *p = '\0';
+                *(e++) = p + 1;
+            }
         }
     }
 
@@ -133,6 +167,7 @@ void TEST_MAIN(void)
         char const* filename = filenames[i];
         tc.input_path = filename;
         tc.ignore_output = false;
+        bool skip = false;
         strncpy(expected_basename_ptr, filename, expected_basename_avail);
         if (stat(expected_kdl_fn, &st) == 0) {
             // file exists - expected to pass
@@ -141,6 +176,13 @@ void TEST_MAIN(void)
             for (size_t j = 0; j < n_fuzzy; ++j) {
                 if (strcmp(fuzzy_test_cases[j], filename) == 0) {
                     tc.ignore_output = true;
+                    break;
+                }
+            }
+            for (size_t j = 0; j < n_skip; ++j) {
+                if (strcmp(skipped_test_cases[j], filename) == 0) {
+                    skip = true;
+                    break;
                 }
             }
         } else {
@@ -154,11 +196,17 @@ void TEST_MAIN(void)
             }
         }
         // let's go
-        run_test_d(filename, &do_test_case, &tc);
+        if (skip) {
+            fprintf(stderr, "SKIP %s\n", filename);
+        } else {
+            run_test_d(filename, &do_test_case, &tc);
+        }
     }
 
-    free(excl_buf);
+    free(fuzzy_buf);
     free(fuzzy_test_cases);
+    free(skip_buf);
+    free(skipped_test_cases);
     free(filenames);
     free(input_dir);
     free(expected_kdl_fn);

@@ -39,7 +39,9 @@ int main(int argc, char** argv)
     }
 
     kdl_tokenizer* tokenizer = kdl_create_stream_tokenizer(&read_func, (void*)in);
-    kdl_emitter* emitter = kdl_create_stream_emitter(&write_func, NULL, &KDL_DEFAULT_EMITTER_OPTIONS);
+    kdl_emitter_options emitter_opts = KDL_DEFAULT_EMITTER_OPTIONS;
+    emitter_opts.version = KDL_VERSION_2;
+    kdl_emitter* emitter = kdl_create_stream_emitter(&write_func, NULL, &emitter_opts);
 
     if (tokenizer == NULL || emitter == NULL) {
         fprintf(stderr, "Initialization error\n");
@@ -73,8 +75,11 @@ int main(int argc, char** argv)
         case KDL_TOKEN_STRING:
             token_type_name = "KDL_TOKEN_STRING";
             break;
-        case KDL_TOKEN_RAW_STRING:
-            token_type_name = "KDL_TOKEN_RAW_STRING";
+        case KDL_TOKEN_RAW_STRING_V1:
+            token_type_name = "KDL_TOKEN_RAW_STRING_V1";
+            break;
+        case KDL_TOKEN_RAW_STRING_V2:
+            token_type_name = "KDL_TOKEN_RAW_STRING_V2";
             break;
         case KDL_TOKEN_SINGLE_LINE_COMMENT:
             token_type_name = "KDL_TOKEN_SINGLE_LINE_COMMENT";

@@ -416,18 +416,24 @@ cpdef enum IdentifierMode:
     quote_all_identifiers = KDL_QUOTE_ALL_IDENTIFIERS
     ascii_identifiers = KDL_ASCII_IDENTIFIERS
 
+cpdef enum KdlVersion:
+    kdl_1 = KDL_VERSION_1
+    kdl_2 = KDL_VERSION_2
+
 cdef class EmitterOptions:
     cdef public int indent
     cdef public EscapeMode escape_mode
     cdef public IdentifierMode identifier_mode
     cdef public FloatMode float_mode
+    cdef public KdlVersion version
 
     def __init__(
             self, *,
             indent=None,
             escape_mode=None,
             identifier_mode=None,
-            float_mode=None):
+            float_mode=None,
+            version=None):
         if indent is not None:
             self.indent = indent
         else:
@@ -444,20 +450,38 @@ cdef class EmitterOptions:
             self.float_mode = float_mode
         else:
             self.float_mode = FloatMode()
+        if isinstance(version, int):
+            if version == 1:
+                self.version = KdlVersion.kdl_1
+            elif version == 2:
+                self.version = KdlVersion.kdl_2
+            else:
+                raise ValueError(f"Unknown version: {version}")
+        elif isinstance(version, KdlVersion):
+            self.version = version
+        elif version is not None:
+            raise TypeError(f"Expected int or KdlVersion for version, not {type(version)}")
 
     cdef kdl_emitter_options _to_c_struct(self):
-        cdef kdl_emitter_options res
+        cdef kdl_emitter_options res = KDL_DEFAULT_EMITTER_OPTIONS
         res.indent = self.indent
         res.escape_mode = <kdl_escape_mode>self.escape_mode
         res.identifier_mode = <kdl_identifier_emission_mode>self.identifier_mode
         res.float_mode = self.float_mode._to_c_struct()
+        res.version = <kdl_version>self.version
         return res
 
-def parse(str kdl_text):
+def parse(str kdl_text, *, version=1):
     """
     parse(kdl_text)
 
     Parse a KDL document (must be a str) and return a Document.
+
+    Pass a ``version`` argument to specify the KDL version (default: 1)
+
+    parse(kdl_text, version=1)
+    parse(kdl_text, version=2)
+    parse(kdl_text, version="any")
     """
 
     cdef kdl_event_data* ev
@@ -468,10 +492,24 @@ def parse(str kdl_text):
     cdef list nodes = root_node_list
     cdef Node current_node = None
 
+    cdef kdl_parse_option parse_opt
+
+    if version in (1, '1', '1.0.0'):
+        parse_opt = KDL_READ_VERSION_1
+    elif version in (2, '2', '2.0.0'):
+        parse_opt = KDL_READ_VERSION_2
+    elif version in (None, 'detect'):
+        try:
+            return parse(kdl_text, version=2)
+        except ParseError:
+            return parse(kdl_text, version=1)
+    else:
+        raise ValueError(f"Unexpected value for version: {version}")
+
     byte_str = kdl_text.encode("utf-8")
     kdl_doc.data = byte_str
     kdl_doc.len = len(byte_str)
-    parser = kdl_create_string_parser(kdl_doc, KDL_DEFAULTS)
+    parser = kdl_create_string_parser(kdl_doc, parse_opt)
 
     while True:
         ev = kdl_parser_next_event(parser)

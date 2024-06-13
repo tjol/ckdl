@@ -7,6 +7,10 @@ cdef extern from "kdl/common.h":
         KDL_ESCAPE_ASCII_MODE =0x170,
         KDL_ESCAPE_DEFAULT = KDL_ESCAPE_CONTROL | KDL_ESCAPE_NEWLINE | KDL_ESCAPE_TAB
 
+    ctypedef enum kdl_version:
+        KDL_VERSION_1,
+        KDL_VERSION_2
+
     ctypedef size_t (*kdl_read_func)(void *user_data, char *buf, size_t bufsize);
     ctypedef size_t (*kdl_write_func)(void *user_data, const char *data, size_t nbytes);
 
@@ -26,6 +30,9 @@ cdef extern from "kdl/common.h":
 
     cdef kdl_owned_string kdl_escape(const kdl_str *s, kdl_escape_mode mode)
     cdef kdl_owned_string kdl_unescape(const kdl_str *s)
+
+    cdef kdl_owned_string kdl_escape_v(kdl_version version, const kdl_str *s, kdl_escape_mode mode)
+    cdef kdl_owned_string kdl_unescape_v(kdl_version version, const kdl_str *s)
 
 cdef extern from "kdl/value.h":
     ctypedef enum kdl_type:
@@ -65,6 +72,9 @@ cdef extern from "kdl/parser.h":
     ctypedef enum kdl_parse_option:
         KDL_DEFAULTS = 0,
         KDL_EMIT_COMMENTS = 1,
+        KDL_READ_VERSION_1 = 0x20000,
+        KDL_READ_VERSION_2 = 0x40000,
+        KDL_DETECT_VERSION = 0x70000
 
     ctypedef struct kdl_event_data:
         kdl_event event
@@ -99,6 +109,7 @@ cdef extern from "kdl/emitter.h":
         kdl_escape_mode escape_mode
         kdl_identifier_emission_mode identifier_mode
         kdl_float_printing_options float_mode
+        kdl_version version
 
     cdef kdl_emitter_options KDL_DEFAULT_EMITTER_OPTIONS
 

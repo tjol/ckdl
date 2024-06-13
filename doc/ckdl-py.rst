@@ -37,7 +37,7 @@ Reading
     >>> kdl_txt = """
     ... node1 1 2 "three" (f64)4.0 {
     ...     (some-type)"first child"
-    ...     child-#2 prop="val"
+    ...     child-2 prop="val"
     ... }
     ... """
     >>> doc = ckdl.parse(kdl_txt)
@@ -59,11 +59,20 @@ Reading
     >>> doc[0].args[3].type_annotation
     'f64'
     >>> doc[0].children
-    [<Node (some-type)"first child">, <Node child-#2; 1 property>]
+    [<Node (some-type)"first child">, <Node child-2; 1 property>]
     >>> doc[0].children[0].type_annotation
     'some-type'
     >>> doc[0].children[1].properties
     {'prop': 'val'}
+    >>>
+    >>> # KDL v2 can be enabled like this
+    >>>
+    >>> doc2 = ckdl.parse("one 2 three #inf", version="detect")
+    >>> doc2.nodes
+    [<Node one; 3 args>]
+    >>> doc2.nodes[0].args
+    [2, 'three', inf]
+    >>>
 
 Writing
 """""""
@@ -87,6 +96,18 @@ Writing
     node2 "arg1" "arg2" some_property="foo" {
         child3
     }
+    >>>
+    >>> # KDL v2 output
+    >>>
+    >>> print(mydoc.dump(ckdl.EmitterOptions(version=2)))
+    node1 "argument 1" 2 #null node1-prop=65535 {
+        child1
+        (child2-type)child2 child2_prop=#true
+    }
+    node2 arg1 arg2 some_property=foo {
+        child3
+    }
+
 
 
 API
@@ -105,12 +126,14 @@ emitter.
 Parsing
 """""""
 
-.. py:function:: parse(kdl_doc)
+.. py:function:: parse(kdl_doc, *, version=1)
 
     Parse a KDL document
 
     :param kdl_doc: The KDL document to parse
     :type kdl_doc: str
+    :param version: Which version(s) to accept: ``1`` for KDLv1 only, ``2`` for KDLv2 only,
+                    or either ``None`` or ``"detect"`` to support both.
     :rtype: Document
     :raises: :py:exc:`ParseError`
 
@@ -205,7 +228,7 @@ Data types
 Emitter configuration
 """""""""""""""""""""
 
-.. py:class:: EmitterOptions(*, indent=None, escape_mode=None, identifier_mode=None, float_mode=None)
+.. py:class:: EmitterOptions(*, indent=None, escape_mode=None, identifier_mode=None, float_mode=None, version=None)
 
     .. py:attribute:: indent
 
@@ -230,6 +253,12 @@ Emitter configuration
         How exactly should doubles be formatted?
 
         :type: FloatMode
+
+    .. py:attribute:: version
+
+        Which KDL version to emit? The constructor accepts :py:class:`KdlVersion` and :py:class:`int`.
+
+        :type: KdlVersion
 
 .. py:class:: EscapeMode
 
@@ -277,3 +306,9 @@ Emitter configuration
 
         :type: int
 
+.. py:class:: KdlVersion
+
+    Enum
+
+    .. py:attribute:: kdl_1
+    .. py:attribute:: kdl_2

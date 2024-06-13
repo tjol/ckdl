@@ -33,6 +33,12 @@ typedef struct _kdl_parser kdl_parser;
 
 namespace kdl {
 
+enum class KdlVersion {
+    Kdl_1,
+    Kdl_2,
+    Any
+};
+
 template <typename T> concept _arithmetic = std::is_arithmetic_v<T>;
 
 class TypeError : public std::exception {
@@ -346,10 +352,12 @@ public:
     auto end() { return m_nodes.end(); }
 
     std::u8string to_string() const;
+    std::u8string to_string(KdlVersion version) const;
 };
 
 // Load a KDL document from string
 KDLPP_EXPORT Document parse(std::u8string_view kdl_text);
+KDLPP_EXPORT Document parse(std::u8string_view kdl_text, KdlVersion version);
 
 } // namespace kdl
 
