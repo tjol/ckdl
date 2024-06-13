@@ -136,18 +136,12 @@ set(FUZZY_KDL_TESTS_LIST_V2
     no_decimal_exponent.kdl # float representation not consistent with other test cases
 )
 string(REPLACE ";" ":" FUZZY_KDL_TESTS_V2 "${FUZZY_KDL_TESTS_LIST_V2}")
-set(SKIP_KDL_TESTS_LIST_V2
-    escaped_whitespace.kdl                  # invalid multi-line string
-    string_escaped_literal_whitespace.kdl   # invalid multi-line string
-)
-string(REPLACE ";" ":" SKIP_KDL_TESTS_V2 "${SKIP_KDL_TESTS_LIST_V2}")
 
 add_executable(example_doc_test_v2 example_doc_test.c)
 target_link_libraries(example_doc_test_v2 kdl test_util ckdl-cat)
 target_compile_definitions(example_doc_test_v2 PRIVATE
     "KDL_TEST_CASES_ROOT=\"${KDL_TEST_CASES_ROOT}\""
     "FUZZY_KDL_TESTS=\"${FUZZY_KDL_TESTS_V2}\""
-    "SKIP_KDL_TESTS=\"${SKIP_KDL_TESTS_V2}\""
     "KDL_VERSION=KDL_VERSION_2")
 add_test(NAME example_doc_test_v2 COMMAND "$<TARGET_FILE:example_doc_test_v2>" "${KDL_TEST_CASES_ROOT}")
 #################################################

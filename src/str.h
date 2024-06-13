@@ -33,5 +33,6 @@ KDL_NODISCARD kdl_owned_string kdl_escape_v2(kdl_str const* s, kdl_escape_mode m
 KDL_NODISCARD kdl_owned_string kdl_unescape_v2(kdl_str const* s);
 
 KDL_NODISCARD kdl_owned_string _kdl_dedent_multiline_string(kdl_str const* s);
+KDL_NODISCARD kdl_owned_string _kdl_remove_escaped_whitespace(kdl_str const* s);
 
 #endif // KDL_INTERNAL_STR_H_

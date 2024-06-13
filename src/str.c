@@ -349,7 +349,9 @@ esc_error:
 kdl_owned_string kdl_unescape_v2(kdl_str const* s)
 {
     kdl_owned_string result;
-    kdl_owned_string dedented = _kdl_dedent_multiline_string(s);
+    kdl_owned_string no_ws_escapes = _kdl_remove_escaped_whitespace(s);
+    kdl_str pre_dedent = kdl_borrow_str(&no_ws_escapes);
+    kdl_owned_string dedented = _kdl_dedent_multiline_string(&pre_dedent);
     kdl_str escaped = kdl_borrow_str(&dedented);
 
     size_t orig_len = escaped.len;
@@ -411,21 +413,8 @@ kdl_owned_string kdl_unescape_v2(kdl_str const* s)
                 break;
             }
             default:
-                // See if this is a whitespace escape
-                if (_kdl_is_whitespace(KDL_CHARACTER_SET_V2, c) || _kdl_is_newline(c)) {
-                    kdl_str tail = escaped; // make a copy - we will advance too far
-                    while ((status = _kdl_pop_codepoint(&tail, &c)) == KDL_UTF8_OK
-                        && (_kdl_is_whitespace(KDL_CHARACTER_SET_V2, c) || _kdl_is_newline(c))) {
-                        // skip this char
-                        escaped = tail;
-                    }
-                    // if there is a UTF-8 error, this will be discovered on the
-                    // next iteration of the outer loop
-                    break;
-                } else {
-                    // Not whitespace - backslash is illegal here
-                    goto unesc_error;
-                }
+                // invalid escape
+                goto unesc_error;
             }
         } else {
             // Nothing special, copy the character
@@ -435,6 +424,7 @@ kdl_owned_string kdl_unescape_v2(kdl_str const* s)
 
     if (status == KDL_UTF8_EOF) {
         // ok
+        kdl_free_string(&no_ws_escapes);
         kdl_free_string(&dedented);
         result = _kdl_buf_to_string(&buf);
         return result;
@@ -443,6 +433,7 @@ kdl_owned_string kdl_unescape_v2(kdl_str const* s)
     }
 
 unesc_error:
+    kdl_free_string(&no_ws_escapes);
     kdl_free_string(&dedented);
     _kdl_free_write_buffer(&buf);
     result = (kdl_owned_string){NULL, 0};
@@ -555,6 +546,65 @@ kdl_owned_string _kdl_dedent_multiline_string(kdl_str const* s)
 dedent_err:
     _kdl_free_write_buffer(&buf_norm_lf);
     if (buf_dedented != NULL) free(buf_dedented);
+    result = (kdl_owned_string){NULL, 0};
+    return result;
+}
+
+kdl_owned_string _kdl_remove_escaped_whitespace(kdl_str const* s)
+{
+    kdl_owned_string result;
+    kdl_str escaped = *s;
+
+    size_t orig_len = escaped.len;
+    _kdl_write_buffer buf = _kdl_new_write_buffer(orig_len);
+    if (buf.buf == NULL) goto unesc_error;
+    if (escaped.data == NULL) goto unesc_error;
+
+    uint32_t c = 0;
+    kdl_utf8_status status;
+
+    while ((status = _kdl_pop_codepoint(&escaped, &c)) == KDL_UTF8_OK) {
+        if (_kdl_is_illegal_char(KDL_CHARACTER_SET_V2, c)) {
+            goto unesc_error;
+        } else if (c == '\\') {
+            kdl_str tail = escaped; // make a copy - we will advance too far
+            bool removed_whitespace = false;
+
+            while ((status = _kdl_pop_codepoint(&tail, &c)) == KDL_UTF8_OK
+                && (_kdl_is_whitespace(KDL_CHARACTER_SET_V2, c) || _kdl_is_newline(c))) {
+                // skip this char
+                escaped = tail;
+                removed_whitespace = true;
+            }
+
+            switch (status) { // why did the loop end?
+            case KDL_UTF8_OK:
+            case KDL_UTF8_EOF:
+                break;
+            default:
+                goto unesc_error;
+            }
+
+            if (!removed_whitespace) {
+                // no whitespace -> keep backslash for kdl_unescape_v2()
+                _kdl_buf_push_char(&buf, '\\');
+            }
+        } else {
+            // Nothing special, copy the character
+            _kdl_buf_push_codepoint(&buf, c);
+        }
+    }
+
+    if (status == KDL_UTF8_EOF) {
+        // ok
+        result = _kdl_buf_to_string(&buf);
+        return result;
+    } else {
+        goto unesc_error;
+    }
+
+unesc_error:
+    _kdl_free_write_buffer(&buf);
     result = (kdl_owned_string){NULL, 0};
     return result;
 }
