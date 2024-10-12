@@ -24,9 +24,9 @@ class CKDLTest(unittest.TestCase):
         dedented = [l[indent:] if l.startswith(indent_str) else l for l in lines]
         return "\n".join(dedented)
 
-    def test_simple_parsing(self):
+    def test_simple_parsing_v1(self):
         kdl = '(tp)node "arg1" 2 3; node2'
-        doc = ckdl.parse(kdl)
+        doc = ckdl.parse(kdl, version=1)
         self.assertEqual(len(doc), 2)
         self.assertEqual(doc[0].type_annotation, "tp")
         self.assertEqual(doc[0].name, "node")
@@ -39,7 +39,22 @@ class CKDLTest(unittest.TestCase):
         self.assertEqual(doc[1].children, [])
         self.assertEqual(doc[1].properties, {})
 
-    def test_simple_emission(self):
+    def test_simple_parsing_v2(self):
+        kdl = '(tp)node arg1 2 3; node2'
+        doc = ckdl.parse(kdl, version=2)
+        self.assertEqual(len(doc), 2)
+        self.assertEqual(doc[0].type_annotation, "tp")
+        self.assertEqual(doc[0].name, "node")
+        self.assertEqual(doc[0].args, ["arg1", 2, 3])
+        self.assertEqual(doc[0].children, [])
+        self.assertEqual(doc[0].properties, {})
+        self.assertIsNone(doc[1].type_annotation)
+        self.assertEqual(doc[1].name, "node2")
+        self.assertEqual(doc[1].args, [])
+        self.assertEqual(doc[1].children, [])
+        self.assertEqual(doc[1].properties, {})
+
+    def test_simple_emission_v1(self):
         doc = ckdl.Document(
             ckdl.Node(
                 None,
@@ -60,7 +75,29 @@ class CKDLTest(unittest.TestCase):
             """
         )
         self.assertEqual(str(doc), expected)
-        self.assertEqual(doc.dump(), expected)
+        self.assertEqual(doc.dump(opts=ckdl.EmitterOptions(version=1)), expected)
+
+    def test_simple_emission_v2(self):
+        doc = ckdl.Document(
+            ckdl.Node(
+                None,
+                "-",
+                "foo",
+                100,
+                None,
+                ckdl.Node("child1", a=ckdl.Value("i8", -1)),
+                ckdl.Node("child2", True),
+            )
+        )
+        expected = self._dedent_str(
+            """
+            - foo 100 #null {
+                child1 a=(i8)-1
+                child2 #true
+            }
+            """
+        )
+        self.assertEqual(doc.dump(ckdl.EmitterOptions(version=2)), expected)
 
     def test_node_constructors(self):
         doc = ckdl.Document(
