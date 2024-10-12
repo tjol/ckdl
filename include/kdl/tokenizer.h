@@ -20,7 +20,8 @@ enum kdl_token_type {
     KDL_TOKEN_END_TYPE,            // ')'
     KDL_TOKEN_WORD,                // identifier, number, boolean, or null
     KDL_TOKEN_STRING,              // regular string
-    KDL_TOKEN_RAW_STRING,          // raw string
+    KDL_TOKEN_RAW_STRING_V1,       // KDLV1 raw string
+    KDL_TOKEN_RAW_STRING_V2,       // KDLv2 raw string
     KDL_TOKEN_SINGLE_LINE_COMMENT, // // ...
     KDL_TOKEN_SLASHDASH,           // /-
     KDL_TOKEN_MULTI_LINE_COMMENT,  // /* ... */
@@ -30,11 +31,19 @@ enum kdl_token_type {
     KDL_TOKEN_NEWLINE,             // LF, CR, or CRLF
     KDL_TOKEN_SEMICOLON,           // ';'
     KDL_TOKEN_LINE_CONTINUATION,   // '\\'
-    KDL_TOKEN_WHITESPACE           // any regular whitespace
+    KDL_TOKEN_WHITESPACE,          // any regular whitespace
+};
+
+// Character set configuration
+enum kdl_character_set {
+    KDL_CHARACTER_SET_V1 = 1, // V1 character set: BOM is whitespace, vertical tab is not, etc.
+    KDL_CHARACTER_SET_V2 = 2, // V2 character set: control characters restricted, etc.
+    KDL_CHARACTER_SET_DEFAULT = KDL_CHARACTER_SET_V2
 };
 
 typedef enum kdl_tokenizer_status kdl_tokenizer_status;
 typedef enum kdl_token_type kdl_token_type;
+typedef enum kdl_character_set kdl_character_set;
 typedef struct kdl_token kdl_token;
 typedef struct _kdl_tokenizer kdl_tokenizer;
 
@@ -50,6 +59,9 @@ KDL_NODISCARD KDL_EXPORT kdl_tokenizer* kdl_create_string_tokenizer(kdl_str doc)
 KDL_NODISCARD KDL_EXPORT kdl_tokenizer* kdl_create_stream_tokenizer(kdl_read_func read_func, void* user_data);
 // Destroy a tokenizer
 KDL_EXPORT void kdl_destroy_tokenizer(kdl_tokenizer* tokenizer);
+
+// Change the character set used by the tokenizer
+KDL_EXPORT void kdl_tokenizer_set_character_set(kdl_tokenizer* tokenizer, kdl_character_set cs);
 
 // Get the next token and write it to a user-supplied structure (or return an error)
 KDL_EXPORT kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* tokenizer, kdl_token* dest);

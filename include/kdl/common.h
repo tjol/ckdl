@@ -20,6 +20,11 @@ enum kdl_escape_mode {
     KDL_ESCAPE_DEFAULT = KDL_ESCAPE_CONTROL | KDL_ESCAPE_NEWLINE | KDL_ESCAPE_TAB
 };
 
+enum kdl_version {
+    KDL_VERSION_1,
+    KDL_VERSION_2
+};
+
 // Function pointers used to interface with external IO
 typedef size_t (*kdl_read_func)(void* user_data, char* buf, size_t bufsize);
 typedef size_t (*kdl_write_func)(void* user_data, char const* data, size_t nbytes);
@@ -27,6 +32,7 @@ typedef size_t (*kdl_write_func)(void* user_data, char const* data, size_t nbyte
 typedef struct kdl_str kdl_str;
 typedef struct kdl_owned_string kdl_owned_string;
 typedef enum kdl_escape_mode kdl_escape_mode;
+typedef enum kdl_version kdl_version;
 
 // A reference to a string, like Rust's str or C++'s std::u8string_view
 // Need not be nul-terminated!
@@ -56,9 +62,16 @@ KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_clone_str(kdl_str const* s);
 // Free the memory associated with an owned string, and set the pointer to NULL
 KDL_EXPORT void kdl_free_string(kdl_owned_string* s);
 
-// Escape special characters in a string according to KDL string rules
-KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape(kdl_str const* s, kdl_escape_mode mode);
+// Escape special characters in a string
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape_v(kdl_version version, kdl_str const* s, kdl_escape_mode mode);
 // Resolve backslash escape sequences
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape_v(kdl_version version, kdl_str const* s);
+
+// Escape special characters in a string according to KDLv1 string rules (subject to change)
+KDL_DEPRECATED("Use kdl_escape_v instead")
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape(kdl_str const* s, kdl_escape_mode mode);
+// Resolve backslash escape sequences according to KDLv1 rules (subject to change)
+KDL_DEPRECATED("Use kdl_unescape_v instead")
 KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape(kdl_str const* s);
 
 #ifdef __cplusplus

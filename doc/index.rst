@@ -22,6 +22,10 @@ The ckdl project also features simple "demo" bindings for the following language
 * :doc:`Python 3 <ckdl-py>`
 * :doc:`C++ 20 <kdlpp>`
 
+ckdl supports KDL version 1.0.0 and has preliminary support for KDL 2.0.0 (draft spec).
+KDL 2 support has to be explicitly enabled. When the KDL 2 spec is finalized, future
+versions of ckdl will default to parsing both KDL 2 and KDL 1 documents.
+
 Building ckdl
 -------------
 
@@ -35,12 +39,17 @@ ckdl is written in portable modern C, and it should ideally run anywhere you hav
 modern C compiler with at least a minimal standard library. The only really platform-dependent
 code is in the test suite, which you don't have to build if you can't.
 
-ckdl has been tested with:
+ckdl is routinely tested on recent versions of:
+
+* Linux (x86_64, x86) with glibc
+* Windows (x64), with Microsoft Visual C++
+* MacOS (arm64, x86_64)
+
+ckdl has in the past additionally been tested with:
 
 * Linux (x86_64, x86, arm64, arm32v7l), with glibc and musl libc - going back as far as
   CentOS 6
-* MacOS (arm64, x86_64)
-* Windows 10 (x86_64, x86), using Microsoft Visual C++ and Mingw-w64
+* Windows wih Mingw-w64
 * FreeBSD 12 on x86_64
 * NetBSD 5 on x86_64
 * Illumos (OmniOS) on x86_64
@@ -76,7 +85,6 @@ The CMake scripts support a few options, including:
   library
 * ``-DBUILD_KDLPP=OFF``: Disable building the C++20 bindings
 * ``-DBUILD_TESTS=OFF``: Disable building the test suite
-* ``-DDOWNLOAD_TEST_DATA=OFF``: Don't download test data from GitHub during configure
 
 To run the test suite, run ``make test`` or ``ctest`` in the build directory.
 

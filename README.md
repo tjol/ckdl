@@ -26,8 +26,11 @@ under `doc/` in this repository.
 
 ### Status
 
-ckdl passes all test cases in the KDL test suite except for one where a number is
-formatted a little differently.
+ckdl has full support for **KDL 1.0.0** and passes the upstream test suite.
 
-It's reasonable to suspect that ckdl is *close* to being standard-compliant, but
-of course it's always possible there are bugs affecting some finer details.
+ckdl has experimental (opt-in) support for a [draft version of KDL 2.0.0][kdl2].
+For the time being, KDLv2 support has to be explicitly requested via parser/emitter
+options; this behaviour is subject to change once KDLv2 is finalized.
+
+The parser also supports a hybrid mode that accepts both KDLv2 and KDLv1
+documents.

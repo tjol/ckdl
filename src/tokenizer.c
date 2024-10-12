@@ -17,22 +17,30 @@
 
 struct _kdl_tokenizer {
     kdl_str document;
+    kdl_character_set charset;
     kdl_read_func read_func;
     void* read_user_data;
     char* buffer;
     size_t buffer_size;
 };
 
+static inline void _remove_initial_bom(kdl_tokenizer* self);
+static inline void _update_doc_ptr(kdl_tokenizer* self, char const* new_ptr);
+static inline kdl_utf8_status _tok_get_char(
+    kdl_tokenizer* self, char const** cur, char const** next, uint32_t* codepoint);
+
 kdl_tokenizer* kdl_create_string_tokenizer(kdl_str doc)
 {
     kdl_tokenizer* self = malloc(sizeof(kdl_tokenizer));
     if (self != NULL) {
         self->document = doc;
+        self->charset = KDL_CHARACTER_SET_DEFAULT;
         self->read_func = NULL;
         self->read_user_data = NULL;
         self->buffer = NULL;
         self->buffer_size = 0;
     }
+    _remove_initial_bom(self);
     return self;
 }
 
@@ -41,11 +49,13 @@ kdl_tokenizer* kdl_create_stream_tokenizer(kdl_read_func read_func, void* user_d
     kdl_tokenizer* self = malloc(sizeof(kdl_tokenizer));
     if (self != NULL) {
         self->document = (kdl_str){.data = NULL, .len = 0};
+        self->charset = KDL_CHARACTER_SET_DEFAULT;
         self->read_func = read_func;
         self->read_user_data = user_data;
         self->buffer = NULL;
         self->buffer_size = 0;
     }
+    _remove_initial_bom(self);
     return self;
 }
 
@@ -56,6 +66,20 @@ void kdl_destroy_tokenizer(kdl_tokenizer* tokenizer)
     }
     free(tokenizer);
 }
+
+static inline void _remove_initial_bom(kdl_tokenizer* self)
+{
+    uint32_t c = 0;
+    char const* cur = self->document.data;
+    char const* next = NULL;
+
+    if (_tok_get_char(self, &cur, &next, &c) == KDL_UTF8_OK && c == 0xFEFF) {
+        // skip initial BOM
+        _update_doc_ptr(self, next);
+    }
+}
+
+void kdl_tokenizer_set_character_set(kdl_tokenizer* self, kdl_character_set cs) { self->charset = cs; }
 
 static size_t _refill_tokenizer(kdl_tokenizer* self)
 {
@@ -94,7 +118,7 @@ static size_t _refill_tokenizer(kdl_tokenizer* self)
     return read_count;
 }
 
-bool _kdl_is_whitespace(uint32_t c)
+bool _kdl_is_whitespace(kdl_character_set charset, uint32_t c)
 {
     return c == 0x0009 || // Character Tabulation
         c == 0x0020 ||    // Space
@@ -114,7 +138,10 @@ bool _kdl_is_whitespace(uint32_t c)
         c == 0x202F ||    // Narrow No-Break Space
         c == 0x205F ||    // Medium Mathematical Space
         c == 0x3000 ||    // Ideographic Space
-        c == 0xFEFF;      // Byte-order mark
+
+        (charset == KDL_CHARACTER_SET_V1 && c == 0xFEFF) || // Byte-order mark
+        (charset == KDL_CHARACTER_SET_V2 && c == 0x000B)    // Vertical Tab
+        ;
 }
 
 bool _kdl_is_newline(uint32_t c)
@@ -127,21 +154,62 @@ bool _kdl_is_newline(uint32_t c)
         c == 0x2029;      // PS  Paragraph Separator
 }
 
-bool _kdl_is_id(uint32_t c)
+bool _kdl_is_id(kdl_character_set charset, uint32_t c)
 {
-    return c > 0x20 && c <= 0x10FFFF //
-        && c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' && c != '}' && c != '<' && c != '>'
-        && c != ';' && c != '[' && c != ']' && c != '=' && c != ',' && c != '"' && !_kdl_is_whitespace(c)
-        && !_kdl_is_newline(c);
+    return _kdl_is_word_char(charset, c) && !(charset == KDL_CHARACTER_SET_V2 && c == '#');
 }
 
-bool _kdl_is_id_start(uint32_t c) { return _kdl_is_id(c) && (c < '0' || c > '9'); }
+bool _kdl_is_id_start(kdl_character_set charset, uint32_t c)
+{
+    return _kdl_is_word_start(charset, c) && !(charset == KDL_CHARACTER_SET_V2 && c == '#');
+}
 
-bool _kdl_is_end_of_word(uint32_t c)
+bool _kdl_is_word_char(kdl_character_set charset, uint32_t c)
+{
+    return c > 0x20 && c <= 0x10FFFF && c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' && c != '}'
+        && c != ';' && c != '[' && c != ']' && c != '"'
+        && !(charset == KDL_CHARACTER_SET_V1 && (c == '<' || c == '>' || c == ','))
+        && !_kdl_is_equals_sign(charset, c) && !_kdl_is_whitespace(charset, c) && !_kdl_is_newline(c)
+        && !_kdl_is_illegal_char(charset, c);
+}
+
+bool _kdl_is_word_start(kdl_character_set charset, uint32_t c)
+{
+    return _kdl_is_id(charset, c) && (c < '0' || c > '9');
+}
+
+bool _kdl_is_end_of_word(kdl_character_set charset, uint32_t c)
 {
     // is this character something that could terminate an identifier (or number) in some situation?
-    return _kdl_is_whitespace(c) || _kdl_is_newline(c) //
-        || c == ';' || c == ')' || c == '}' || c == '/' || c == '\\' || c == '=';
+    return _kdl_is_whitespace(charset, c) || _kdl_is_newline(c) //
+        || c == ';' || c == ')' || c == '}' || c == '/' || c == '\\' || _kdl_is_equals_sign(charset, c);
+}
+
+bool _kdl_is_illegal_char(kdl_character_set charset, uint32_t c)
+{
+    return charset == KDL_CHARACTER_SET_V2
+        && (c <= 0x0008 ||                  // control characters
+            (0x000E <= c && c <= 0x001F) || //    ''
+            c == 0x007F ||                  // delete
+            (0xD800 <= c && c <= 0xDFFF) || // UTF-16 surrogates
+            c == 0x200E || c == 0x200F ||   // directional control characters
+            (0x202A <= c && c <= 0x202E) || //    ''
+            (0x2066 <= c && c <= 0x2069) || //    ''
+            c == 0xFEFF ||                  // ZWNBSP = BOM
+            c > 0x10FFFF                    // not a codepoint
+        );
+}
+
+bool _kdl_is_equals_sign(kdl_character_set charset, uint32_t c)
+{
+    if (charset == KDL_CHARACTER_SET_V1) {
+        return c == '=';
+    } else {
+        return c == '=' || // EQUALS SIGN =
+            c == 0xFE66 || // SMALL EQUALS SIGN ﹦
+            c == 0xFF1D || // FULLWIDTH EQUALS SIGN ＝
+            c == 0x1F7F0;  // HEAVY EQUALS SIGN 🟰
+    }
 }
 
 static inline kdl_utf8_status _tok_get_char(
@@ -202,11 +270,14 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
         }
 
         // Could be the start of a new token
-        if (_kdl_is_whitespace(c)) {
+        if (_kdl_is_illegal_char(self->charset, c)) {
+            return KDL_TOKENIZER_ERROR;
+        } else if (_kdl_is_whitespace(self->charset, c)) {
             // find whitespace run
             size_t ws_start_offset = cur - self->document.data;
             cur = next;
-            while (_tok_get_char(self, &cur, &next, &c) == KDL_UTF8_OK && _kdl_is_whitespace(c)) {
+            while (
+                _tok_get_char(self, &cur, &next, &c) == KDL_UTF8_OK && _kdl_is_whitespace(self->charset, c)) {
                 // accept whitespace character
                 cur = next;
             }
@@ -275,7 +346,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             dest->value.len = (size_t)(next - cur);
             _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
-        } else if (c == '=') {
+        } else if (_kdl_is_equals_sign(self->charset, c)) {
             // attribute assignment
             dest->type = KDL_TOKEN_EQUALS;
             dest->value.data = cur;
@@ -288,8 +359,8 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
         } else if (c == '"') {
             // string
             return _pop_string(self, dest);
-        } else if (_kdl_is_id(c)) {
-            if (c == 'r') {
+        } else if (_kdl_is_word_char(self->charset, c)) {
+            if (c == 'r' || c == '#') {
                 // this *could* be a raw string
                 kdl_tokenizer_status rstring_status = _pop_raw_string(self, dest);
                 if (rstring_status == KDL_TOKENIZER_OK) return KDL_TOKENIZER_OK;
@@ -319,10 +390,10 @@ static kdl_tokenizer_status _pop_word(kdl_tokenizer* self, kdl_token* dest)
             return KDL_TOKENIZER_ERROR;
         }
 
-        if (_kdl_is_end_of_word(c)) {
+        if (_kdl_is_end_of_word(self->charset, c)) {
             // end the word
             goto end_of_word;
-        } else if (!_kdl_is_id(c)) {
+        } else if (!_kdl_is_word_char(self->charset, c)) {
             // invalid character
             return KDL_TOKENIZER_ERROR;
         }
@@ -369,7 +440,11 @@ static kdl_tokenizer_status _pop_comment(kdl_tokenizer* self, kdl_token* dest)
             default: // error
                 return KDL_TOKENIZER_ERROR;
             }
-            if (_kdl_is_newline(c)) goto end_of_line;
+            if (_kdl_is_illegal_char(self->charset, c)) {
+                return KDL_TOKENIZER_ERROR;
+            } else if (_kdl_is_newline(c)) {
+                goto end_of_line;
+            }
             // Accept this character
             cur = next;
         }
@@ -394,7 +469,9 @@ end_of_line:
                 return KDL_TOKENIZER_ERROR;
             }
 
-            if (c == '*' && prev_char == '/') {
+            if (_kdl_is_illegal_char(self->charset, c)) {
+                return KDL_TOKENIZER_ERROR;
+            } else if (c == '*' && prev_char == '/') {
                 // another level of nesting
                 ++depth;
                 c = 0; // "/*/" doesn't count as self-closing
@@ -440,8 +517,10 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
             return KDL_TOKENIZER_ERROR;
         }
 
-        if (c == '\\' && prev_char == '\\') {
-            c = 0; // double backslash is  no backslash
+        if (_kdl_is_illegal_char(self->charset, c)) {
+            return KDL_TOKENIZER_ERROR;
+        } else if (c == '\\' && prev_char == '\\') {
+            c = 0; // double backslash is no backslash
         } else if (c == '"' && prev_char != '\\') {
             break; // non-escaped end of string
         }
@@ -464,8 +543,20 @@ static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer* self, kdl_token* dest
     uint32_t c = 0;
     char const* cur = self->document.data;
     char const* next = NULL;
-    if (_tok_get_char(self, &cur, &next, &c) != KDL_UTF8_OK || c != 'r') return KDL_TOKENIZER_ERROR;
-    cur = next;
+    kdl_token_type type = KDL_TOKEN_RAW_STRING_V1;
+
+    if (_tok_get_char(self, &cur, &next, &c) != KDL_UTF8_OK) return KDL_TOKENIZER_ERROR;
+    switch (c) {
+    case 'r':
+        type = KDL_TOKEN_RAW_STRING_V1;
+        cur = next;
+        break;
+    case '#':
+        type = KDL_TOKEN_RAW_STRING_V2;
+        break;
+    default:
+        return KDL_TOKENIZER_ERROR;
+    }
 
     // Get all hashes, and the initial quote
     int hashes = 0;
@@ -502,7 +593,9 @@ static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer* self, kdl_token* dest
             return KDL_TOKENIZER_ERROR;
         }
 
-        if (end_quote_offset != 0 && c == '#') {
+        if (_kdl_is_illegal_char(self->charset, c)) {
+            return KDL_TOKENIZER_ERROR;
+        } else if (end_quote_offset != 0 && c == '#') {
             ++hashes_found;
         } else if (c == '"') {
             end_quote_offset = cur - self->document.data;
@@ -524,6 +617,6 @@ static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer* self, kdl_token* dest
     dest->value.data = self->document.data + string_start_offset;
     dest->value.len = end_quote_offset - string_start_offset;
     _update_doc_ptr(self, next);
-    dest->type = KDL_TOKEN_RAW_STRING;
+    dest->type = type;
     return KDL_TOKENIZER_OK;
 }
