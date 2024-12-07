@@ -66,11 +66,13 @@ KDL_EXPORT void kdl_free_string(kdl_owned_string* s);
 KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape_v(kdl_version version, kdl_str const* s, kdl_escape_mode mode);
 // Resolve backslash escape sequences
 KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape_v(kdl_version version, kdl_str const* s);
+// Resolve backslash escape sequences and (in v2) dedent string
+KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape_multi_line(kdl_version version, kdl_str const* s);
 
-// Escape special characters in a string according to KDLv1 string rules (subject to change)
+// Escape special characters in a string according to KDLv1 string rules
 KDL_DEPRECATED("Use kdl_escape_v instead")
 KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape(kdl_str const* s, kdl_escape_mode mode);
-// Resolve backslash escape sequences according to KDLv1 rules (subject to change)
+// Resolve backslash escape sequences according to KDLv1 rules
 KDL_DEPRECATED("Use kdl_unescape_v instead")
 KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape(kdl_str const* s);
 

@@ -363,8 +363,10 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
             }
         case KDL_TOKEN_WORD:
         case KDL_TOKEN_STRING:
+        case KDL_TOKEN_MULTILINE_STRING:
         case KDL_TOKEN_RAW_STRING_V1:
         case KDL_TOKEN_RAW_STRING_V2:
+        case KDL_TOKEN_RAW_MULTILINE_STRING:
             if (!_parse_value(self, token, &tmp_val, &self->tmp_string_key)) {
                 _set_parse_error(self, "Error parsing node name");
                 return &self->event;
@@ -633,6 +635,21 @@ static bool _parse_value(kdl_parser* self, kdl_token const* token, kdl_value* va
     case KDL_TOKEN_RAW_STRING_V2:
         if (_v2_allowed(self)) {
             _set_version(self, KDL_VERSION_2);
+            // newlines are not allowed in plain raw strings in v2
+            if (_kdl_str_contains_newline(&token->value)) {
+                return false;
+            }
+            // no parsing necessary
+            *s = kdl_clone_str(&token->value);
+            val->type = KDL_TYPE_STRING;
+            val->string = kdl_borrow_str(s);
+            return true;
+        } else {
+            return false;
+        }
+    case KDL_TOKEN_RAW_MULTILINE_STRING:
+        if (_v2_allowed(self)) {
+            _set_version(self, KDL_VERSION_2);
             // dedent multi-line string
             *s = _kdl_dedent_multiline_string(&token->value);
             if (s->data == NULL) {
@@ -650,7 +667,7 @@ static bool _parse_value(kdl_parser* self, kdl_token const* token, kdl_value* va
         kdl_owned_string v2_str = (kdl_owned_string){NULL, 0};
 
         if (_v1_allowed(self)) v1_str = kdl_unescape_v1(&token->value);
-        if (_v2_allowed(self)) v2_str = kdl_unescape_v2(&token->value);
+        if (_v2_allowed(self)) v2_str = kdl_unescape_v2_single_line(&token->value);
 
         if (v1_str.data == NULL && v2_str.data != NULL) {
             _set_version(self, KDL_VERSION_2);
@@ -670,6 +687,20 @@ static bool _parse_value(kdl_parser* self, kdl_token const* token, kdl_value* va
             val->type = KDL_TYPE_STRING;
             val->string = kdl_borrow_str(s);
             return true;
+        }
+    }
+    case KDL_TOKEN_MULTILINE_STRING: {
+        if (_v2_allowed(self)) {
+            *s = kdl_unescape_v2_multi_line(&token->value);
+            if (s->data == NULL) {
+                return false;
+            } else {
+                val->type = KDL_TYPE_STRING;
+                val->string = kdl_borrow_str(s);
+                return true;
+            }
+        } else {
+            return false;
         }
     }
     case KDL_TOKEN_WORD: {

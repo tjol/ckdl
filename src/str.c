@@ -108,8 +108,7 @@ kdl_owned_string kdl_escape(kdl_str const* s, kdl_escape_mode mode) { return kdl
 
 kdl_owned_string kdl_unescape(kdl_str const* s) { return kdl_unescape_v1(s); }
 
-KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape_v(
-    kdl_version version, kdl_str const* s, kdl_escape_mode mode)
+kdl_owned_string kdl_escape_v(kdl_version version, kdl_str const* s, kdl_escape_mode mode)
 {
     switch (version) {
     case KDL_VERSION_1:
@@ -121,13 +120,25 @@ KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_escape_v(
     }
 }
 
-KDL_NODISCARD KDL_EXPORT kdl_owned_string kdl_unescape_v(kdl_version version, kdl_str const* s)
+kdl_owned_string kdl_unescape_v(kdl_version version, kdl_str const* s)
 {
     switch (version) {
     case KDL_VERSION_1:
         return kdl_unescape_v1(s);
     case KDL_VERSION_2:
-        return kdl_unescape_v2(s);
+        return kdl_unescape_v2_single_line(s);
+    default:
+        return (kdl_owned_string){NULL, 0};
+    }
+}
+
+kdl_owned_string kdl_unescape_multi_line(kdl_version version, kdl_str const* s)
+{
+    switch (version) {
+    case KDL_VERSION_1:
+        return kdl_unescape_v1(s);
+    case KDL_VERSION_2:
+        return kdl_unescape_v2_multi_line(s);
     default:
         return (kdl_owned_string){NULL, 0};
     }
@@ -346,7 +357,23 @@ esc_error:
     return result;
 }
 
-kdl_owned_string kdl_unescape_v2(kdl_str const* s)
+kdl_owned_string kdl_unescape_v2_single_line(kdl_str const* s)
+{
+    kdl_owned_string result;
+    kdl_owned_string no_ws_escapes = _kdl_remove_escaped_whitespace(s);
+    kdl_str escaped = kdl_borrow_str(&no_ws_escapes);
+
+    if (_kdl_str_contains_newline(&escaped)) {
+        result = (kdl_owned_string){NULL, 0};
+    } else {
+        result = _kdl_resolve_escapes_v2(&escaped);
+    }
+
+    kdl_free_string(&no_ws_escapes);
+    return result;
+}
+
+kdl_owned_string kdl_unescape_v2_multi_line(kdl_str const* s)
 {
     kdl_owned_string result;
     kdl_owned_string no_ws_escapes = _kdl_remove_escaped_whitespace(s);
@@ -354,89 +381,17 @@ kdl_owned_string kdl_unescape_v2(kdl_str const* s)
     kdl_owned_string dedented = _kdl_dedent_multiline_string(&pre_dedent);
     kdl_str escaped = kdl_borrow_str(&dedented);
 
-    size_t orig_len = escaped.len;
-    _kdl_write_buffer buf = _kdl_new_write_buffer(orig_len);
-    if (buf.buf == NULL) goto unesc_error;
-    if (dedented.data == NULL) goto unesc_error;
-
-    uint32_t c = 0;
-    kdl_utf8_status status;
-
-    while ((status = _kdl_pop_codepoint(&escaped, &c)) == KDL_UTF8_OK) {
-        if (_kdl_is_illegal_char(KDL_CHARACTER_SET_V2, c)) {
-            goto unesc_error;
-        } else if (c == '\\') {
-            if (_kdl_pop_codepoint(&escaped, &c) != KDL_UTF8_OK) goto unesc_error;
-
-            switch (c) {
-            case 'n':
-                _kdl_buf_push_char(&buf, '\n');
-                break;
-            case 'r':
-                _kdl_buf_push_char(&buf, '\r');
-                break;
-            case 't':
-                _kdl_buf_push_char(&buf, '\t');
-                break;
-            case 's':
-                _kdl_buf_push_char(&buf, ' ');
-                break;
-            case '\\':
-                _kdl_buf_push_char(&buf, '\\');
-                break;
-            case '"':
-                _kdl_buf_push_char(&buf, '\"');
-                break;
-            case 'b':
-                _kdl_buf_push_char(&buf, '\b');
-                break;
-            case 'f':
-                _kdl_buf_push_char(&buf, '\f');
-                break;
-            case 'u': {
-                // u should be followed by {
-                if (_kdl_pop_codepoint(&escaped, &c) != KDL_UTF8_OK || c != '{') goto unesc_error;
-
-                uint32_t r = 0;
-                while ((status = _kdl_pop_codepoint(&escaped, &c)) == KDL_UTF8_OK) {
-                    // parse hex
-                    if (c == '}') break;
-                    else if (c >= '0' && c <= '9') r = (r << 4) + (c - '0');
-                    else if (c >= 'a' && c <= 'f') r = (r << 4) + (c - 'a' + 0xa);
-                    else if (c >= 'A' && c <= 'F') r = (r << 4) + (c - 'A' + 0xa);
-                    else goto unesc_error;
-                }
-                if (status != KDL_UTF8_OK) goto unesc_error;
-                if ((0xD800 <= r && r <= 0xDFFF) // only Unicode Scalar values are allowed in strings
-                    || !_kdl_buf_push_codepoint(&buf, r))
-                    goto unesc_error;
-                break;
-            }
-            default:
-                // invalid escape
-                goto unesc_error;
-            }
-        } else {
-            // Nothing special, copy the character
-            _kdl_buf_push_codepoint(&buf, c);
-        }
-    }
-
-    if (status == KDL_UTF8_EOF) {
-        // ok
-        kdl_free_string(&no_ws_escapes);
-        kdl_free_string(&dedented);
-        result = _kdl_buf_to_string(&buf);
-        return result;
-    } else {
-        goto unesc_error;
-    }
-
-unesc_error:
     kdl_free_string(&no_ws_escapes);
+
+    if (dedented.data == NULL) {
+        // dedenting error
+        result = (kdl_owned_string){NULL, 0};
+    } else {
+        result = _kdl_resolve_escapes_v2(&escaped);
+    }
+
     kdl_free_string(&dedented);
-    _kdl_free_write_buffer(&buf);
-    result = (kdl_owned_string){NULL, 0};
+
     return result;
 }
 
@@ -483,8 +438,8 @@ kdl_owned_string _kdl_dedent_multiline_string(kdl_str const* s)
     }
 
     if (final_newline == NULL) {
-        // no newlines = no change
-        return _kdl_buf_to_string(&buf_norm_lf);
+        // no newlines: this is not a valid multi-line string!
+        goto dedent_err;
     }
 
     kdl_str indent
@@ -498,8 +453,7 @@ kdl_owned_string _kdl_dedent_multiline_string(kdl_str const* s)
         }
     }
 
-    // The first character of the string MUST be a newline if there are any
-    // newlines.
+    // The first character of the string MUST be a newline
     if (norm_lf.data[0] != '\n') {
         goto dedent_err;
     }
@@ -607,4 +561,104 @@ unesc_error:
     _kdl_free_write_buffer(&buf);
     result = (kdl_owned_string){NULL, 0};
     return result;
+}
+
+kdl_owned_string _kdl_resolve_escapes_v2(kdl_str const* s)
+{
+    kdl_owned_string result;
+    kdl_str escaped = *s;
+
+    size_t orig_len = escaped.len;
+    _kdl_write_buffer buf = _kdl_new_write_buffer(orig_len);
+    if (buf.buf == NULL) goto unesc_error;
+
+    uint32_t c = 0;
+    kdl_utf8_status status;
+
+    while ((status = _kdl_pop_codepoint(&escaped, &c)) == KDL_UTF8_OK) {
+        if (_kdl_is_illegal_char(KDL_CHARACTER_SET_V2, c)) {
+            goto unesc_error;
+        } else if (c == '\\') {
+            if (_kdl_pop_codepoint(&escaped, &c) != KDL_UTF8_OK) goto unesc_error;
+
+            switch (c) {
+            case 'n':
+                _kdl_buf_push_char(&buf, '\n');
+                break;
+            case 'r':
+                _kdl_buf_push_char(&buf, '\r');
+                break;
+            case 't':
+                _kdl_buf_push_char(&buf, '\t');
+                break;
+            case 's':
+                _kdl_buf_push_char(&buf, ' ');
+                break;
+            case '\\':
+                _kdl_buf_push_char(&buf, '\\');
+                break;
+            case '"':
+                _kdl_buf_push_char(&buf, '\"');
+                break;
+            case 'b':
+                _kdl_buf_push_char(&buf, '\b');
+                break;
+            case 'f':
+                _kdl_buf_push_char(&buf, '\f');
+                break;
+            case 'u': {
+                // u should be followed by {
+                if (_kdl_pop_codepoint(&escaped, &c) != KDL_UTF8_OK || c != '{') goto unesc_error;
+
+                uint32_t r = 0;
+                while ((status = _kdl_pop_codepoint(&escaped, &c)) == KDL_UTF8_OK) {
+                    // parse hex
+                    if (c == '}') break;
+                    else if (c >= '0' && c <= '9') r = (r << 4) + (c - '0');
+                    else if (c >= 'a' && c <= 'f') r = (r << 4) + (c - 'a' + 0xa);
+                    else if (c >= 'A' && c <= 'F') r = (r << 4) + (c - 'A' + 0xa);
+                    else goto unesc_error;
+                }
+                if (status != KDL_UTF8_OK) goto unesc_error;
+                if ((0xD800 <= r && r <= 0xDFFF) // only Unicode Scalar values are allowed in strings
+                    || !_kdl_buf_push_codepoint(&buf, r))
+                    goto unesc_error;
+                break;
+            }
+            default:
+                // invalid escape
+                goto unesc_error;
+            }
+        } else {
+            // Nothing special, copy the character
+            _kdl_buf_push_codepoint(&buf, c);
+        }
+    }
+
+    if (status == KDL_UTF8_EOF) {
+        // ok
+        result = _kdl_buf_to_string(&buf);
+        return result;
+    } else {
+        goto unesc_error;
+    }
+
+unesc_error:
+    _kdl_free_write_buffer(&buf);
+    result = (kdl_owned_string){NULL, 0};
+    return result;
+}
+
+bool _kdl_str_contains_newline(kdl_str const* s)
+{
+    kdl_str string = *s;
+    kdl_utf8_status status;
+    uint32_t c;
+
+    while ((status = _kdl_pop_codepoint(&string, &c)) == KDL_UTF8_OK) {
+        if (_kdl_is_newline(c)) {
+            return true;
+        }
+    }
+    return false;
 }

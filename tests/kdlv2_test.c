@@ -210,7 +210,6 @@ static void test_multiline_strings(void)
 {
     kdl_str expected = kdl_str_from_cstr("test\n\nstring");
     kdl_str escaped_variants[] = {
-        kdl_str_from_cstr("test\\n\\nstring"),
         kdl_str_from_cstr("\ntest\\n\\nstring\n"),
         kdl_str_from_cstr("\r\ntest\r\rstring\n"),
         kdl_str_from_cstr("\n \t test\f \t \f \t string\n \t "),
@@ -219,7 +218,7 @@ static void test_multiline_strings(void)
     int n_escaped_variants = sizeof(escaped_variants) / sizeof(escaped_variants[0]);
 
     for (int i = 0; i < n_escaped_variants; ++i) {
-        kdl_owned_string result = kdl_unescape_v(KDL_VERSION_2, &escaped_variants[i]);
+        kdl_owned_string result = kdl_unescape_multi_line(KDL_VERSION_2, &escaped_variants[i]);
         ASSERT(result.len == expected.len);
         ASSERT(memcmp(result.data, expected.data, expected.len) == 0);
         kdl_free_string(&result);
@@ -232,8 +231,12 @@ static void test_multiline_strings(void)
     int n_invalid_strings = sizeof(invalid_strings) / sizeof(invalid_strings[0]);
 
     for (int i = 0; i < n_invalid_strings; ++i) {
-        kdl_owned_string result = kdl_unescape_v(KDL_VERSION_2, &invalid_strings[i]);
-        ASSERT(result.data == NULL);
+        // invalid as multi-line strings
+        kdl_owned_string result_ml = kdl_unescape_multi_line(KDL_VERSION_2, &invalid_strings[i]);
+        ASSERT(result_ml.data == NULL);
+        // invalid as single-line strings
+        kdl_owned_string result_sl = kdl_unescape_v(KDL_VERSION_2, &invalid_strings[i]);
+        ASSERT(result_sl.data == NULL);
     }
 
     kdl_str edge_cases[][2] = {
@@ -248,7 +251,7 @@ static void test_multiline_strings(void)
     for (int i = 0; i < n_edge_cases; ++i) {
         kdl_str const* input = &edge_cases[i][0];
         kdl_str const* output = &edge_cases[i][1];
-        kdl_owned_string result = kdl_unescape_v(KDL_VERSION_2, input);
+        kdl_owned_string result = kdl_unescape_multi_line(KDL_VERSION_2, input);
         ASSERT(result.len == output->len);
         ASSERT(memcmp(result.data, output->data, output->len) == 0);
         kdl_free_string(&result);

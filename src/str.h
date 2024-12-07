@@ -29,10 +29,14 @@ KDL_NODISCARD kdl_owned_string kdl_unescape_v1(kdl_str const* s);
 
 // Escape special characters in a string according to KDLv2 string rules
 KDL_NODISCARD kdl_owned_string kdl_escape_v2(kdl_str const* s, kdl_escape_mode mode);
-// Resolve backslash escape sequences according to KDLv2 rules
-KDL_NODISCARD kdl_owned_string kdl_unescape_v2(kdl_str const* s);
+// Resolve backslash escape sequences according to KDLv2 rules for single-line strings
+KDL_NODISCARD kdl_owned_string kdl_unescape_v2_single_line(kdl_str const* s);
+// Resolve backslash escape sequences according to KDLv2 rules for multi-line strings
+KDL_NODISCARD kdl_owned_string kdl_unescape_v2_multi_line(kdl_str const* s);
 
 KDL_NODISCARD kdl_owned_string _kdl_dedent_multiline_string(kdl_str const* s);
 KDL_NODISCARD kdl_owned_string _kdl_remove_escaped_whitespace(kdl_str const* s);
+KDL_NODISCARD kdl_owned_string _kdl_resolve_escapes_v2(kdl_str const* s);
+bool _kdl_str_contains_newline(kdl_str const* s);
 
 #endif // KDL_INTERNAL_STR_H_
