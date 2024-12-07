@@ -37,6 +37,8 @@ enum _kdl_parser_state {
     PARSER_FLAG_MAYBE_IN_PROPERTY = 0x2000,
     PARSER_FLAG_BARE_PROPERTY_NAME = 0x4000,
     PARSER_FLAG_NEWLINES_ARE_WHITESPACE = 0x8000,
+    PARSER_FLAG_END_OF_NODE = 0x10000,
+    PARSER_FLAG_END_OF_NODE_OR_CHILD_BLOCK = 0x20000,
     PARSER_FLAG_CONTEXTUALLY_ILLEGAL_WHITESPACE = 0x100000,
     // Bitmask for testing the state
     PARSER_MASK_WHITESPACE_CONTEXTUALLY_BANNED = //
@@ -409,6 +411,9 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
                 if (self->slashdash_depth == self->depth + 1) {
                     // slashdash is ending here
                     self->slashdash_depth = -1;
+                    self->state |= PARSER_FLAG_END_OF_NODE_OR_CHILD_BLOCK;
+                } else {
+                    self->state |= PARSER_FLAG_END_OF_NODE;
                 }
                 return NULL;
             }
@@ -528,6 +533,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
             return &self->event;
         }
     } else {
+        // End of node cases: always valid
         switch (token->type) {
         case KDL_TOKEN_END_CHILDREN:
             // end this node, and process the token again
@@ -548,6 +554,31 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
                 ev = _apply_slashdash(self);
                 return ev;
             }
+        default:
+            break;
+        }
+
+        // Child block: valid unless we've had a non-slashdashed child block
+        // already or slashdash is active now
+        if (self->state & PARSER_FLAG_END_OF_NODE && self->slashdash_depth < 0) {
+            _set_parse_error(self, "Expected end of node");
+            return &self->event;
+        }
+        if (token->type == KDL_TOKEN_START_CHILDREN) {
+            // Next event will probably be a new node
+            self->state = PARSER_OUTSIDE_NODE;
+            ++self->depth;
+            _reset_event(self);
+            return NULL;
+        }
+
+        // Args, props: only valid at the start
+        if (self->state & (PARSER_FLAG_END_OF_NODE | PARSER_FLAG_END_OF_NODE_OR_CHILD_BLOCK)) {
+            _set_parse_error(self, "Expected end of node or child block");
+            return &self->event;
+        }
+
+        switch (token->type) {
         case KDL_TOKEN_WORD:
         case KDL_TOKEN_STRING:
         case KDL_TOKEN_MULTILINE_STRING:
@@ -615,12 +646,6 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
                 self->state |= PARSER_FLAG_TYPE_ANNOTATION_START;
                 return NULL;
             }
-        case KDL_TOKEN_START_CHILDREN:
-            // enter the node / allow new children
-            self->state = PARSER_OUTSIDE_NODE;
-            ++self->depth;
-            _reset_event(self);
-            return NULL;
         default:
             _set_parse_error(self, "Unexpected token");
             return &self->event;
