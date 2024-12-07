@@ -36,6 +36,7 @@ enum _kdl_parser_state {
     PARSER_FLAG_IN_PROPERTY = 0x1000,
     PARSER_FLAG_MAYBE_IN_PROPERTY = 0x2000,
     PARSER_FLAG_BARE_PROPERTY_NAME = 0x4000,
+    PARSER_FLAG_NEWLINES_ARE_WHITESPACE = 0x8000,
     PARSER_FLAG_CONTEXTUALLY_ILLEGAL_WHITESPACE = 0x100000,
     // Bitmask for testing the state
     PARSER_MASK_WHITESPACE_CONTEXTUALLY_BANNED = //
@@ -216,6 +217,10 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
             }
         }
 
+        if (token.type == KDL_TOKEN_NEWLINE && self->state & PARSER_FLAG_NEWLINES_ARE_WHITESPACE) {
+            token.type = KDL_TOKEN_WHITESPACE;
+        }
+
         switch (token.type) {
         case KDL_TOKEN_WHITESPACE:
             if (self->state & PARSER_MASK_WHITESPACE_BANNED_V1) {
@@ -260,10 +265,13 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
                 if (self->slashdash_depth < 0) {
                     self->slashdash_depth = self->depth + 1;
                 }
+                self->state |= PARSER_FLAG_NEWLINES_ARE_WHITESPACE;
                 break;
             }
             _fallthrough_;
         default:
+            self->state &= ~PARSER_FLAG_NEWLINES_ARE_WHITESPACE;
+
             switch (self->state & 0xff) {
             case PARSER_OUTSIDE_NODE:
                 ev = _next_node(self, &token);
