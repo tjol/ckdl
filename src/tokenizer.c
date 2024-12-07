@@ -1,4 +1,5 @@
 #include "kdl/tokenizer.h"
+#include "compat.h"
 #include "grammar.h"
 #include "utf8.h"
 
@@ -251,7 +252,6 @@ static inline void _update_doc_ptr(kdl_tokenizer* self, char const* new_ptr)
 static kdl_tokenizer_status _pop_word(kdl_tokenizer* self, kdl_token* dest);
 static kdl_tokenizer_status _pop_comment(kdl_tokenizer* self, kdl_token* dest);
 static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest);
-static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer* self, kdl_token* dest);
 
 kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
 {
@@ -362,7 +362,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
         } else if (_kdl_is_word_char(self->charset, c)) {
             if (c == 'r' || c == '#') {
                 // this *could* be a raw string
-                kdl_tokenizer_status rstring_status = _pop_raw_string(self, dest);
+                kdl_tokenizer_status rstring_status = _pop_string(self, dest);
                 if (rstring_status == KDL_TOKENIZER_OK) return KDL_TOKENIZER_OK;
                 // else: parse this as an identifier instead (which may also fail)
             }
@@ -500,67 +500,28 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
     uint32_t c = 0;
     char const* cur = self->document.data;
     char const* next = NULL;
-    if (_tok_get_char(self, &cur, &next, &c) != KDL_UTF8_OK || c != '"') return KDL_TOKENIZER_ERROR;
-
-    // eat the initial quote
-    _update_doc_ptr(self, next);
-    cur = self->document.data;
-
-    uint32_t prev_char = 0;
-
-    while (true) {
-        switch (_tok_get_char(self, &cur, &next, &c)) {
-        case KDL_UTF8_OK:
-            break;
-        case KDL_UTF8_EOF: // eof in a string is an error
-        default:           // error
-            return KDL_TOKENIZER_ERROR;
-        }
-
-        if (_kdl_is_illegal_char(self->charset, c)) {
-            return KDL_TOKENIZER_ERROR;
-        } else if (c == '\\' && prev_char == '\\') {
-            c = 0; // double backslash is no backslash
-        } else if (c == '"' && prev_char != '\\') {
-            break; // non-escaped end of string
-        }
-
-        // Accept this character
-        cur = next;
-        prev_char = c;
-    }
-
-    // cur = the quote, next = the char after the quote
-    dest->value = self->document;
-    dest->value.len = (size_t)(cur - dest->value.data);
-    _update_doc_ptr(self, next);
-    dest->type = KDL_TOKEN_STRING;
-    return KDL_TOKENIZER_OK;
-}
-
-static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer* self, kdl_token* dest)
-{
-    uint32_t c = 0;
-    char const* cur = self->document.data;
-    char const* next = NULL;
-    kdl_token_type type = KDL_TOKEN_RAW_STRING_V1;
+    bool is_raw = false;
+    bool is_v1 = false;
 
     if (_tok_get_char(self, &cur, &next, &c) != KDL_UTF8_OK) return KDL_TOKENIZER_ERROR;
     switch (c) {
     case 'r':
-        type = KDL_TOKEN_RAW_STRING_V1;
+        is_raw = true;
+        is_v1 = true;
         cur = next;
         break;
     case '#':
-        type = KDL_TOKEN_RAW_STRING_V2;
+        is_raw = true;
+        break;
+    case '"':
         break;
     default:
         return KDL_TOKENIZER_ERROR;
     }
 
-    // Get all hashes, and the initial quote
+    // Count the hashes
     int hashes = 0;
-    while (true) {
+    while (is_raw) {
         switch (_tok_get_char(self, &cur, &next, &c)) {
         case KDL_UTF8_OK:
             break;
@@ -579,11 +540,55 @@ static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer* self, kdl_token* dest
         }
     }
 
-    cur = next;
+    // Count the quotes
+    int initial_quote_count = 0;
+    while (initial_quote_count < 3) {
+        switch (_tok_get_char(self, &cur, &next, &c)) {
+        case KDL_UTF8_OK:
+            break;
+        case KDL_UTF8_EOF:
+            // is this an empty string?
+            if (!is_raw && initial_quote_count == 2) {
+                dest->value.data = self->document.data;
+                dest->value.len = 0;
+                _update_doc_ptr(self, cur);
+                dest->type = KDL_TOKEN_STRING;
+                return KDL_TOKENIZER_OK;
+            }
+            _fallthrough_;
+        default: // error
+            return KDL_TOKENIZER_ERROR;
+        }
+
+        if (c == '"') {
+            ++initial_quote_count;
+            cur = next;
+        } else {
+            break;
+        }
+    }
+
+    if (initial_quote_count == 2) {
+        // this is an empty string and we overshot - backtrack by one char
+        --cur;
+        --initial_quote_count;
+    }
+
+    // cur is now the first character after the quote(s)
     size_t string_start_offset = cur - self->document.data;
+
     // Scan the string itself
     int hashes_found = 0;
+    int quotes_found = 0;
     size_t end_quote_offset = 0;
+    uint32_t prev_char = 0;
+
+    // for the pecial case of a raw string containing just a quote: #"""#
+    if (is_raw && initial_quote_count == 3) {
+        quotes_found = 3;
+        end_quote_offset = (size_t)(-1);
+    }
+
     while (true) {
         switch (_tok_get_char(self, &cur, &next, &c)) {
         case KDL_UTF8_OK:
@@ -595,28 +600,55 @@ static kdl_tokenizer_status _pop_raw_string(kdl_tokenizer* self, kdl_token* dest
 
         if (_kdl_is_illegal_char(self->charset, c)) {
             return KDL_TOKENIZER_ERROR;
-        } else if (end_quote_offset != 0 && c == '#') {
-            ++hashes_found;
-        } else if (c == '"') {
-            end_quote_offset = cur - self->document.data;
+        } else if (!is_raw && c == '\\' && prev_char == '\\') {
+            c = 0; // double backslash is no backslash
+            quotes_found = hashes_found = 0;
+            end_quote_offset = 0;
+        } else if (c == '"' && (is_raw || prev_char != '\\')) {
+            if (quotes_found == 0) {
+                end_quote_offset = cur - self->document.data;
+            }
+            ++quotes_found;
             hashes_found = 0;
+        } else if (c == '#' && (hashes_found != 0 || quotes_found == initial_quote_count)) {
+            ++hashes_found;
+            quotes_found = 0;
         } else {
+            // this is neither a quote nor a hash
+            quotes_found = hashes_found = 0;
             end_quote_offset = 0;
         }
 
-        if (end_quote_offset != 0 && hashes_found == hashes) {
+        if (end_quote_offset != 0
+            && ((hashes == 0 && quotes_found == initial_quote_count)
+                || (hashes != 0 && hashes_found == hashes))) {
             // end of string!
             break;
         } else {
             // Accept character
+            prev_char = c;
             cur = next;
         }
     }
 
-    // end_quote = the quote, next = the char after the quote and hashes
+    // special case: raw string #"""#
+    if (is_raw && end_quote_offset == (size_t)(-1)) {
+        // string_start_offset points to the hash right now!
+        string_start_offset -= 2;
+        end_quote_offset = string_start_offset + 1;
+        initial_quote_count = 1;
+    }
+
+    // end_quote_ptr = the (first) end quote, next = the char after the quote and hashes
     dest->value.data = self->document.data + string_start_offset;
     dest->value.len = end_quote_offset - string_start_offset;
     _update_doc_ptr(self, next);
-    dest->type = type;
+    if (initial_quote_count == 3) {
+        dest->type = is_raw ? KDL_TOKEN_RAW_MULTILINE_STRING : KDL_TOKEN_MULTILINE_STRING;
+    } else if (is_raw) {
+        dest->type = is_v1 ? KDL_TOKEN_RAW_STRING_V1 : KDL_TOKEN_RAW_STRING_V2;
+    } else {
+        dest->type = KDL_TOKEN_STRING;
+    }
     return KDL_TOKENIZER_OK;
 }

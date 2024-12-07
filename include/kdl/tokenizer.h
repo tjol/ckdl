@@ -16,22 +16,24 @@ enum kdl_tokenizer_status {
 
 // Type of token
 enum kdl_token_type {
-    KDL_TOKEN_START_TYPE,          // '('
-    KDL_TOKEN_END_TYPE,            // ')'
-    KDL_TOKEN_WORD,                // identifier, number, boolean, or null
-    KDL_TOKEN_STRING,              // regular string
-    KDL_TOKEN_RAW_STRING_V1,       // KDLV1 raw string
-    KDL_TOKEN_RAW_STRING_V2,       // KDLv2 raw string
-    KDL_TOKEN_SINGLE_LINE_COMMENT, // // ...
-    KDL_TOKEN_SLASHDASH,           // /-
-    KDL_TOKEN_MULTI_LINE_COMMENT,  // /* ... */
-    KDL_TOKEN_EQUALS,              // '='
-    KDL_TOKEN_START_CHILDREN,      // '{'
-    KDL_TOKEN_END_CHILDREN,        // '}'
-    KDL_TOKEN_NEWLINE,             // LF, CR, or CRLF
-    KDL_TOKEN_SEMICOLON,           // ';'
-    KDL_TOKEN_LINE_CONTINUATION,   // '\\'
-    KDL_TOKEN_WHITESPACE,          // any regular whitespace
+    KDL_TOKEN_START_TYPE,           // '('
+    KDL_TOKEN_END_TYPE,             // ')'
+    KDL_TOKEN_WORD,                 // identifier, number, boolean, or null
+    KDL_TOKEN_STRING,               // regular string
+    KDL_TOKEN_MULTILINE_STRING,     // KDLv2 multi-line string
+    KDL_TOKEN_RAW_STRING_V1,        // KDLv1 raw string
+    KDL_TOKEN_RAW_STRING_V2,        // KDLv2 raw string
+    KDL_TOKEN_RAW_MULTILINE_STRING, // KDLv2 raw multiline string
+    KDL_TOKEN_SINGLE_LINE_COMMENT,  // // ...
+    KDL_TOKEN_SLASHDASH,            // /-
+    KDL_TOKEN_MULTI_LINE_COMMENT,   // /* ... */
+    KDL_TOKEN_EQUALS,               // '='
+    KDL_TOKEN_START_CHILDREN,       // '{'
+    KDL_TOKEN_END_CHILDREN,         // '}'
+    KDL_TOKEN_NEWLINE,              // LF, CR, or CRLF
+    KDL_TOKEN_SEMICOLON,            // ';'
+    KDL_TOKEN_LINE_CONTINUATION,    // '\\'
+    KDL_TOKEN_WHITESPACE,           // any regular whitespace
 };
 
 // Character set configuration

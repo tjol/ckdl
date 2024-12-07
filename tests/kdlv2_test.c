@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-static void test_tokenizer_strings(void)
+static void test_tokenizer_raw_strings(void)
 {
     kdl_token token;
 
@@ -36,6 +36,40 @@ static void test_tokenizer_strings(void)
 
     kdl_destroy_tokenizer(tok);
 }
+
+static void test_tokenizer_multiline_strings(void)
+{
+    kdl_token token;
+
+    char const* doc1 = "\"\"\"\nabc\"\n\"\"\"";
+    char const* doc2 = "##\"\"\"\nabc\"\"\"#\n\"\"\"##";
+
+    kdl_str k_doc1 = kdl_str_from_cstr(doc1);
+    kdl_str k_doc2 = kdl_str_from_cstr(doc2);
+
+    kdl_tokenizer* tok = kdl_create_string_tokenizer(k_doc1);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_OK);
+    ASSERT(token.type == KDL_TOKEN_MULTILINE_STRING);
+    ASSERT(token.value.len == 6);
+    ASSERT(memcmp(token.value.data, "\nabc\"\n", 6) == 0);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_EOF);
+
+    kdl_destroy_tokenizer(tok);
+
+    tok = kdl_create_string_tokenizer(k_doc2);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_OK);
+    ASSERT(token.type == KDL_TOKEN_RAW_MULTILINE_STRING);
+    ASSERT(token.value.len == 9);
+    ASSERT(memcmp(token.value.data, "\nabc\"\"\"#\n", 9) == 0);
+
+    ASSERT(kdl_pop_token(tok, &token) == KDL_TOKENIZER_EOF);
+
+    kdl_destroy_tokenizer(tok);
+}
+
 
 static void test_tokenizer_identifiers(void)
 {
@@ -454,7 +488,8 @@ static void test_parser_comment_in_type(void)
 
 void TEST_MAIN(void)
 {
-    run_test("Tokenizer: KDLv2 strings", &test_tokenizer_strings);
+    run_test("Tokenizer: KDLv2 raw strings", &test_tokenizer_raw_strings);
+    run_test("Tokenizer: KDLv2 multi-line strings", &test_tokenizer_multiline_strings);
     run_test("Tokenizer: KDLv2 identifiers", &test_tokenizer_identifiers);
     run_test("Tokenizer: KDLv2 whitespace", &test_tokenizer_whitespace);
     run_test("Tokenizer: byte-order-mark", &test_tokenizer_bom);
