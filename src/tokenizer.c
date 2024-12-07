@@ -608,7 +608,12 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
             if (quotes_found == 0) {
                 end_quote_offset = cur - self->document.data;
             }
-            ++quotes_found;
+            if (quotes_found < initial_quote_count) {
+                ++quotes_found;
+            } else {
+                // possibly extra quotes at the end of a raw string.
+                ++end_quote_offset;
+            }
             hashes_found = 0;
         } else if (c == '#' && (hashes_found != 0 || quotes_found == initial_quote_count)) {
             ++hashes_found;
