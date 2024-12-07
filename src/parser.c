@@ -403,11 +403,14 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
                 _set_parse_error(self, "Unexpected '}'");
                 return &self->event;
             } else {
+                self->state = PARSER_IN_NODE;
                 --self->depth;
                 _reset_event(self);
-                self->event.event = KDL_EVENT_END_NODE;
-                ev = _apply_slashdash(self);
-                return ev;
+                if (self->slashdash_depth == self->depth + 1) {
+                    // slashdash is ending here
+                    self->slashdash_depth = -1;
+                }
+                return NULL;
             }
         default:
             _set_parse_error(self, "Unexpected token, expected node");
@@ -615,12 +618,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         case KDL_TOKEN_START_CHILDREN:
             // enter the node / allow new children
             self->state = PARSER_OUTSIDE_NODE;
-            // if we just opened a slashdash, reduced its depth so that it ends
-            // at the end of the parent node (we're commenting out the children block)
-            if (self->slashdash_depth == self->depth + 1) {
-                --self->slashdash_depth; // as if the /- had appeared before the node
-                // the node has already been forwarded, so that's fine
-            }
+            ++self->depth;
             _reset_event(self);
             return NULL;
         default:
