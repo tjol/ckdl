@@ -35,4 +35,4 @@ options; this behaviour is subject to change once KDLv2 is finalized.
 The parser also supports a hybrid mode that accepts both KDLv2 and KDLv1
 documents.
 
-[kdl2]: https://github.com/kdl-org/kdl/pull/286
+[kdl2]: https://github.com/kdl-org/kdl/blob/main/SPEC.md
