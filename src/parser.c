@@ -311,8 +311,10 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
         switch (token->type) {
         case KDL_TOKEN_WORD:
         case KDL_TOKEN_STRING:
+        case KDL_TOKEN_MULTILINE_STRING:
         case KDL_TOKEN_RAW_STRING_V1:
         case KDL_TOKEN_RAW_STRING_V2:
+        case KDL_TOKEN_RAW_MULTILINE_STRING:
             if (!_parse_value(self, token, &tmp_val, &self->tmp_string_type)) {
                 _set_parse_error(self, "Error parsing type annotation");
                 return &self->event;
@@ -482,8 +484,10 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         switch (token->type) {
         case KDL_TOKEN_WORD:
         case KDL_TOKEN_STRING:
+        case KDL_TOKEN_MULTILINE_STRING:
         case KDL_TOKEN_RAW_STRING_V1:
         case KDL_TOKEN_RAW_STRING_V2:
+        case KDL_TOKEN_RAW_MULTILINE_STRING:
             if (!_parse_value(self, token, &tmp_val, &self->tmp_string_type)) {
                 _set_parse_error(self, "Error parsing type annotation");
                 return &self->event;
@@ -535,8 +539,10 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
             }
         case KDL_TOKEN_WORD:
         case KDL_TOKEN_STRING:
+        case KDL_TOKEN_MULTILINE_STRING:
         case KDL_TOKEN_RAW_STRING_V1:
-        case KDL_TOKEN_RAW_STRING_V2: {
+        case KDL_TOKEN_RAW_STRING_V2:
+        case KDL_TOKEN_RAW_MULTILINE_STRING: {
             // Either a property key, or a property value, or an argument.
             if (!_parse_value(self, token, &self->event.value, &self->tmp_string_value)) {
                 _set_parse_error(self, "Error parsing property or argument");
