@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- The parser has been updated to the newest version of the KDLv2 spec (TBC)
+  * multi-line strings now use `"""` instead of `"`
+  * slashdash behaviour has been harmonized
+- `kdl_unescape_v` now applies the single-line-string rules for KDLv2; use
+  `kdl_unescape_multi_line` for multi-line rules.
+
 ## v0.2.0 (2024-10-13)
 
 Bug fixed:

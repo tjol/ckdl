@@ -155,11 +155,19 @@ String behaviour varies by KDL version:
 
 .. c:function:: kdl_owned_string kdl_unescape_v(kdl_version version, kdl_str const* s)
 
-    Resolve backslash escape sequences
+    Resolve backslash escape sequences.
 
     :param version: The KDL version to use
-    :param s: A string that might have been surrounded by ``""`` in a KDL file
+    :param s: A string that might have been surrounded by ``"`` in a KDL file
     :return: The string with all backslash escapes replaced
+
+.. c:function:: kdl_owned_string kdl_unescape_multi_line(kdl_version version, kdl_str const* s)
+
+    Dedent the multi-line string and resolve backslash escape sequences.
+
+    :param version: The KDL version to use
+    :param s: A string that might have been surrounded by ``"""`` in a KDL file (in KDLv1: ``"``)
+    :return: The dedented string with all backslash escapes replaced
 
 
 KDL Values
