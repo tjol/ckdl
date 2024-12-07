@@ -168,10 +168,9 @@ bool _kdl_is_id_start(kdl_character_set charset, uint32_t c)
 bool _kdl_is_word_char(kdl_character_set charset, uint32_t c)
 {
     return c > 0x20 && c <= 0x10FFFF && c != '\\' && c != '/' && c != '(' && c != ')' && c != '{' && c != '}'
-        && c != ';' && c != '[' && c != ']' && c != '"'
+        && c != ';' && c != '[' && c != ']' && c != '"' && c != '='
         && !(charset == KDL_CHARACTER_SET_V1 && (c == '<' || c == '>' || c == ','))
-        && !_kdl_is_equals_sign(charset, c) && !_kdl_is_whitespace(charset, c) && !_kdl_is_newline(c)
-        && !_kdl_is_illegal_char(charset, c);
+        && !_kdl_is_whitespace(charset, c) && !_kdl_is_newline(c) && !_kdl_is_illegal_char(charset, c);
 }
 
 bool _kdl_is_word_start(kdl_character_set charset, uint32_t c)
@@ -183,7 +182,7 @@ bool _kdl_is_end_of_word(kdl_character_set charset, uint32_t c)
 {
     // is this character something that could terminate an identifier (or number) in some situation?
     return _kdl_is_whitespace(charset, c) || _kdl_is_newline(c) //
-        || c == ';' || c == ')' || c == '}' || c == '/' || c == '\\' || _kdl_is_equals_sign(charset, c);
+        || c == ';' || c == ')' || c == '}' || c == '/' || c == '\\' || c == '=';
 }
 
 bool _kdl_is_illegal_char(kdl_character_set charset, uint32_t c)
@@ -199,18 +198,6 @@ bool _kdl_is_illegal_char(kdl_character_set charset, uint32_t c)
             c == 0xFEFF ||                  // ZWNBSP = BOM
             c > 0x10FFFF                    // not a codepoint
         );
-}
-
-bool _kdl_is_equals_sign(kdl_character_set charset, uint32_t c)
-{
-    if (charset == KDL_CHARACTER_SET_V1) {
-        return c == '=';
-    } else {
-        return c == '=' || // EQUALS SIGN =
-            c == 0xFE66 || // SMALL EQUALS SIGN ﹦
-            c == 0xFF1D || // FULLWIDTH EQUALS SIGN ＝
-            c == 0x1F7F0;  // HEAVY EQUALS SIGN 🟰
-    }
 }
 
 static inline kdl_utf8_status _tok_get_char(
@@ -346,7 +333,7 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             dest->value.len = (size_t)(next - cur);
             _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
-        } else if (_kdl_is_equals_sign(self->charset, c)) {
+        } else if (c == '=') {
             // attribute assignment
             dest->type = KDL_TOKEN_EQUALS;
             dest->value.data = cur;
