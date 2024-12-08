@@ -459,7 +459,7 @@ kdl_owned_string _kdl_dedent_multiline_string(kdl_str const* s)
     }
 
     // Remove the whitespace from the beginning of all lines
-    buf_dedented = malloc(norm_lf.len - 1);
+    buf_dedented = malloc(norm_lf.len);
     char* out = buf_dedented;
     char const* in = norm_lf.data; // skip initial LF
     char const* end = norm_lf.data + norm_lf.len;
@@ -494,7 +494,8 @@ kdl_owned_string _kdl_dedent_multiline_string(kdl_str const* s)
     size_t len = out - buf_dedented;
     // Strip the final line feed
     if (len > 0 && buf_dedented[len - 1] == '\n') --len;
-    buf_dedented = realloc(buf_dedented, len);
+    buf_dedented = realloc(buf_dedented, len + 1);
+    buf_dedented[len] = '\0';
     return (kdl_owned_string){.data = buf_dedented, .len = len};
 
 dedent_err:
