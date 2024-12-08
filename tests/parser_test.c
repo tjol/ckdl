@@ -2,6 +2,7 @@
 
 #include "test_util.h"
 
+#include <stdio.h>
 #include <string.h>
 
 static void test_basics(void)
@@ -188,6 +189,53 @@ static void test_slashdash(void)
     kdl_destroy_parser(parser);
 }
 
+static void test_slashdash_child_block(void)
+{
+    kdl_str invalid_docs[] = {
+        kdl_str_from_cstr("node /-{child} arg"),               // arg can't follow child block
+        kdl_str_from_cstr("node /-{child} /-arg"),             // arg can't follow child block
+        kdl_str_from_cstr("node {child} /-arg"),               // arg can't follow child block
+        kdl_str_from_cstr("node { one } /-{ two } { three }"), // two child blocks
+        kdl_str_from_cstr("node /-{ one } { two } { three }"), // two child blocks
+    };
+    int n_invalid = sizeof(invalid_docs) / sizeof(invalid_docs[0]);
+
+    kdl_str valid_docs[] = {
+        kdl_str_from_cstr("node arg /-{child}"),                  // child blocks can be slashdashed
+        kdl_str_from_cstr("node /-arg {child}"),                  // args can be slashdashed
+        kdl_str_from_cstr("node /-arg /-{child}"),                // multiple slashdashes
+        kdl_str_from_cstr("node /-{one}/-{two}{three}"),          // {} after /-{}
+        kdl_str_from_cstr("node { one; } /-{ two } /-{ three }"), // /-{} after {}
+    };
+    int n_valid = sizeof(valid_docs) / sizeof(valid_docs[0]);
+
+    for (int i = 0; i < n_invalid; ++i) {
+        kdl_parser* parser = kdl_create_string_parser(invalid_docs[i], KDL_READ_VERSION_2);
+
+        kdl_event_data* ev;
+        do {
+            ev = kdl_parser_next_event(parser);
+        } while (ev->event != KDL_EVENT_EOF && ev->event != KDL_EVENT_PARSE_ERROR);
+
+        ASSERT(ev->event == KDL_EVENT_PARSE_ERROR);
+
+        kdl_destroy_parser(parser);
+    }
+
+    for (int i = 0; i < n_valid; ++i) {
+        kdl_parser* parser = kdl_create_string_parser(valid_docs[i], KDL_READ_VERSION_2);
+
+        kdl_event_data* ev;
+        do {
+            ev = kdl_parser_next_event(parser);
+        } while (ev->event != KDL_EVENT_EOF && ev->event != KDL_EVENT_PARSE_ERROR);
+
+        ASSERT(ev->event == KDL_EVENT_EOF);
+
+        kdl_destroy_parser(parser);
+    }
+}
+
 static void test_unbalanced_brace(void)
 {
     char const* const kdl_text = "node1 {";
@@ -278,6 +326,7 @@ void TEST_MAIN(void)
 {
     run_test("Parser: basics", &test_basics);
     run_test("Parser: slashdash", &test_slashdash);
+    run_test("Parser: slashdash with child blocks", &test_slashdash_child_block);
     run_test("Parser: unbalanced {", &test_unbalanced_brace);
     run_test("Parser: arg can't be identifier", &test_identifier_arg);
     run_test("Parser: type can't be number", &test_number_type);

@@ -58,6 +58,7 @@ struct _kdl_parser {
     kdl_parse_option opt;
     int depth;
     int slashdash_depth;
+    int child_block_at_depth;
     enum _kdl_parser_state state;
     kdl_event_data event;
     kdl_owned_string tmp_string_type;
@@ -73,6 +74,7 @@ static void _init_kdl_parser(kdl_parser* self, kdl_parse_option opt)
 {
     self->depth = 0;
     self->slashdash_depth = -1;
+    self->child_block_at_depth = -1;
     self->state = PARSER_OUTSIDE_NODE;
     self->tmp_string_type = (kdl_owned_string){NULL, 0};
     self->tmp_string_key = (kdl_owned_string){NULL, 0};
@@ -408,12 +410,25 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
                 self->state = PARSER_IN_NODE;
                 --self->depth;
                 _reset_event(self);
+                if (self->slashdash_depth < 0) {
+                    // slashdash is not active, this child block can't be
+                    // followed by another child block.
+                    self->state |= PARSER_FLAG_END_OF_NODE;
+                    self->child_block_at_depth = self->depth;
+                } else {
+                    // slashdash applies to this child block
+                    if (self->child_block_at_depth == self->depth) {
+                        // we already had a child block here before
+                        self->state |= PARSER_FLAG_END_OF_NODE;
+                    } else {
+                        // all child blocks seen so far in this node have been
+                        // slashdashed
+                        self->state |= PARSER_FLAG_END_OF_NODE_OR_CHILD_BLOCK;
+                    }
+                }
                 if (self->slashdash_depth == self->depth + 1) {
                     // slashdash is ending here
                     self->slashdash_depth = -1;
-                    self->state |= PARSER_FLAG_END_OF_NODE_OR_CHILD_BLOCK;
-                } else {
-                    self->state |= PARSER_FLAG_END_OF_NODE;
                 }
                 return NULL;
             }
@@ -549,6 +564,9 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
                 // end the node
                 self->state = PARSER_OUTSIDE_NODE;
                 --self->depth;
+                if (self->child_block_at_depth > self->depth) {
+                    self->child_block_at_depth = -1;
+                }
                 _reset_event(self);
                 self->event.event = KDL_EVENT_END_NODE;
                 ev = _apply_slashdash(self);
