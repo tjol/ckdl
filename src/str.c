@@ -461,34 +461,43 @@ kdl_owned_string _kdl_dedent_multiline_string(kdl_str const* s)
     // Remove the whitespace from the beginning of all lines
     buf_dedented = malloc(norm_lf.len);
     char* out = buf_dedented;
-    char const* in = norm_lf.data; // skip initial LF
+    char const* in = norm_lf.data + 1; // skip initial LF
     char const* end = norm_lf.data + norm_lf.len;
-    bool at_start = true;
     // copy the rest of the string
-    if (norm_lf.len > 1) {
-        while (in < end) {
-            *out = *in;
-            if (*in == '\n') {
-                if (in + 1 < end && *(in + 1) == '\n') {
-                    // double newline - ok
-                } else {
-                    // check indent
-                    if (memcmp(in + 1, indent.data, indent.len) == 0) {
-                        // skip indent
-                        in += indent.len;
-                    } else {
-                        goto dedent_err;
-                    }
-                }
+    while (in < end) {
+        // find the next newline
+        char const* eol = in;
+        while (eol < end && *eol != '\n') ++eol;
+        if (eol == end) break;
+
+        // check if the line is all whitespace
+        kdl_str line = (kdl_str){.data = in, .len = (eol - in)};
+        uint32_t c;
+        bool is_ws = true;
+        while (_kdl_pop_codepoint(&line, &c) == KDL_UTF8_OK) {
+            if (!_kdl_is_whitespace(KDL_CHARACTER_SET_V2, c)) {
+                is_ws = false;
+                break;
             }
-            if (!at_start) {
-                // Skip the initial newline => only advance the output pointer
-                // if we're somewhere other than the initial newline
-                ++out;
-            }
-            ++in;
-            at_start = false;
         }
+
+        if (is_ws) {
+            // push a single newline
+            *(out++) = '\n';
+        } else {
+            // check if the line starts with the indent
+            size_t line_len = eol - in;
+            if (line_len >= indent.len && memcmp(in, indent.data, indent.len) == 0) {
+                // copy the line after the indent to the output (incl newline)
+                size_t n = line_len - indent.len + 1;
+                memcpy(out, in + indent.len, n);
+                out += n;
+            } else {
+                goto dedent_err;
+            }
+        }
+
+        in = eol + 1;
     }
 
     size_t len = out - buf_dedented;

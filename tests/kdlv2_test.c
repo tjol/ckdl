@@ -70,7 +70,6 @@ static void test_tokenizer_multiline_strings(void)
     kdl_destroy_tokenizer(tok);
 }
 
-
 static void test_tokenizer_identifiers(void)
 {
     kdl_token token;
@@ -240,11 +239,13 @@ static void test_multiline_strings(void)
     }
 
     kdl_str edge_cases[][2] = {
-        {kdl_str_from_cstr("\n\t"),              kdl_str_from_cstr("")       }, // empty
-        {kdl_str_from_cstr("\n"),                kdl_str_from_cstr("")       }, // empty
-        {kdl_str_from_cstr("\n\n  hello\n  "),   kdl_str_from_cstr("\nhello")}, // double newline at start
-        {kdl_str_from_cstr("\n  \\\n     \n  "), kdl_str_from_cstr("")       }, // escaped newline within
-        {kdl_str_from_cstr("\n  \n     \n  "),   kdl_str_from_cstr("\n   ")  }, // whitespace only
+        {kdl_str_from_cstr("\n\t"),               kdl_str_from_cstr("")       }, // empty
+        {kdl_str_from_cstr("\n"),                 kdl_str_from_cstr("")       }, // empty
+        {kdl_str_from_cstr("\n\n  hello\n  "),    kdl_str_from_cstr("\nhello")}, // double newline at start
+        {kdl_str_from_cstr("\n  \\\n     \n  "),  kdl_str_from_cstr("")       }, // escaped newline within
+        {kdl_str_from_cstr("\n  \n     \n  "),    kdl_str_from_cstr("\n")     }, // empty line with extra ws
+        {kdl_str_from_cstr("\n  \n\t\n  "),       kdl_str_from_cstr("\n")     }, // empty line with odd whitespace
+        {kdl_str_from_cstr("\n  \n  \\s   \n  "), kdl_str_from_cstr("\n    ") }, // whitespace only
     };
     int n_edge_cases = sizeof(edge_cases) / sizeof(edge_cases[0]);
 
@@ -444,7 +445,6 @@ static void test_parser_comment_in_property(void)
     kdl_destroy_parser(parser);
 }
 
-
 static void test_parser_comment_in_type(void)
 {
     kdl_event_data* ev;
@@ -474,7 +474,6 @@ static void test_parser_comment_in_type(void)
 
     kdl_destroy_parser(parser);
 }
-
 
 void TEST_MAIN(void)
 {
