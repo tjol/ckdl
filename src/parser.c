@@ -193,6 +193,7 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
             case KDL_TOKENIZER_EOF:
                 if ((self->state & 0xff) == PARSER_IN_NODE) {
                     // EOF may be ok, but we have to close the node first
+                    self->state &= ~PARSER_FLAG_NEWLINES_ARE_WHITESPACE;
                     token.type = KDL_TOKEN_NEWLINE;
                     token.value = (kdl_str){NULL, 0};
                     break;
@@ -357,6 +358,9 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
         }
     } else {
         switch (token->type) {
+        case KDL_TOKEN_LINE_CONTINUATION:
+            // line continuations do nothing outside of nodes
+            return NULL;
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
             if (self->state & PARSER_MASK_NODE_CANNOT_END_HERE) {
