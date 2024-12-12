@@ -358,9 +358,6 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
         }
     } else {
         switch (token->type) {
-        case KDL_TOKEN_LINE_CONTINUATION:
-            // line continuations do nothing outside of nodes
-            return NULL;
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
             if (self->state & PARSER_MASK_NODE_CANNOT_END_HERE) {
@@ -436,6 +433,13 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
                 }
                 return NULL;
             }
+        case KDL_TOKEN_LINE_CONTINUATION:
+            // line continuations do nothing outside of nodes in v2, but are illegal here in v1
+            if (_v2_allowed(self)) {
+                _set_version(self, KDL_VERSION_2);
+                return NULL;
+            }
+            _fallthrough_;
         default:
             _set_parse_error(self, "Unexpected token, expected node");
             return &self->event;
