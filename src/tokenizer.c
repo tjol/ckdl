@@ -570,12 +570,6 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
     size_t end_quote_offset = 0;
     uint32_t prev_char = 0;
 
-    // for the pecial case of a raw string containing just a quote: #"""#
-    if (is_raw && initial_quote_count == 3) {
-        quotes_found = 3;
-        end_quote_offset = (size_t)(-1);
-    }
-
     while (true) {
         switch (_tok_get_char(self, &cur, &next, &c)) {
         case KDL_UTF8_OK:
@@ -621,14 +615,6 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
             prev_char = c;
             cur = next;
         }
-    }
-
-    // special case: raw string #"""#
-    if (is_raw && end_quote_offset == (size_t)(-1)) {
-        // string_start_offset points to the hash right now!
-        string_start_offset -= 2;
-        end_quote_offset = string_start_offset + 1;
-        initial_quote_count = 1;
     }
 
     // end_quote_ptr = the (first) end quote, next = the char after the quote and hashes
