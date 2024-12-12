@@ -529,7 +529,8 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
 
     // Count the quotes
     int initial_quote_count = 0;
-    while (initial_quote_count < 3) {
+    int max_quote_count = is_v1 ? 1 : 3;
+    while (initial_quote_count < max_quote_count) {
         switch (_tok_get_char(self, &cur, &next, &c)) {
         case KDL_UTF8_OK:
             break;
