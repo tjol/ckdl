@@ -552,6 +552,10 @@ kdl_owned_string _kdl_remove_escaped_whitespace(kdl_str const* s)
             if (!removed_whitespace) {
                 // no whitespace -> keep backslash for kdl_unescape_v2()
                 _kdl_buf_push_char(&buf, '\\');
+                // definitely keep the next char as well
+                if ((status = _kdl_pop_codepoint(&escaped, &c)) == KDL_UTF8_OK) {
+                    _kdl_buf_push_codepoint(&buf, c);
+                }
             }
         } else {
             // Nothing special, copy the character
