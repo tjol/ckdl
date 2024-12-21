@@ -4,8 +4,8 @@
 **ckdl** is a C library that implements reading and writing a the
 [KDL Document Language](https://kdl.dev/).
 
-This package lets Python programs read and write KDL files, using
-*ckdl* as a back-end.
+This package lets Python programs read and write KDL (both version 2.0.0 and
+version 1.0.0) files, using *ckdl* as a back-end.
 
 Install with
 
@@ -19,7 +19,7 @@ Install with
 >>> import ckdl
 >>> kdl_txt = """
 ... best-primes 2 3 5 7
-... colours importance=(%)1000 { green; blue shade="синий"; blue shade="голубой"; violet }
+... colours importance=(%)1000 { green; blue shade=синий; blue shade=голубой; violet }
 ... """
 >>> doc = ckdl.parse(kdl_txt)
 >>> doc
@@ -37,17 +37,16 @@ Install with
 >>> doc[1].children
 [<Node green>, <Node blue; 1 property>, <Node blue; 1 property>, <Node violet>]
 >>> doc[1].children[1].properties['shade']
-'синий'
 ```
 
 ### Writing
 
 ```pycon
->>> import ckdl
->>> mydoc = ckdl.Document(ckdl.Node("best-primes", 7, 11, 13), ckdl.Node("worst-primes", ckdl.Value("undoubtedly", 5)))
+>>> mydoc = ckdl.Document(ckdl.Node("best-primes", 7, 11, 13), ckdl.Node("worst-values", ckdl.Value("scary", None)))
 >>> print(str(mydoc))
 best-primes 7 11 13
-worst-primes (undoubtedly)5
+worst-values (scary)#null
+
 ```
 '''
 
@@ -66,7 +65,7 @@ setup(
     },
     keywords="kdl parser configuration",
     classifiers = [
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3"
