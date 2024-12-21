@@ -37,6 +37,7 @@ Install with
 >>> doc[1].children
 [<Node green>, <Node blue; 1 property>, <Node blue; 1 property>, <Node violet>]
 >>> doc[1].children[1].properties['shade']
+'синий'
 ```
 
 ### Writing
