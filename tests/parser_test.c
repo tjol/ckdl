@@ -255,12 +255,12 @@ static void test_unbalanced_brace(void)
     kdl_destroy_parser(parser);
 }
 
-static void test_identifier_arg(void)
+static void test_identifier_arg_v1(void)
 {
     char const* const kdl_text = "node1 \"arg1\" arg2";
 
     kdl_str doc = kdl_str_from_cstr(kdl_text);
-    kdl_parser* parser = kdl_create_string_parser(doc, 0);
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_READ_VERSION_1);
 
     // test all events
     kdl_event_data* ev;
@@ -273,6 +273,28 @@ static void test_identifier_arg(void)
 
     ev = kdl_parser_next_event(parser);
     ASSERT(ev->event == KDL_EVENT_PARSE_ERROR);
+
+    kdl_destroy_parser(parser);
+}
+
+static void test_identifier_arg_v2(void)
+{
+    char const* const kdl_text = "node1 \"arg1\" arg2";
+
+    kdl_str doc = kdl_str_from_cstr(kdl_text);
+    kdl_parser* parser = kdl_create_string_parser(doc, KDL_READ_VERSION_2);
+
+    // test all events
+    kdl_event_data* ev;
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_ARGUMENT);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_ARGUMENT);
 
     kdl_destroy_parser(parser);
 }
@@ -322,13 +344,59 @@ static void test_bom(void)
     kdl_destroy_parser(parser);
 }
 
+static void test_parser_detects_version(void)
+{
+    kdl_event_data* ev;
+
+    // KDL 1.0.0 variant
+
+    char const* const kdl_text_v1 = "r#\"node\"#";
+
+    kdl_str doc_v1 = kdl_str_from_cstr(kdl_text_v1);
+    kdl_parser* parser_v1 = kdl_create_string_parser(doc_v1, KDL_DEFAULTS);
+
+
+    ev = kdl_parser_next_event(parser_v1);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+    ASSERT(memcmp(ev->name.data, "node", 4) == 0);
+
+    ev = kdl_parser_next_event(parser_v1);
+    ASSERT(ev->event == KDL_EVENT_END_NODE);
+
+    ev = kdl_parser_next_event(parser_v1);
+    ASSERT(ev->event == KDL_EVENT_EOF);
+
+    kdl_destroy_parser(parser_v1);
+
+    // KDL 2.0.0 variant
+
+    char const* const kdl_text_v2 = "#\"node\"#";
+
+    kdl_str doc_v2 = kdl_str_from_cstr(kdl_text_v2);
+    kdl_parser* parser_v2 = kdl_create_string_parser(doc_v2, KDL_DEFAULTS);
+
+    ev = kdl_parser_next_event(parser_v2);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+    ASSERT(memcmp(ev->name.data, "node", 4) == 0);
+
+    ev = kdl_parser_next_event(parser_v2);
+    ASSERT(ev->event == KDL_EVENT_END_NODE);
+
+    ev = kdl_parser_next_event(parser_v2);
+    ASSERT(ev->event == KDL_EVENT_EOF);
+
+    kdl_destroy_parser(parser_v2);
+}
+
 void TEST_MAIN(void)
 {
     run_test("Parser: basics", &test_basics);
     run_test("Parser: slashdash", &test_slashdash);
     run_test("Parser: slashdash with child blocks", &test_slashdash_child_block);
     run_test("Parser: unbalanced {", &test_unbalanced_brace);
-    run_test("Parser: arg can't be identifier", &test_identifier_arg);
+    run_test("Parser: arg can't be identifier in v1", &test_identifier_arg_v1);
+    run_test("Parser: arg can be bare string in v2", &test_identifier_arg_v2);
     run_test("Parser: type can't be number", &test_number_type);
     run_test("Parser: BOM treated as whitespace", &test_bom);
+    run_test("Parser: KDLv1 and KDLv2 both supported", &test_parser_detects_version);
 }

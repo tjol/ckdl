@@ -16,7 +16,6 @@
 #define _str_equals_literal(k, l)                                                                            \
     ((k).len == (sizeof(l "") - 1) && 0 == memcmp(("" l), (k).data, (sizeof(l) - 1)))
 
-#define KDL_DETECT_VERSION_BIT (kdl_parse_option)0x10000
 #define KDL_PARSE_OPT_VERSION_BITS KDL_DETECT_VERSION
 
 #define _v1_only(self) ((self->opt & KDL_PARSE_OPT_VERSION_BITS) == KDL_READ_VERSION_1)
@@ -86,7 +85,7 @@ static void _init_kdl_parser(kdl_parser* self, kdl_parse_option opt)
 
     // Fallback: use KDLv1 only
     if ((opt & KDL_PARSE_OPT_VERSION_BITS) == 0) {
-        opt |= KDL_READ_VERSION_1;
+        opt |= KDL_DETECT_VERSION;
     }
 
     self->opt = opt;

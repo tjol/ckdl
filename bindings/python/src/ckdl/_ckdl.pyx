@@ -459,7 +459,9 @@ cdef class EmitterOptions:
                 raise ValueError(f"Unknown version: {version}")
         elif isinstance(version, KdlVersion):
             self.version = version
-        elif version is not None:
+        elif version is None:
+            self.version = KdlVersion.kdl_2
+        else:
             raise TypeError(f"Expected int or KdlVersion for version, not {type(version)}")
 
     cdef kdl_emitter_options _to_c_struct(self):
@@ -471,7 +473,7 @@ cdef class EmitterOptions:
         res.version = <kdl_version>self.version
         return res
 
-def parse(str kdl_text, *, version=1):
+def parse(str kdl_text, *, version="any"):
     """
     parse(kdl_text)
 
@@ -498,7 +500,7 @@ def parse(str kdl_text, *, version=1):
         parse_opt = KDL_READ_VERSION_1
     elif version in (2, '2', '2.0.0'):
         parse_opt = KDL_READ_VERSION_2
-    elif version in (None, 'detect'):
+    elif version in (None, 'detect', 'any'):
         try:
             return parse(kdl_text, version=2)
         except ParseError:

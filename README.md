@@ -26,13 +26,8 @@ under `doc/` in this repository.
 
 ### Status
 
-ckdl has full support for **KDL 1.0.0** and passes the upstream test suite.
+ckdl has full support for **KDL 2.0.0** and **KDL 1.0.0**. The parser passes
+the upstream test suite.
 
-ckdl has opt-in support for [KDL 2.0.0][kdl2]. At the moment, KDLv2 support has
-to be explicitly requested via parser/emitter options; this behaviour is subject
-to change once KDLv2 is finalized.
-
-The parser also supports a hybrid mode that accepts both KDLv2 and KDLv1
-documents.
-
-[kdl2]: https://github.com/kdl-org/kdl/blob/main/SPEC.md
+By default, the parser will allow documents of either KDL version. You can
+restrict the parser to one version or the other using parse options.

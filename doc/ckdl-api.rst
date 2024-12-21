@@ -380,7 +380,7 @@ If you wish, you may configure the parser to emit comments in addition to "regul
 
     .. c:enumerator:: KDL_READ_VERSION_1
 
-        Use KDL version 1.0.0 (this is the default)
+        Use KDL version 1.0.0
 
     .. c:enumerator:: KDL_READ_VERSION_2
 
@@ -388,7 +388,7 @@ If you wish, you may configure the parser to emit comments in addition to "regul
 
     .. c:enumerator:: KDL_DETECT_VERSION
 
-        Allow both KDL v2 and KDL v1. This will be the default in future.
+        Allow both KDL v2 and KDL v1. This is the default.
 
         This mode aims to produce entirely correct output for all KDLv2 documents as well as
         for *almost* all KDLv1 documents. If you need complete KDLv1 compliance, use
@@ -482,7 +482,7 @@ text.
 
     .. c:member:: kdl_version version
 
-        KDL version to use.
+        KDL version to use. (default: :c:enumerator:`KDL_VERSION_2`)
 
 .. c:type:: enum kdl_identifier_emission_mode kdl_identifier_emission_mode
 

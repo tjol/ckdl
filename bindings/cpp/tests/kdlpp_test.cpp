@@ -116,6 +116,14 @@ static void test_cycle_kdl2()
     ASSERT(txt3 == txt1);
 }
 
+static void test_both_versions_allowed()
+{
+    auto doc1 = kdl::parse(u8"r#\"node\"#");
+    ASSERT(doc1.to_string() == u8"node");
+    auto doc2 = kdl::parse(u8"#\"node\"#");
+    ASSERT(doc2.to_string() == u8"node");
+}
+
 void TEST_MAIN()
 {
     run_test("kdlpp: cycle", &test_cycle);
@@ -124,5 +132,6 @@ void TEST_MAIN()
     run_test("kdlpp: reading demo code", &test_reading_demo);
     run_test("kdlpp: writing demo code", &test_writing_demo);
     run_test("kdlpp: KDLv2 support", &test_cycle_kdl2);
+    run_test("kdlpp: KDLv1 and KDLv2 allowed by default", &test_both_versions_allowed);
 }
 

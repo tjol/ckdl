@@ -19,7 +19,7 @@ const kdl_emitter_options KDL_DEFAULT_EMITTER_OPTIONS = {
                    .exponent_plus = false,
                    .plus = false,
                    .min_exponent = 4},
-    .version = KDL_VERSION_1
+    .version = KDL_VERSION_2
 };
 
 struct _kdl_emitter {

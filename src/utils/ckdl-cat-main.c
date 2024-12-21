@@ -20,7 +20,7 @@ int main(int argc, char** argv)
     bool opts_ended = false;
 
     bool monoglot = false;
-    kdl_version version = KDL_VERSION_1;
+    kdl_version version = KDL_VERSION_2;
 
     while (--argc) {
         ++argv;

@@ -218,7 +218,7 @@ std::u8string Document::to_string(KdlVersion version) const
     return result;
 }
 
-Document parse(std::u8string_view kdl_text) { return parse(kdl_text, KdlVersion::Kdl_1); }
+Document parse(std::u8string_view kdl_text) { return parse(kdl_text, KdlVersion::Any); }
 
 Document parse(std::u8string_view kdl_text, KdlVersion version)
 {
