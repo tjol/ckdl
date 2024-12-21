@@ -157,19 +157,19 @@ class CKDLTest(unittest.TestCase):
             """
         )
         self.assertEqual(doc.dump(), expected_default)
-        # opt1 = ckdl.EmitterOptions(
-        #     indent=1,
-        #     escape_mode=ckdl.EscapeMode.ascii_mode,
-        #     float_mode=ckdl.FloatMode(min_exponent=2),
-        # )
-        # expected_opt1 = self._dedent_str(
-        #     f"""
-        #     a {{
-        #      "\\u{{{ord('🎉'):x}}}" "\\u{{{ord('🎈'):x}}}" 2e-3
-        #     }}
-        #     """
-        # )
-        # self.assertEqual(doc.dump(opt1), expected_opt1)
+        opt1 = ckdl.EmitterOptions(
+            indent=1,
+            escape_mode=ckdl.EscapeMode.ascii_mode,
+            float_mode=ckdl.FloatMode(min_exponent=2),
+        )
+        expected_opt1 = self._dedent_str(
+            f"""
+            a {{
+             "\\u{{{ord('🎉'):x}}}" "\\u{{{ord('🎈'):x}}}" 2e-3
+            }}
+            """
+        )
+        self.assertEqual(doc.dump(opt1), expected_opt1)
         opt2 = ckdl.EmitterOptions(
             indent=5,
             identifier_mode=ckdl.IdentifierMode.quote_all_identifiers,

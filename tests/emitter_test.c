@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 static void test_basics_v1(void)
 {
@@ -118,9 +119,31 @@ static void test_data_types(void)
     ASSERT(memcmp(result.data, expected_str.data, result.len) == 0);
 }
 
+static void test_ascii_mode(void)
+{
+    kdl_emitter_options opts = KDL_DEFAULT_EMITTER_OPTIONS;
+    opts.escape_mode = KDL_ESCAPE_ASCII_MODE;
+    kdl_emitter* emitter = kdl_create_buffering_emitter(&opts);
+
+    ASSERT(emitter);
+    ASSERT(kdl_emit_node(emitter, kdl_str_from_cstr("\xc3\xa4"))); // ä U+00E4
+    ASSERT(kdl_emit_arg(
+        emitter, &(kdl_value){.type = KDL_TYPE_STRING, .string = kdl_str_from_cstr("\xc3\xb6")})); // ö U+00F6
+    ASSERT(kdl_emit_end(emitter));
+
+    kdl_str result = kdl_get_emitter_buffer(emitter);
+
+    char const* expected = "\"\\u{e4}\" \"\\u{f6}\"\n";
+    kdl_str expected_str = kdl_str_from_cstr(expected);
+
+    ASSERT(expected_str.len == result.len);
+    ASSERT(memcmp(result.data, expected_str.data, result.len) == 0);
+}
+
 void TEST_MAIN(void)
 {
     run_test("Emitter: basics (v1)", &test_basics_v1);
     run_test("Emitter: basics (v2)", &test_basics_v2);
     run_test("Emitter: all types", &test_data_types);
+    run_test("Emitter: ASCII mode", &test_ascii_mode);
 }

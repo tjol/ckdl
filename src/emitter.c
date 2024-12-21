@@ -247,9 +247,11 @@ static bool _emit_bare_string(kdl_emitter* self, kdl_str s)
         bool first = true;
         kdl_character_set charset
             = self->opt.version == KDL_VERSION_1 ? KDL_CHARACTER_SET_V1 : KDL_CHARACTER_SET_V2;
+        bool require_ascii = self->opt.identifier_mode == KDL_ASCII_IDENTIFIERS
+            || (self->opt.escape_mode & KDL_ESCAPE_ASCII_MODE) == KDL_ESCAPE_ASCII_MODE;
         while (KDL_UTF8_OK == _kdl_pop_codepoint(&tail, &c)) {
             if ((first && !_kdl_is_id_start(charset, c)) || !_kdl_is_id(charset, c)
-                || (self->opt.identifier_mode == KDL_ASCII_IDENTIFIERS && c >= 0x7f)) {
+                || (require_ascii && c >= 0x7f)) {
                 bare = false;
                 break;
             }
@@ -264,7 +266,8 @@ static bool _emit_bare_string(kdl_emitter* self, kdl_str s)
     }
 }
 
-static bool _emit_string(kdl_emitter* self, kdl_str s) {
+static bool _emit_string(kdl_emitter* self, kdl_str s)
+{
     if (self->opt.version == KDL_VERSION_1) {
         return _emit_quoted_str(self, s);
     } else {
