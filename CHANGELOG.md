@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0 (2024-12-21)
 
 - KDL 2.0.0 is now the default
 
