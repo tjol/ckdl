@@ -22,9 +22,9 @@ The ckdl project also features simple "demo" bindings for the following language
 * :doc:`Python 3 <ckdl-py>`
 * :doc:`C++ 20 <kdlpp>`
 
-ckdl supports KDL version 1.0.0 and has preliminary support for KDL 2.0.0 (draft spec).
-KDL 2 support has to be explicitly enabled. When the KDL 2 spec is finalized, future
-versions of ckdl will default to parsing both KDL 2 and KDL 1 documents.
+ckdl supports KDL versions 1.0.0 and KDL 2.0.0. KDL 2 support has to be
+explicitly enabled. Future versions of ckdl will default to parsing both KDL 2
+and KDL 1 documents.
 
 Building ckdl
 -------------

@@ -28,7 +28,7 @@ enum kdl_parse_option {
     KDL_DEFAULTS = 0,             // Nothing special
     KDL_EMIT_COMMENTS = 0x001,    // Emit comments (default: don't)
     KDL_READ_VERSION_1 = 0x20000, // Use KDL version 1.0.0
-    KDL_READ_VERSION_2 = 0x40000, // Use KDL version 2.0.0-draft.6
+    KDL_READ_VERSION_2 = 0x40000, // Use KDL version 2.0.0
     KDL_DETECT_VERSION = 0x70000, // Allow both KDL v2 and KDL v1
 };
 

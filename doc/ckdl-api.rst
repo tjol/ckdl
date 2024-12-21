@@ -384,7 +384,7 @@ If you wish, you may configure the parser to emit comments in addition to "regul
 
     .. c:enumerator:: KDL_READ_VERSION_2
 
-        Use KDL version 2.0.0 (draft)
+        Use KDL version 2.0.0
 
     .. c:enumerator:: KDL_DETECT_VERSION
 

@@ -2,9 +2,10 @@
 
 ## Unreleased
 
-- The parser has been updated to the newest version of the KDLv2 spec (TBC)
+- The parser has been updated to the final newest version of the KDLv2 spec
   * multi-line strings now use `"""` instead of `"`
   * slashdash behaviour has been harmonized
+  * line continuations are now allowed everywhere
 - `kdl_unescape_v` now applies the single-line-string rules for KDLv2; use
   `kdl_unescape_multi_line` for multi-line rules.
 

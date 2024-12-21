@@ -130,7 +130,7 @@ add_test(NAME example_doc_test_v1 COMMAND "$<TARGET_FILE:example_doc_test_v1>" "
 #################################################
 # Upstream test suite for KDL version 2.0.0
 ####
-set(KDL_TEST_CASES_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/test_documents/upstream/2.0.0.draft)
+set(KDL_TEST_CASES_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/test_documents/upstream/2.0.0)
 # Ignore some tests which require unsupported number representations
 set(FUZZY_KDL_TESTS_LIST_V2
     no_decimal_exponent.kdl # float representation not consistent with other test cases
