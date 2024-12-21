@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.2.1 (2024-12-21)
 
 - The parser has been updated to the final newest version of the KDLv2 spec
   * multi-line strings now use `"""` instead of `"`
