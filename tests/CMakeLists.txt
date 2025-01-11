@@ -121,7 +121,7 @@ set(FUZZY_KDL_TESTS_LIST_V1
 string(REPLACE ";" ":" FUZZY_KDL_TESTS_V1 "${FUZZY_KDL_TESTS_LIST_V1}")
 
 add_executable(example_doc_test_v1 example_doc_test.c)
-target_link_libraries(example_doc_test_v1 kdl test_util ckdl-cat)
+target_link_libraries(example_doc_test_v1 test_util ckdl-cat)
 target_compile_definitions(example_doc_test_v1 PRIVATE
     "KDL_TEST_CASES_ROOT=\"${KDL_TEST_CASES_ROOT}\""
     "FUZZY_KDL_TESTS=\"${FUZZY_KDL_TESTS_V1}\""
@@ -138,7 +138,7 @@ set(FUZZY_KDL_TESTS_LIST_V2
 string(REPLACE ";" ":" FUZZY_KDL_TESTS_V2 "${FUZZY_KDL_TESTS_LIST_V2}")
 
 add_executable(example_doc_test_v2 example_doc_test.c)
-target_link_libraries(example_doc_test_v2 kdl test_util ckdl-cat)
+target_link_libraries(example_doc_test_v2 test_util ckdl-cat)
 target_compile_definitions(example_doc_test_v2 PRIVATE
     "KDL_TEST_CASES_ROOT=\"${KDL_TEST_CASES_ROOT}\""
     "FUZZY_KDL_TESTS=\"${FUZZY_KDL_TESTS_V2}\""
