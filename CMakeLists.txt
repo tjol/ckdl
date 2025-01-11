@@ -85,7 +85,7 @@ set(KDL_UTF8_C_SOURCES
     src/utf8.c
 )
 
-add_library(kdl-utf8 STATIC ${KDL_UTF8_C_SOURCES})
+add_library(kdl-utf8 OBJECT ${KDL_UTF8_C_SOURCES})
 target_compile_options(kdl-utf8 PRIVATE ${KDL_COMPILE_OPTIONS})
 target_include_directories(kdl-utf8 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
