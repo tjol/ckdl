@@ -53,7 +53,8 @@ enum _kdl_parser_state {
         | PARSER_MASK_WHITESPACE_CONTEXTUALLY_BANNED, //
 };
 
-static int current_line_number = 0; 
+static int current_line_number = 1; 
+static int current_column_number = 1; 
 
 struct _kdl_parser {
     kdl_tokenizer* tokenizer;
@@ -153,9 +154,9 @@ static void _set_parse_error(kdl_parser* self, char const* message)
 {
     self->event.event = KDL_EVENT_PARSE_ERROR;
     self->event.value.type = KDL_TYPE_STRING;
-    int required_len = snprintf(NULL, 0, "line %d: %s", current_line_number, message) + 1;
+    int required_len = snprintf(NULL, 0, "at %d:%d %s", current_line_number, current_column_number, message) + 1;
     char* message_with_line = (char*)malloc(required_len * sizeof(char));
-    snprintf(message_with_line, required_len, "line %d: %s", current_line_number, message);
+    snprintf(message_with_line, required_len, "at %d:%d %s", current_line_number, current_column_number, message);
     self->event.value.string = (kdl_str){message_with_line, required_len};
 }
 
@@ -190,6 +191,7 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
     while (true) {
 
         // get the next token (if available)
+        current_column_number++;
         if (self->have_next_token) {
             token = self->next_token;
             self->have_next_token = false;
@@ -376,6 +378,7 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
             current_line_number++;
+            current_column_number = 1;
             if (self->state & PARSER_FLAG_WHITESPACE_REQUIRED) {
                 self->state &= ~PARSER_FLAG_WHITESPACE_REQUIRED;
             }
@@ -476,6 +479,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
             break; // fine
         case KDL_TOKEN_NEWLINE:
             current_line_number++;
+            current_column_number = 1;
             self->state &= ~PARSER_FLAG_LINE_CONT;
             return NULL; // Get next token - \ and newline cancel out
         default:
@@ -593,6 +597,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
             current_line_number++;
+            current_column_number = 1;
             if (self->state & PARSER_MASK_NODE_CANNOT_END_HERE) {
                 _set_parse_error(self, "Unexpected end of node (incomplete argument or property?)");
                 return &self->event;
