@@ -53,6 +53,8 @@ enum _kdl_parser_state {
         | PARSER_MASK_WHITESPACE_CONTEXTUALLY_BANNED, //
 };
 
+static int current_line_number = 0; 
+
 struct _kdl_parser {
     kdl_tokenizer* tokenizer;
     kdl_parse_option opt;
@@ -151,7 +153,10 @@ static void _set_parse_error(kdl_parser* self, char const* message)
 {
     self->event.event = KDL_EVENT_PARSE_ERROR;
     self->event.value.type = KDL_TYPE_STRING;
-    self->event.value.string = (kdl_str){message, strlen(message)};
+    int required_len = snprintf(NULL, 0, "line %d: %s", current_line_number, message) + 1;
+    char* message_with_line = (char*)malloc(required_len * sizeof(char));
+    snprintf(message_with_line, required_len, "line %d: %s", current_line_number, message);
+    self->event.value.string = (kdl_str){message_with_line, required_len};
 }
 
 static void _set_comment_event(kdl_parser* self, kdl_token const* token)
@@ -370,6 +375,7 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
         switch (token->type) {
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
+            current_line_number++;
             if (self->state & PARSER_FLAG_WHITESPACE_REQUIRED) {
                 self->state &= ~PARSER_FLAG_WHITESPACE_REQUIRED;
             }
@@ -469,6 +475,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         case KDL_TOKEN_SINGLE_LINE_COMMENT:
             break; // fine
         case KDL_TOKEN_NEWLINE:
+            current_line_number++;
             self->state &= ~PARSER_FLAG_LINE_CONT;
             return NULL; // Get next token - \ and newline cancel out
         default:
@@ -585,6 +592,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
             _fallthrough_;
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
+            current_line_number++;
             if (self->state & PARSER_MASK_NODE_CANNOT_END_HERE) {
                 _set_parse_error(self, "Unexpected end of node (incomplete argument or property?)");
                 return &self->event;
