@@ -53,9 +53,6 @@ enum _kdl_parser_state {
         | PARSER_MASK_WHITESPACE_CONTEXTUALLY_BANNED, //
 };
 
-static int current_line_number = 1; 
-static int current_column_number = 1; 
-
 struct _kdl_parser {
     kdl_tokenizer* tokenizer;
     kdl_parse_option opt;
@@ -150,13 +147,13 @@ static void _reset_event(kdl_parser* self)
     self->event.value.type_annotation = (kdl_str){NULL, 0};
 }
 
-static void _set_parse_error(kdl_parser* self, char const* message)
+static void _set_parse_error(kdl_parser* self, kdl_token token, char const* message)
 {
     self->event.event = KDL_EVENT_PARSE_ERROR;
     self->event.value.type = KDL_TYPE_STRING;
-    int required_len = snprintf(NULL, 0, "at %d:%d %s", current_line_number, current_column_number, message) + 1;
+    int required_len = snprintf(NULL, 0, "at %d:%d %s", token.line_no, token.col_no, message) + 1;
     char* message_with_line = (char*)malloc(required_len * sizeof(char));
-    snprintf(message_with_line, required_len, "at %d:%d %s", current_line_number, current_column_number, message);
+    snprintf(message_with_line, required_len, "at %d:%d %s", token.line_no, token.col_no, message);
     self->event.value.string = (kdl_str){message_with_line, required_len};
 }
 
@@ -191,7 +188,6 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
     while (true) {
 
         // get the next token (if available)
-        current_column_number++;
         if (self->have_next_token) {
             token = self->next_token;
             self->have_next_token = false;
@@ -205,14 +201,14 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
                     token.value = (kdl_str){NULL, 0};
                     break;
                 } else if (self->depth > 0) {
-                    _set_parse_error(self, "Unexpected end of data (unclosed lists of children)");
+                    _set_parse_error(self, token, "Unexpected end of data (unclosed lists of children)");
                     return &self->event;
                 } else if (self->slashdash_depth > 0) {
-                    _set_parse_error(self, "Dangling slashdash (/-)");
+                    _set_parse_error(self, token, "Dangling slashdash (/-)");
                     return &self->event;
                 } else if (self->state != PARSER_OUTSIDE_NODE) {
                     // Some flags are active, this is not allowed
-                    _set_parse_error(self, "Unexpected end of data");
+                    _set_parse_error(self, token, "Unexpected end of data");
                     return &self->event;
                 } else {
                     // state == PARSER_OUTYSIDE_NODE, at top level => EOF ok
@@ -224,7 +220,7 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
                 break;
             default:
             case KDL_TOKENIZER_ERROR:
-                _set_parse_error(self, "Parse error");
+                _set_parse_error(self, token, "Parse error");
                 return &self->event;
             }
         }
@@ -240,7 +236,7 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
             }
             if (self->state & PARSER_MASK_WHITESPACE_BANNED_V1) {
                 if (_v1_only(self)) {
-                    _set_parse_error(self, "Whitespace not allowed here");
+                    _set_parse_error(self, token, "Whitespace not allowed here");
                     return &self->event;
                 } else {
                     _set_version(self, KDL_VERSION_2);
@@ -257,7 +253,7 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
             }
             if (self->state & PARSER_MASK_WHITESPACE_BANNED_V1) {
                 if (_v1_only(self)) {
-                    _set_parse_error(self, "Comment not allowed here");
+                    _set_parse_error(self, token, "Comment not allowed here");
                     return &self->event;
                 } else {
                     _set_version(self, KDL_VERSION_2);
@@ -273,7 +269,7 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
             break;
         case KDL_TOKEN_SLASHDASH:
             if (self->state & PARSER_FLAG_WHITESPACE_REQUIRED) {
-                _set_parse_error(self, "Whitespace required before /-");
+                _set_parse_error(self, token, "Whitespace required before /-");
                 return &self->event;
             }
             // slashdash comments out the next node or argument or property
@@ -281,7 +277,7 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
                 // fall through to _next_event_in_node() - this event should be
                 // bubbled back up
             } else if (self->state & PARSER_MASK_NODE_CANNOT_END_HERE) {
-                _set_parse_error(self, "/- not allowed here");
+                _set_parse_error(self, token, "/- not allowed here");
                 return &self->event;
             } else {
                 if (self->slashdash_depth < 0) {
@@ -304,7 +300,7 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
                 if (ev) return ev;
                 else continue;
             default:
-                _set_parse_error(self, "Inconsistent state");
+                _set_parse_error(self, token, "Inconsistent state");
                 return &self->event;
             }
         }
@@ -346,7 +342,7 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
         case KDL_TOKEN_RAW_STRING_V2:
         case KDL_TOKEN_RAW_MULTILINE_STRING:
             if (!_parse_value(self, token, &tmp_val, &self->tmp_string_type)) {
-                _set_parse_error(self, "Error parsing type annotation");
+                _set_parse_error(self, *token, "Error parsing type annotation");
                 return &self->event;
             }
             if (tmp_val.type == KDL_TYPE_STRING) {
@@ -356,11 +352,11 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
                 self->waiting_type_annotation = tmp_val.string;
                 return NULL;
             } else {
-                _set_parse_error(self, "Expected identifier or string");
+                _set_parse_error(self, *token, "Expected identifier or string");
                 return &self->event;
             }
         default:
-            _set_parse_error(self, "Unexpected token, expected type");
+            _set_parse_error(self, *token, "Unexpected token, expected type");
             return &self->event;
         }
     } else if (self->state & PARSER_FLAG_TYPE_ANNOTATION_END) {
@@ -370,20 +366,18 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
                 = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_END) | PARSER_FLAG_TYPE_ANNOTATION_ENDED;
             return NULL;
         default:
-            _set_parse_error(self, "Unexpected token, expected ')'");
+            _set_parse_error(self, *token, "Unexpected token, expected ')'");
             return &self->event;
         }
     } else {
         switch (token->type) {
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
-            current_line_number++;
-            current_column_number = 1;
             if (self->state & PARSER_FLAG_WHITESPACE_REQUIRED) {
                 self->state &= ~PARSER_FLAG_WHITESPACE_REQUIRED;
             }
             if (self->state & PARSER_MASK_NODE_CANNOT_END_HERE) {
-                _set_parse_error(self, "Unexpected end of node (incomplete node name?)");
+                _set_parse_error(self, *token, "Unexpected end of node (incomplete node name?)");
                 return &self->event;
             } else {
                 // When there is no open type annotation, additional newlines are allowed
@@ -392,7 +386,7 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
         case KDL_TOKEN_START_TYPE:
             // only one type allowed!
             if (self->event.value.type_annotation.data != NULL) {
-                _set_parse_error(self, "Unexpected second type annotation");
+                _set_parse_error(self, *token, "Unexpected second type annotation");
                 return &self->event;
             } else {
                 self->state |= PARSER_FLAG_TYPE_ANNOTATION_START;
@@ -405,7 +399,7 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
         case KDL_TOKEN_RAW_STRING_V2:
         case KDL_TOKEN_RAW_MULTILINE_STRING:
             if (!_parse_value(self, token, &tmp_val, &self->tmp_string_key)) {
-                _set_parse_error(self, "Error parsing node name");
+                _set_parse_error(self, *token, "Error parsing node name");
                 return &self->event;
             }
             if (tmp_val.type == KDL_TYPE_STRING) {
@@ -421,13 +415,13 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
                 ev = _apply_slashdash(self);
                 return ev;
             } else {
-                _set_parse_error(self, "Expected identifier or string");
+                _set_parse_error(self, *token, "Expected identifier or string");
                 return &self->event;
             }
         case KDL_TOKEN_END_CHILDREN:
             // end the parent node
             if (self->depth == 0) {
-                _set_parse_error(self, "Unexpected '}'");
+                _set_parse_error(self, *token, "Unexpected '}'");
                 return &self->event;
             } else {
                 self->state = PARSER_IN_NODE;
@@ -463,7 +457,7 @@ static kdl_event_data* _next_node(kdl_parser* self, kdl_token* token)
             }
             _fallthrough_;
         default:
-            _set_parse_error(self, "Unexpected token, expected node");
+            _set_parse_error(self, *token, "Unexpected token, expected node");
             return &self->event;
         }
     }
@@ -478,12 +472,10 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         case KDL_TOKEN_SINGLE_LINE_COMMENT:
             break; // fine
         case KDL_TOKEN_NEWLINE:
-            current_line_number++;
-            current_column_number = 1;
             self->state &= ~PARSER_FLAG_LINE_CONT;
             return NULL; // Get next token - \ and newline cancel out
         default:
-            _set_parse_error(self, "Illegal token after line continuation");
+            _set_parse_error(self, *token, "Illegal token after line continuation");
             return &self->event;
         }
     }
@@ -494,7 +486,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         }
         if (self->state & PARSER_MASK_WHITESPACE_BANNED_V1) {
             if (_v1_only(self)) {
-                _set_parse_error(self, "Line continuation not allowed here");
+                _set_parse_error(self, *token, "Line continuation not allowed here");
                 return &self->event;
             } else {
                 _set_version(self, KDL_VERSION_2);
@@ -513,7 +505,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
             if (self->state & PARSER_FLAG_CONTEXTUALLY_ILLEGAL_WHITESPACE) {
                 self->state &= ~PARSER_FLAG_CONTEXTUALLY_ILLEGAL_WHITESPACE;
                 if (_v1_only(self)) {
-                    _set_parse_error(self, "Whitespace not allowed before = sign");
+                    _set_parse_error(self, *token, "Whitespace not allowed before = sign");
                     return &self->event;
                 } else {
                     _set_version(self, KDL_VERSION_2);
@@ -529,7 +521,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
             // Not in property; emit as argument (if legal)
             if (self->state & PARSER_FLAG_BARE_PROPERTY_NAME) {
                 if (_v1_only(self)) {
-                    _set_parse_error(self, "Bare identifier not allowed here");
+                    _set_parse_error(self, *token, "Bare identifier not allowed here");
                     return &self->event;
                 } else {
                     _set_version(self, KDL_VERSION_2);
@@ -559,7 +551,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         case KDL_TOKEN_RAW_STRING_V2:
         case KDL_TOKEN_RAW_MULTILINE_STRING:
             if (!_parse_value(self, token, &tmp_val, &self->tmp_string_type)) {
-                _set_parse_error(self, "Error parsing type annotation");
+                _set_parse_error(self, *token, "Error parsing type annotation");
                 return &self->event;
             }
             if (tmp_val.type == KDL_TYPE_STRING) {
@@ -569,11 +561,11 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
                 self->waiting_type_annotation = tmp_val.string;
                 return NULL;
             } else {
-                _set_parse_error(self, "Expected identifier or string");
+                _set_parse_error(self, *token, "Expected identifier or string");
                 return &self->event;
             }
         default:
-            _set_parse_error(self, "Unexpected token, expected type");
+            _set_parse_error(self, *token, "Unexpected token, expected type");
             return &self->event;
         }
     } else if (self->state & PARSER_FLAG_TYPE_ANNOTATION_END) {
@@ -583,7 +575,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
                 = (self->state & ~PARSER_FLAG_TYPE_ANNOTATION_END) | PARSER_FLAG_TYPE_ANNOTATION_ENDED;
             return NULL;
         default:
-            _set_parse_error(self, "Unexpected token, expected ')'");
+            _set_parse_error(self, *token, "Unexpected token, expected ')'");
             return &self->event;
         }
     } else {
@@ -596,10 +588,8 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
             _fallthrough_;
         case KDL_TOKEN_NEWLINE:
         case KDL_TOKEN_SEMICOLON:
-            current_line_number++;
-            current_column_number = 1;
             if (self->state & PARSER_MASK_NODE_CANNOT_END_HERE) {
-                _set_parse_error(self, "Unexpected end of node (incomplete argument or property?)");
+                _set_parse_error(self, *token, "Unexpected end of node (incomplete argument or property?)");
                 return &self->event;
             } else {
                 // end the node
@@ -620,7 +610,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         // Child block: valid unless we've had a non-slashdashed child block
         // already or slashdash is active now
         if (self->state & PARSER_FLAG_END_OF_NODE && self->slashdash_depth < 0) {
-            _set_parse_error(self, "Expected end of node");
+            _set_parse_error(self, *token, "Expected end of node");
             return &self->event;
         }
         if (token->type == KDL_TOKEN_START_CHILDREN) {
@@ -633,7 +623,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
 
         // Args, props: only valid at the start
         if (self->state & (PARSER_FLAG_END_OF_NODE | PARSER_FLAG_END_OF_NODE_OR_CHILD_BLOCK)) {
-            _set_parse_error(self, "Expected end of node or child block");
+            _set_parse_error(self, *token, "Expected end of node or child block");
             return &self->event;
         }
 
@@ -645,12 +635,12 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         case KDL_TOKEN_RAW_STRING_V2:
         case KDL_TOKEN_RAW_MULTILINE_STRING: {
             if (self->state & PARSER_FLAG_WHITESPACE_REQUIRED) {
-                _set_parse_error(self, "Whitespace required before argument or property");
+                _set_parse_error(self, *token, "Whitespace required before argument or property");
                 return &self->event;
             }
             // Either a property key, or a property value, or an argument.
             if (!_parse_value(self, token, &self->event.value, &self->tmp_string_value)) {
-                _set_parse_error(self, "Error parsing property or argument");
+                _set_parse_error(self, *token, "Error parsing property or argument");
                 return &self->event;
             }
 
@@ -675,7 +665,7 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
             // KDLv1 bans bare identifiers in this position
             if (token->type == KDL_TOKEN_WORD && self->event.value.type == KDL_TYPE_STRING) {
                 if (_v1_only(self)) {
-                    _set_parse_error(self, "Bare identifier not allowed here");
+                    _set_parse_error(self, *token, "Bare identifier not allowed here");
                     return &self->event;
                 } else {
                     _set_version(self, KDL_VERSION_2);
@@ -702,19 +692,19 @@ static kdl_event_data* _next_event_in_node(kdl_parser* self, kdl_token* token)
         }
         case KDL_TOKEN_START_TYPE:
             if (self->state & PARSER_FLAG_WHITESPACE_REQUIRED) {
-                _set_parse_error(self, "Whitespace required before type");
+                _set_parse_error(self, *token, "Whitespace required before type");
                 return &self->event;
             }
             // only one type allowed!
             if (self->event.value.type_annotation.data != NULL) {
-                _set_parse_error(self, "Unexpected second type annotation");
+                _set_parse_error(self, *token, "Unexpected second type annotation");
                 return &self->event;
             } else {
                 self->state |= PARSER_FLAG_TYPE_ANNOTATION_START;
                 return NULL;
             }
         default:
-            _set_parse_error(self, "Unexpected token");
+            _set_parse_error(self, *token, "Unexpected token");
             return &self->event;
         }
     }

@@ -53,6 +53,8 @@ typedef struct _kdl_tokenizer kdl_tokenizer;
 struct kdl_token {
     enum kdl_token_type type;
     kdl_str value;
+    int line_no;
+    int col_no;
 };
 
 // Create a tokenizer that reads from a string
