@@ -1,5 +1,6 @@
 from ._libkdl cimport *
 from libc.limits cimport LLONG_MIN, LLONG_MAX
+import sys
 
 class ParseError(ValueError):
     def __init__(self, msg):
@@ -503,8 +504,12 @@ def parse(str kdl_text, *, version="any"):
     elif version in (None, 'detect', 'any'):
         try:
             return parse(kdl_text, version=2)
-        except ParseError:
-            return parse(kdl_text, version=1)
+        except ParseError as e:
+            exc_type, exc_value, tb = sys.exc_info()
+            try:
+                return parse(kdl_text, version=1)
+            except:
+                raise e.with_traceback(tb)
     else:
         raise ValueError(f"Unexpected value for version: {version}")
 
