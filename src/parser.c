@@ -1048,7 +1048,10 @@ static bool _parse_decimal_float(kdl_str number, kdl_value* val, kdl_owned_strin
             int digit = c - '0';
             if (state == exponent || state == exponent_nodigit) {
                 state = exponent;
-                explicit_exponent = explicit_exponent * 10 + digit;
+                // stop parsing beyond rough heuristic, avoids overflow
+                if (explicit_exponent < 285) {
+                    explicit_exponent = explicit_exponent * 10 + digit;
+                }
             } else {
                 decimal_mantissa = decimal_mantissa * 10 + digit;
                 if (state == before_decimal) {

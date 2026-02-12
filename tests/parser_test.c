@@ -388,6 +388,33 @@ static void test_parser_detects_version(void)
     kdl_destroy_parser(parser_v2);
 }
 
+static void test_extreme_float(void)
+{
+    char const* const kdl_text = "node1 1e4294967296";
+
+    kdl_str doc = kdl_str_from_cstr(kdl_text);
+    kdl_parser* parser = kdl_create_string_parser(doc, 0);
+
+    // test all events
+    kdl_event_data* ev;
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_START_NODE);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_ARGUMENT);
+    ASSERT(ev->value.type == KDL_TYPE_NUMBER);
+    ASSERT(ev->value.number.type == KDL_NUMBER_TYPE_STRING_ENCODED);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_END_NODE);
+
+    ev = kdl_parser_next_event(parser);
+    ASSERT(ev->event == KDL_EVENT_EOF);
+
+    kdl_destroy_parser(parser);
+}
+
 void TEST_MAIN(void)
 {
     run_test("Parser: basics", &test_basics);
@@ -399,4 +426,5 @@ void TEST_MAIN(void)
     run_test("Parser: type can't be number", &test_number_type);
     run_test("Parser: BOM treated as whitespace", &test_bom);
     run_test("Parser: KDLv1 and KDLv2 both supported", &test_parser_detects_version);
+    run_test("Parser: parse extreme floating point", &test_extreme_float);
 }
