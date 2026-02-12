@@ -96,7 +96,9 @@ static size_t _refill_tokenizer(kdl_tokenizer* self)
         self->document.len = 0;
     }
     // Move whatever data is left unparsed to the top of the buffer
-    memmove(self->buffer, self->document.data, self->document.len);
+    if (self->document.len > 0) {
+        memmove(self->buffer, self->document.data, self->document.len);
+    }
     self->document.data = self->buffer;
     size_t len_available = self->buffer_size - self->document.len;
     if (len_available < MIN_BUFFER_SIZE) {
