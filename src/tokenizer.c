@@ -25,6 +25,9 @@ struct _kdl_tokenizer {
     size_t buffer_size;
 };
 
+int current_line_number = 1;
+int current_column_number = 1;
+
 static inline void _remove_initial_bom(kdl_tokenizer* self);
 static inline void _update_doc_ptr(kdl_tokenizer* self, char const* new_ptr);
 static inline kdl_utf8_status _tok_get_char(
@@ -32,6 +35,8 @@ static inline kdl_utf8_status _tok_get_char(
 
 kdl_tokenizer* kdl_create_string_tokenizer(kdl_str doc)
 {
+    current_column_number = 1;
+    current_line_number = 1;
     kdl_tokenizer* self = malloc(sizeof(kdl_tokenizer));
     if (self != NULL) {
         self->document = doc;
@@ -47,6 +52,8 @@ kdl_tokenizer* kdl_create_string_tokenizer(kdl_str doc)
 
 kdl_tokenizer* kdl_create_stream_tokenizer(kdl_read_func read_func, void* user_data)
 {
+    current_column_number = 1;
+    current_line_number = 1;
     kdl_tokenizer* self = malloc(sizeof(kdl_tokenizer));
     if (self != NULL) {
         self->document = (kdl_str){.data = NULL, .len = 0};
@@ -78,6 +85,7 @@ static inline void _remove_initial_bom(kdl_tokenizer* self)
         // skip initial BOM
         _update_doc_ptr(self, next);
     }
+    current_column_number--;
 }
 
 void kdl_tokenizer_set_character_set(kdl_tokenizer* self, kdl_character_set cs) { self->charset = cs; }
@@ -211,6 +219,7 @@ static inline kdl_utf8_status _tok_get_char(
         kdl_utf8_status status = _kdl_pop_codepoint(&s, codepoint);
         switch (status) {
         case KDL_UTF8_OK:
+            current_column_number++;
             *next = s.data;
             return KDL_UTF8_OK;
         case KDL_UTF8_EOF:
@@ -274,6 +283,9 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             dest->type = KDL_TOKEN_WHITESPACE;
             dest->value.data = self->document.data + ws_start_offset;
             dest->value.len = cur - dest->value.data;
+            dest->line_no = current_line_number;
+            dest->col_no = current_column_number;
+            current_column_number--;
             _update_doc_ptr(self, cur);
             return KDL_TOKENIZER_OK;
         } else if (_kdl_is_newline(c)) {
@@ -291,13 +303,19 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             dest->type = KDL_TOKEN_NEWLINE;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
+            dest->line_no = current_line_number;
+            dest->col_no = current_column_number;
             _update_doc_ptr(self, next);
+            current_line_number++;
+            current_column_number = 1;
             return KDL_TOKENIZER_OK;
         } else if (c == ';') {
             // semicolon (end of node)
             dest->type = KDL_TOKEN_SEMICOLON;
             dest->value.data = self->document.data;
             dest->value.len = (size_t)(cur - self->document.data);
+            dest->line_no = current_line_number;
+            dest->col_no = current_column_number;
             _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == '\\') {
@@ -305,6 +323,8 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             dest->type = KDL_TOKEN_LINE_CONTINUATION;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
+            dest->line_no = current_line_number;
+            dest->col_no = current_column_number;
             _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == '(') {
@@ -312,6 +332,8 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             dest->type = KDL_TOKEN_START_TYPE;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
+            dest->line_no = current_line_number;
+            dest->col_no = current_column_number;
             _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == ')') {
@@ -319,6 +341,8 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             dest->type = KDL_TOKEN_END_TYPE;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
+            dest->line_no = current_line_number;
+            dest->col_no = current_column_number;
             _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == '{') {
@@ -326,6 +350,8 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             dest->type = KDL_TOKEN_START_CHILDREN;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
+            dest->line_no = current_line_number;
+            dest->col_no = current_column_number;
             _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == '}') {
@@ -333,6 +359,8 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             dest->type = KDL_TOKEN_END_CHILDREN;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
+            dest->line_no = current_line_number;
+            dest->col_no = current_column_number;
             _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == '=') {
@@ -340,6 +368,8 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             dest->type = KDL_TOKEN_EQUALS;
             dest->value.data = cur;
             dest->value.len = (size_t)(next - cur);
+            dest->line_no = current_line_number;
+            dest->col_no = current_column_number;
             _update_doc_ptr(self, next);
             return KDL_TOKENIZER_OK;
         } else if (c == '/') {
@@ -347,15 +377,23 @@ kdl_tokenizer_status kdl_pop_token(kdl_tokenizer* self, kdl_token* dest)
             return _pop_comment(self, dest);
         } else if (c == '"') {
             // string
+            current_column_number--;
             return _pop_string(self, dest);
         } else if (_kdl_is_word_char(self->charset, c)) {
             if (c == 'r' || c == '#') {
                 // this *could* be a raw string
+                int last_current_col = current_column_number;
+                current_column_number--;
                 kdl_tokenizer_status rstring_status = _pop_string(self, dest);
-                if (rstring_status == KDL_TOKENIZER_OK) return KDL_TOKENIZER_OK;
+                if (rstring_status == KDL_TOKENIZER_OK) {
+                    current_column_number--;
+                    return KDL_TOKENIZER_OK;
+                }
+                current_column_number = last_current_col;
                 // else: parse this as an identifier instead (which may also fail)
             }
             // start of an identfier, number, bool, or null
+            current_column_number--;
             return _pop_word(self, dest);
         } else {
             return KDL_TOKENIZER_ERROR;
@@ -393,7 +431,10 @@ end_of_word:
     dest->value = self->document;
     dest->value.len = (size_t)(cur - dest->value.data);
     _update_doc_ptr(self, cur);
+    current_column_number--;
     dest->type = KDL_TOKEN_WORD;
+    dest->line_no = current_line_number;
+    dest->col_no = current_column_number;
     return KDL_TOKENIZER_OK;
 }
 
@@ -406,6 +447,7 @@ static kdl_tokenizer_status _pop_comment(kdl_tokenizer* self, kdl_token* dest)
     if (_tok_get_char(self, &cur, &next, &c1) != KDL_UTF8_OK) return KDL_TOKENIZER_ERROR;
     cur = next;
     if (_tok_get_char(self, &cur, &next, &c2) != KDL_UTF8_OK) return KDL_TOKENIZER_ERROR;
+    current_column_number += 2;
     if (c1 != '/') return KDL_TOKENIZER_ERROR;
 
     if (c2 == '-') {
@@ -413,6 +455,8 @@ static kdl_tokenizer_status _pop_comment(kdl_tokenizer* self, kdl_token* dest)
         dest->value.data = self->document.data;
         dest->value.len = (size_t)2;
         dest->type = KDL_TOKEN_SLASHDASH;
+        dest->line_no = current_line_number;
+        dest->col_no = current_column_number;
         _update_doc_ptr(self, next);
         return KDL_TOKENIZER_OK;
     } else if (c2 == '/') {
@@ -440,6 +484,8 @@ static kdl_tokenizer_status _pop_comment(kdl_tokenizer* self, kdl_token* dest)
 end_of_line:
         dest->value = self->document;
         dest->value.len = (size_t)(cur - dest->value.data);
+        dest->line_no = current_line_number;
+        dest->col_no = current_column_number;
         _update_doc_ptr(self, cur);
         dest->type = KDL_TOKEN_SINGLE_LINE_COMMENT;
         return KDL_TOKENIZER_OK;
@@ -476,6 +522,8 @@ end_of_line:
         // end of comment reached
         dest->value = self->document;
         dest->value.len = (size_t)(cur - dest->value.data);
+        dest->line_no = current_line_number;
+        dest->col_no = current_column_number;
         _update_doc_ptr(self, cur);
         dest->type = KDL_TOKEN_MULTI_LINE_COMMENT;
         return KDL_TOKENIZER_OK;
@@ -507,6 +555,7 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
     default:
         return KDL_TOKENIZER_ERROR;
     }
+    current_column_number--;
 
     // Count the hashes
     int hashes = 0;
@@ -523,6 +572,7 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
             ++hashes;
             cur = next;
         } else if (c == '"') {
+            current_column_number--;
             break;
         } else {
             return KDL_TOKENIZER_ERROR;
@@ -541,6 +591,8 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
             if (!is_raw && initial_quote_count == 2) {
                 dest->value.data = self->document.data;
                 dest->value.len = 0;
+                dest->line_no = current_line_number;
+                dest->col_no = current_column_number;
                 _update_doc_ptr(self, cur);
                 dest->type = KDL_TOKEN_STRING;
                 return KDL_TOKENIZER_OK;
@@ -573,6 +625,7 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
     size_t end_quote_offset = 0;
     uint32_t prev_char = 0;
 
+    current_column_number--;
     while (true) {
         switch (_tok_get_char(self, &cur, &next, &c)) {
         case KDL_UTF8_OK:
@@ -608,6 +661,11 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
             end_quote_offset = 0;
         }
 
+        if (_kdl_is_newline(c)) {
+            current_column_number = 1;
+            current_line_number++;
+        }
+
         if (end_quote_offset != 0
             && ((hashes == 0 && quotes_found == initial_quote_count)
                 || (hashes != 0 && hashes_found == hashes))) {
@@ -623,6 +681,8 @@ static kdl_tokenizer_status _pop_string(kdl_tokenizer* self, kdl_token* dest)
     // end_quote_ptr = the (first) end quote, next = the char after the quote and hashes
     dest->value.data = self->document.data + string_start_offset;
     dest->value.len = end_quote_offset - string_start_offset;
+    dest->line_no = current_line_number;
+    dest->col_no = current_column_number;
     _update_doc_ptr(self, next);
     if (initial_quote_count == 3) {
         dest->type = is_raw ? KDL_TOKEN_RAW_MULTILINE_STRING : KDL_TOKEN_MULTILINE_STRING;
