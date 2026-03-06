@@ -101,7 +101,7 @@ static kdl_owned_string _float_to_string(double f, kdl_float_printing_options co
 
     bool negative = f < 0.0;
     f = fabs(f);
-    int exponent = (int)floor(log10(f));
+    int exponent = f != 0.0 ? (int)floor(log10(f)) : 0;
     double exp_factor = 1.0;
     if (abs(exponent) < opts->min_exponent) {
         // don't use scientific notation
