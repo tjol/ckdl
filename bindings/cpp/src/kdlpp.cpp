@@ -228,8 +228,12 @@ Document parse(std::u8string_view kdl_text, KdlVersion version)
     else if (version == KdlVersion::Any) {
         try {
             return parse(kdl_text, KdlVersion::Kdl_2);
-        } catch (ParseError const&) {
-            return parse(kdl_text, KdlVersion::Kdl_1);
+        } catch (ParseError const& ex2) {
+            try {
+                return parse(kdl_text, KdlVersion::Kdl_1);
+            } catch (ParseError const& ex1) {
+                throw ex2;
+            }
         }
     }
 
