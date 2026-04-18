@@ -262,6 +262,9 @@ public:
                 } else if constexpr (std::is_same_v<T, std::u8string_view>
                     && std::is_same_v<V, std::u8string>) {
                     return T{v};
+                } else if constexpr (std::is_same_v<T, std::string>
+                    && std::is_same_v<V, std::u8string>) {
+                    return T{v.begin(), v.end()};
                 } else {
                     throw TypeError("incompatible types");
                 }
