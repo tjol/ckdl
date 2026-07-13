@@ -1,5 +1,6 @@
 #include <kdl/kdl.h>
 #include <kdlpp.h>
+#include <memory>
 
 namespace kdl {
 
@@ -210,11 +211,11 @@ std::u8string Document::to_string(KdlVersion version) const
     if (version == KdlVersion::Kdl_1) opts.version = KDL_VERSION_1;
     if (version == KdlVersion::Kdl_2) opts.version = KDL_VERSION_2;
 
-    kdl_emitter* emitter = kdl_create_buffering_emitter(&opts);
+    using Emitter = std::unique_ptr<kdl_emitter, decltype(&kdl_destroy_emitter)>;
+    Emitter emitter{kdl_create_buffering_emitter(&opts), &kdl_destroy_emitter};
     if (emitter == nullptr) throw EmitterError{"Error initializing the KDL emitter"};
-    emit_nodes(emitter, m_nodes);
-    auto result = std::u8string{to_u8string_view(kdl_get_emitter_buffer(emitter))};
-    kdl_destroy_emitter(emitter);
+    emit_nodes(emitter.get(), m_nodes);
+    auto result = std::u8string{to_u8string_view(kdl_get_emitter_buffer(emitter.get()))};
     return result;
 }
 
@@ -234,10 +235,10 @@ Document parse(std::u8string_view kdl_text, KdlVersion version)
     }
 
     kdl_str text = {reinterpret_cast<char const*>(kdl_text.data()), kdl_text.size()};
-    kdl_parser* parser = kdl_create_string_parser(text, opts);
+    using Parser = std::unique_ptr<kdl_parser, decltype(&kdl_destroy_parser)>;
+    Parser parser{kdl_create_string_parser(text, opts), &kdl_destroy_parser};
     if (parser == nullptr) throw std::runtime_error("Error initializing the KDL parser");
-    auto doc = Document::read_from(parser);
-    kdl_destroy_parser(parser);
+    auto doc = Document::read_from(parser.get());
     return doc;
 }
 

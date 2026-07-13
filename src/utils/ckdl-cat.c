@@ -101,9 +101,11 @@ static bool kdl_cat_impl(kdl_parser* parser, kdl_emitter* emitter)
         kdl_event_data* ev = kdl_parser_next_event(parser);
         switch (ev->event) {
         case KDL_EVENT_EOF:
+            proplist_clear(&props);
             if (!kdl_emit_end(emitter)) return false;
             return true;
         case KDL_EVENT_PARSE_ERROR:
+            proplist_clear(&props);
             return false;
         case KDL_EVENT_START_NODE:
             if (!in_node_list) {
@@ -136,6 +138,7 @@ static bool kdl_cat_impl(kdl_parser* parser, kdl_emitter* emitter)
             proplist_append(&props, ev->name, &ev->value);
             break;
         default:
+            proplist_clear(&props);
             return false;
         }
     }

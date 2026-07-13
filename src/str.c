@@ -505,6 +505,7 @@ kdl_owned_string _kdl_dedent_multiline_string(kdl_str const* s)
     if (len > 0 && buf_dedented[len - 1] == '\n') --len;
     buf_dedented = realloc(buf_dedented, len + 1);
     buf_dedented[len] = '\0';
+    _kdl_free_write_buffer(&buf_norm_lf);
     return (kdl_owned_string){.data = buf_dedented, .len = len};
 
 dedent_err:
