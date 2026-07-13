@@ -117,6 +117,8 @@ static void test_data_types(void)
     kdl_str expected_str = kdl_str_from_cstr(expected);
     ASSERT(expected_str.len == result.len);
     ASSERT(memcmp(result.data, expected_str.data, result.len) == 0);
+
+    kdl_destroy_emitter(emitter);
 }
 
 static void test_ascii_mode(void)
@@ -138,6 +140,8 @@ static void test_ascii_mode(void)
 
     ASSERT(expected_str.len == result.len);
     ASSERT(memcmp(result.data, expected_str.data, result.len) == 0);
+
+    kdl_destroy_emitter(emitter);
 }
 
 void TEST_MAIN(void)
