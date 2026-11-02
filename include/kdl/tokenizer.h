@@ -9,9 +9,10 @@ extern "C" {
 
 // Return code for the tokenizer
 enum kdl_tokenizer_status {
-    KDL_TOKENIZER_OK,   // ok: token returned
-    KDL_TOKENIZER_EOF,  // regular end of file
-    KDL_TOKENIZER_ERROR // error
+    KDL_TOKENIZER_OK,        // ok: token returned
+    KDL_TOKENIZER_EOF,       // regular end of file
+    KDL_TOKENIZER_ERROR,     // error
+    KDL_TOKENIZER_WOULDBLOCK // tokenizer would block
 };
 
 // Type of token

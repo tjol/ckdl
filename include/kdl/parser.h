@@ -10,12 +10,13 @@ extern "C" {
 
 // Type of parser event
 enum kdl_event {
-    KDL_EVENT_EOF = 0,     // regular end of file
-    KDL_EVENT_PARSE_ERROR, // parse error
-    KDL_EVENT_START_NODE,  // start of a node (a child node, if the previous node has not yet ended)
-    KDL_EVENT_END_NODE,    // end of a node
-    KDL_EVENT_ARGUMENT,    // argument for the current node
-    KDL_EVENT_PROPERTY,    // property for the current node
+    KDL_EVENT_EOF = 0,          // regular end of file
+    KDL_EVENT_PARSE_ERROR,      // parse error
+    KDL_EVENT_START_NODE,       // start of a node (a child node, if the previous node has not yet ended)
+    KDL_EVENT_END_NODE,         // end of a node
+    KDL_EVENT_ARGUMENT,         // argument for the current node
+    KDL_EVENT_PROPERTY,         // property for the current node
+    KDL_EVENT_WOULDBLOCK,       // read operation would block, please try again later
     // If KDL_EMIT_COMMENTS is specified:
     //  - on its own: a comment
     //  - ORed with another event type: a node/argument/property that has been commented out

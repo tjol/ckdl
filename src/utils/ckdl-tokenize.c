@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static size_t read_func(void* user_data, char* buf, size_t bufsize)
+static ptrdiff_t read_func(void* user_data, char* buf, size_t bufsize)
 {
     FILE* fp = (FILE*)user_data;
     return fread(buf, 1, bufsize, fp);

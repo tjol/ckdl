@@ -26,7 +26,9 @@ enum kdl_version {
 };
 
 // Function pointers used to interface with external IO
-typedef size_t (*kdl_read_func)(void* user_data, char* buf, size_t bufsize);
+// For asynchronous operation kdl_read_func can return a negative value
+// signifying that no data available at this point.
+typedef ptrdiff_t (*kdl_read_func)(void* user_data, char* buf, size_t bufsize);
 typedef size_t (*kdl_write_func)(void* user_data, char const* data, size_t nbytes);
 
 typedef struct kdl_str kdl_str;

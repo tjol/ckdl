@@ -10,7 +10,8 @@ enum kdl_utf8_status {
     KDL_UTF8_OK,
     KDL_UTF8_EOF,
     KDL_UTF8_INCOMPLETE,
-    KDL_UTF8_DECODE_ERROR
+    KDL_UTF8_DECODE_ERROR,
+    KDL_UTF8_WOULDBLOCK
 };
 typedef enum kdl_utf8_status kdl_utf8_status;
 
