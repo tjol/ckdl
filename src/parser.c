@@ -175,7 +175,22 @@ static bool _parse_binary_number(kdl_str number, kdl_value* val, kdl_owned_strin
 static bool _identifier_is_valid_v1(kdl_str value);
 static bool _identifier_is_valid_v2(kdl_str value);
 
+#ifdef KDL_DEBUG
+kdl_event_data* _kdl_parser_next_event(kdl_parser* self);
+#endif //KDL_DEBUG
+
 kdl_event_data* kdl_parser_next_event(kdl_parser* self)
+#ifdef KDL_DEBUG
+{
+    kdl_event_data* rv;
+    do {
+        rv = _kdl_parser_next_event(self);
+    } while (rv->event == KDL_EVENT_WOULDBLOCK);
+    return rv;
+}
+
+kdl_event_data* _kdl_parser_next_event(kdl_parser* self)
+#endif //KDL_DEBUG
 {
     kdl_token token;
     kdl_event_data* ev;
@@ -215,6 +230,10 @@ kdl_event_data* kdl_parser_next_event(kdl_parser* self)
                 }
             case KDL_TOKENIZER_OK:
                 break;
+            case KDL_TOKENIZER_WOULDBLOCK:
+                _reset_event(self);
+                self->event.event = KDL_EVENT_WOULDBLOCK;
+                return &self->event;
             default:
             case KDL_TOKENIZER_ERROR:
                 _set_parse_error(self, "Parse error");

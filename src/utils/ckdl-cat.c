@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static size_t read_func(void* user_data, char* buf, size_t bufsize);
+static ptrdiff_t read_func(void* user_data, char* buf, size_t bufsize);
 static size_t write_func(void* user_data, char const* data, size_t nbytes);
 
 struct proplist {
@@ -141,7 +141,7 @@ static bool kdl_cat_impl(kdl_parser* parser, kdl_emitter* emitter)
     }
 }
 
-static size_t read_func(void* user_data, char* buf, size_t bufsize)
+static ptrdiff_t read_func(void* user_data, char* buf, size_t bufsize)
 {
     FILE* fp = (FILE*)user_data;
     return fread(buf, 1, bufsize, fp);
